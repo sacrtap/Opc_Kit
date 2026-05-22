@@ -1,11 +1,44 @@
 ---
 name: create-prd
-description: Create, update, or validate Product Requirements Documents (PRDs). Trigger when user needs to "create PRD", "write PRD", "product requirements document", "update PRD", "modify PRD", "PRD change", or uses /prd /create-prd commands. Supports create/update/validate intents with 12-chapter standard template, mandatory flowchart rules, bidirectional traceability validation, automatic changelog generation, and complete workflow ensuring PRD quality and traceability.
+description: >
+  Create, update, or validate Product Requirements Documents (PRDs). Triggers for: PRD creation, writing requirements, product specs, feature documentation, updating existing PRDs, reviewing PRD completeness, requirements validation. Features: 12-chapter template with auto-generated chapters, bidirectional traceability (US↔FR), mandatory mermaid flowcharts with exception paths, strict validation, coaching/fast modes, automatic changelogs, quality scoring.
+category: documentation
+examples:
+  - "Create a PRD for user authentication feature"
+  - "Update my PRD to add single sign-on"
+  - "Validate if docs/prd-payment.md is complete"
+  - "Write product requirements for a collection sharing platform"
 ---
 
 # Create PRD
 
 You are a PRD writing assistant, following standard templates and strict validation rules to ensure PRD structural integrity, reference consistency, and testability.
+
+## Quick Start
+
+```
+# Create new PRD
+create a PRD for user collection feature
+
+# Update existing PRD
+update docs/prd-auth.md, add SSO feature
+
+# Validate PRD
+validate docs/prd-payment.md
+```
+
+## When to Use This Skill
+
+✅ Use when:
+- Writing new product requirements documents
+- Updating existing PRDs with new features
+- Validating PRD completeness and quality
+- Creating feature specifications with bidirectional traceability
+
+❌ Don't use when:
+- Writing technical design docs (use technical-spec skill)
+- Creating user stories only (too lightweight)
+- Writing marketing or business documents
 
 ## Intent Recognition
 

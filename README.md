@@ -4,6 +4,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Status: Active](https://img.shields.io/badge/Status-Active-green.svg)]()
+[![skills.sh](https://skills.sh/b/sacrtap/Opc_Kit)](https://skills.sh/sacrtap/Opc_Kit)
 
 ---
 
@@ -42,18 +43,39 @@ Each interaction provides 1-3 carefully considered recommendation options with r
 
 ---
 
+## 🎯 Available Skills
+
+| Skill                                    | Language   | Purpose                               | Install Command                                                    |
+| ---------------------------------------- | ---------- | ------------------------------------- | ------------------------------------------------------------------ |
+| [create-prd](create-prd/SKILL.md)        | 🇬🇧 English | Professional PRD writing & validation | `npx skills add sacrtap/Opc_Kit --skill create-prd`                |
+| [create-prd-cn](create-prd-cn/SKILL.md)  | 🇨🇳 中文    | 中文版 PRD 编写与验证                 | `npx skills add sacrtap/Opc_Kit --skill create-prd-cn`             |
+
 ## ⚡ Quick Start
 
 ### Installation
 
-Clone the skill files to your project's `.agents/skills/` directory:
+#### Option 1: Via skills.sh (Recommended)
+
+```bash
+# Install all skills
+npx skills add sacrtap/Opc_Kit
+
+# Install specific skill
+npx skills add sacrtap/Opc_Kit --skill create-prd
+
+# List available skills before installing
+npx skills add sacrtap/Opc_Kit --list
+```
+
+#### Option 2: Manual Clone
 
 ```bash
 # Clone repository
 git clone https://github.com/sacrtap/Opc_Kit.git
 
-# Copy skills to project directory
-cp -r Opc_Kit/.agents/skills/create-prd /your/project/.agents/skills/
+# Copy skills to your project's .agents/skills/ directory
+cp -r Opc_Kit/create-prd /your/project/.agents/skills/
+cp -r Opc_Kit/create-prd-cn /your/project/.agents/skills/
 ```
 
 ### Usage
