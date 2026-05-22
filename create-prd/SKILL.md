@@ -31,53 +31,53 @@ update docs/prd-auth.md, add SSO feature
 validate docs/prd-payment.md
 ```
 
-## 会话设置
+## Session Setup
 
-### 语言检测与自适应
-在会话开始时检测用户的主要对话语言：
-- **中文为主** → 生成中文 PRD
-- **英文为主** → Generate PRD in English
-- **混合/不明确** → 询问用户偏好
+### Language Detection and Adaptation
+Detect user's primary conversation language at session start:
+- **Chinese dominant** → Generate PRD in Chinese
+- **English dominant** → Generate PRD in English
+- **Mixed/ambiguous** → Ask user preference
 
-**检测方法：**
-1. 扫描用户前 3 条消息的语言信号
-2. 如果 >60% 消息使用同一语言 → 采用该语言
-3. 用户可随时覆盖："用英文写" / "write this in Chinese"
-4. **输出语言优先级：** 用户明确指令 > 对话语言检测
+**Detection method:**
+1. Scan first 3 user messages for language signals
+2. If >60% messages in same language → adopt that language
+3. User can override anytime: "用英文写" / "write this in Chinese"
+4. **Output language priority:** User explicit override > conversation language detection
 
-### 默认文件输出
-保存位置：`docs/specs/`（相对于当前项目目录）
+### Default File Output
+Save location: `docs/specs/` (relative to current project directory)
 
-**命名规范：**
-- 用户提供标题：`{title-slug}.md`（如"用户认证" → `user-authentication.md`）
-- 未提供标题：`prd-{YYYY-MM-DD}.md`
+**Naming convention:**
+- User provides title: `{title-slug}.md` (e.g., "User Authentication" → `user-authentication.md`)
+- No title provided: `prd-{YYYY-MM-DD}.md`
 
-**保存前确认：**
-1. 确保 `docs/specs/` 目录存在 → 不存在则自动创建
-2. 向用户展示完整路径："我将保存到 `docs/specs/user-authentication.md`，对吗？"
-3. 用户可覆盖："存到 requirements/ 目录"
+**Pre-save confirmation:**
+1. Ensure `docs/specs/` directory exists → create if absent
+2. Show full path to user: "I'll save this to `docs/specs/user-authentication.md`, correct?"
+3. User can override: "save to requirements/ instead"
 
-### 进度追踪（强制）
-**必须在 PRD 生成开始时创建任务清单（使用你的 TodoWrite 或等效工具）**
+### Progress Tracking (Mandatory)
+**Must create task list at PRD generation start (use TodoWrite or platform equivalent)**
 
-#### 初始任务清单（自动创建）
-- [ ] 深度推理分析
-- [ ] 生成第 1-3 章（问题描述、目标定义、目标用户）
-- [ ] 生成第 4-5 章（用户故事、功能交互流程图）
-- [ ] 生成第 6-7 章（详细功能清单、各功能说明）
-- [ ] 生成第 8-10 章（埋点设计、未来改进计划、风险与依赖）
-- [ ] 自动生成第 11-12 章（术语表、假设索引）
-- [ ] 运行强校验清单
-- [ ] 输出完整 PRD
+#### Initial Task List (auto-created)
+- [ ] Deep reasoning analysis
+- [ ] Generate Chapters 1-3 (Problem Description, Goal Definition, Target Users)
+- [ ] Generate Chapters 4-5 (User Stories, Feature Flowcharts)
+- [ ] Generate Chapters 6-7 (Feature List, Feature Details)
+- [ ] Generate Chapters 8-10 (Tracking Design, Future Improvements, Risks & Dependencies)
+- [ ] Auto-generate Chapters 11-12 (Glossary, Assumption Index)
+- [ ] Run strict validation checklist
+- [ ] Output completed PRD
 
-#### 更新规则
-- 只在章节草稿完成之后才标记 `completed`
-- **绝对不要跳过任务** — 按顺序完成
-- 如果某章节需要用户交互 → 标记 `in_progress`，提问，回答后完成
+#### Update Rules
+- Mark task `completed` ONLY after chapter draft is written
+- **NEVER skip tasks** — complete sequentially
+- If a chapter requires user interaction → mark `in_progress`, ask question, then complete after response
 
-#### 状态沟通
-每完成一个重要步骤后，简要报告进度：
-"✅ 第 1-3 章已完成。正在生成用户故事..."
+#### Status Communication
+After each major step, briefly report progress:
+"✅ Chapters 1-3 completed. Moving to User Stories..."
 
 ## When to Use This Skill
 
@@ -179,7 +179,7 @@ If any question can't be answered or is vague → mark as [ASSUMPTION] and ask u
 Walk through this path:
 
 - **Problem Description → Goal Definition → User Stories → Feature List → Flowchart → Tracking → Success Metrics**
-- Does each环节承接 the previous one? Any breaks?
+- Does each step connect to the previous one? Any breaks?
 - Is each user story implemented by at least one feature? (US→FR traceability)
 - Does each feature respond to at least one user story? (FR→US reverse traceability)
 - Does each tracking event serve at least one success metric?
@@ -231,7 +231,7 @@ Review results are appended at the end of the PRD in fixed format (not inserted 
 
 ### Methodology References
 
-- **First Principles**: Elon Musk / Aristotle — strip away表象, return to irreducible basic facts
+- **First Principles**: Elon Musk / Aristotle — strip away surface appearances, return to irreducible basic facts
 - **Working Backwards**: Amazon/PRFAQ — reverse from user pain points
 - **YAGNI Principle**: XP Extreme Programming — You Ain't Gonna Need It, don't do unnecessary things
 - **MoSCoW Priority**: Must/Should/Could/Won't — ensure v1 only does must-haves
@@ -311,28 +311,28 @@ Full template in `assets/prd-template.md`. 12-chapter fixed skeleton + 3 auto-ge
 | Mermaid Snippets | `assets/mermaid-snippets.md` |
 | Validation Script | `scripts/validate-prd.js` |
 
-## 跨平台工具适配
+## Cross-Platform Tool Compatibility
 
-本技能设计为与 AI Coding Agents 平台无关。以下是各平台的工具映射：
+This skill is designed to be platform-agnostic for AI Coding Agents. Below is the tool mapping for each platform:
 
-### 工具名映射表
+### Tool Name Mapping
 
-| 操作描述      | OpenCode         | Claude Code | Cursor    | Codex      |
-| ------------- | ---------------- | ----------- | --------- | ---------- |
-| 文件读取      | `read`             | `Read`        | 内置读取  | `read_file`  |
-| 文件创建/覆盖 | `write`            | `Write`       | 内置写入  | `write_file` |
-| 精确修改      | `edit`             | `Edit`        | 内置编辑  | `edit_file`  |
-| 文件查找      | `glob`             | `Glob`        | 内置查找  | `glob`       |
-| 内容搜索      | `grep`             | `Grep`        | 内置搜索  | `search`     |
-| 大文件处理    | `ctx_execute_file` | `Bash`        | `Bash`      | `run_shell`  |
-| 任务清单管理  | `todowrite`        | `TodoWrite`   | 内置任务  | 内置任务   |
-| 子代理派遣    | `task`             | `Task`        | ❌ 不支持 | ❌ 不支持  |
+| Operation             | OpenCode | Claude Code | Cursor   | Codex      |
+| --------------------- | -------- | ----------- | -------- | ---------- |
+| File Read             | `read`     | `Read`        | Built-in | `read_file`  |
+| File Create/Overwrite | `write`    | `Write`       | Built-in | `write_file` |
+| Precise Edit          | `edit`     | `Edit`        | Built-in | `edit_file`  |
+| File Lookup           | `glob`     | `Glob`        | Built-in | `glob`       |
+| Content Search        | `grep`     | `Grep`        | Built-in | `search`     |
+| Large File Processing | `ctx_execute_file` | `Bash`      | `Bash`     | `run_shell`  |
+| Task List Management  | `todowrite` | `TodoWrite`   | Built-in | Built-in   |
+| Subagent Dispatch     | `task`     | `Task`        | ❌ Not supported | ❌ Not supported |
 
-### Fallback 策略
-当你没有某个特定工具时：
-1. **大文件分析** → 使用 `bash`/`run_shell` 配合 `head`/`tail`/`grep` 读取关键部分
-2. **子代理** → 在当前会话中顺序执行任务，并在每个任务后报告进度
-3. **任务清单** → 在会话开头用文字列出计划，完成后逐步标记
+### Fallback Strategies
+When a specific tool is unavailable:
+1. **Large file analysis** → Use `bash`/`run_shell` with `head`/`tail`/`grep` to read key sections
+2. **Subagents** → Execute tasks sequentially in current session and report progress after each
+3. **Task list** → Outline plan in text at session start, mark completion step by step
 
 ## Tool Usage
 
