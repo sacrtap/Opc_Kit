@@ -1,8 +1,12 @@
 ---
 name: create-prd
 description: >
-  Create, update, or validate Product Requirements Documents (PRDs). Triggers for: PRD creation, writing requirements, product specs, feature documentation, updating existing PRDs, reviewing PRD completeness, requirements validation, 创建PRD, 产品需求文档, 需求规格说明, writing PRD in Chinese or English. Features: 10-chapter template (CN) / 12-chapter template (EN), bidirectional traceability (US↔FR), mandatory mermaid flowcharts with exception paths, strict validation, coaching/fast modes, automatic changelogs, quality scoring, auto language detection, default docs/specs save path, mandatory progress tracking via TodoWrite, cross-platform AI agent compatible (OpenCode/Claude Code/Cursor/Codex).
-category: documentation
+  Create, update, or validate Product Requirements Documents (PRDs). Triggers for: PRD creation, writing requirements, product specs, feature documentation, updating existing PRDs, reviewing PRD completeness, requirements validation, 创建PRD, 产品需求文档. Features: bilingual PRD generation (auto language detection), bidirectional traceability (US↔FR), mandatory mermaid flowcharts with exception paths, strict validation (18+ criteria), coaching/fast modes, auto language detection, default docs/specs/ save path, mandatory progress tracking, cross-platform AI agent compatible.
+license: MIT
+metadata:
+  author: sacrtap
+  version: "2.0.0"
+  category: documentation
 examples:
   - "Create a PRD for user authentication feature"
   - "创建一个用户认证功能的PRD"
@@ -18,18 +22,36 @@ examples:
 
 You are a PRD writing assistant, following standard templates and strict validation rules to ensure PRD structural integrity, reference consistency, and testability.
 
+## Trust & Quality
+
+- **Validation Script**: `scripts/validate-prd.js` programmatically checks 18+ quality criteria before saving
+- **Quality Score**: Every PRD receives a 7-dimension score (max 100 points) — see PRD Quality Scoring section
+- **Peer-Reviewed Methodology**: Follows Amazon PRFAQ, First Principles, YAGNI, and MoSCoW frameworks
+- **Bidirectional Traceability**: US↔FR 1:1 mapping ensures no requirement is lost or orphaned
+- **Exception Path Coverage**: Every API call and external dependency has failure + timeout branches
+- **Version History**: Changelog entries are mandatory for every update, tracked in PRD metadata
+
+**Benchmark**: 70+ points = production-ready, 85+ = excellent
+
 ## Quick Start
 
-```
-# Create new PRD
-create a PRD for user collection feature
+**Prerequisites:** Node.js (optional, required only for `validate-prd.js` script)
 
-# Update existing PRD
-update docs/prd-auth.md, add SSO feature
+1. **Create a new PRD** — describe your feature in 1-2 sentences:
+   ```
+   create a PRD for user collection feature
+   ```
+   ⏱️ ~5-10 minutes (coaching mode) | ~2-3 minutes (fast mode)
 
-# Validate PRD
-validate docs/prd-payment.md
-```
+2. **Review & iterate** — the skill will ask targeted questions (max 3 recommendations per question)
+
+3. **Validate quality** — run the validation checklist before saving:
+   ```
+   validate docs/specs/prd-collection.md
+   ```
+   ✅ Output: 18-point checklist + 7-dimension quality score (0-100)
+
+**First-time setup:** No installation needed. The skill auto-creates `docs/specs/` directory if absent.
 
 ## Session Setup
 
@@ -255,6 +277,25 @@ Review results are appended at the end of the PRD in fixed format (not inserted 
 15. **Cross-Agent Compatible** — Platform-agnostic skill supporting OpenCode, Claude Code, Cursor, Codex. Tool calls use generic descriptions; each agent maps to its own toolset
 16. **Environment Detection First** — Must detect Node.js environment before running validation script; if absent, ask user before installing; never auto-install without confirmation
 
+## PRD Quality Scoring
+
+Every PRD is scored on 7 dimensions (max 100 points):
+
+| Dimension          | Weight | Max Points | Description                                      |
+| ------------------ | ------ | ---------- | ------------------------------------------------ |
+| Completeness       | 20%    | 20         | All 12 chapters present and filled               |
+| Traceability       | 20%    | 20         | US↔FR 1:1 mapping, no orphaned requirements      |
+| Testability        | 15%    | 15         | Acceptance criteria are executable and quantifiable |
+| Clarity            | 15%    | 15         | Unambiguous language, clear terminology          |
+| Exception Coverage | 10%    | 10         | Failure paths documented for all external calls  |
+| Metrics Alignment  | 10%    | 10         | Tracking events map to success metrics 1:1       |
+| Risk Management    | 10%    | 10         | Dependencies, risks, and mitigations addressed   |
+
+**Benchmark Scores:**
+- **70+ points** = production-ready
+- **85+ points** = excellent
+- **< 70 points** = needs revision before sharing with stakeholders
+
 ## PRD Standard Template
 
 Full template in `assets/prd-template.md`. 12-chapter fixed skeleton + 3 auto-generated:
@@ -310,6 +351,17 @@ Full template in `assets/prd-template.md`. 12-chapter fixed skeleton + 3 auto-ge
 | Changelog Template | `assets/changelog-entry-template.md` |
 | Mermaid Snippets | `assets/mermaid-snippets.md` |
 | Validation Script | `scripts/validate-prd.js` |
+
+## Integrations
+
+Generated PRDs integrate with common product development tools:
+
+- **Figma**: Include prototype URLs in PRD metadata (`metadata.prototype`)
+- **Jira**: Export feature list as Jira Epic/Story structure (F-x.x → Story ID mapping)
+- **GitHub**: Link to related issues/PRs in PRD metadata (`metadata.related-docs`)
+- **Confluence**: Mermaid flowcharts render natively in Confluence markdown
+- **Notion**: PRD markdown imports cleanly into Notion with table and heading support
+- **Analytics**: Tracking events follow naming conventions compatible with Amplitude, Mixpanel, Segment
 
 ## Cross-Platform Tool Compatibility
 
