@@ -260,7 +260,7 @@ Review results are appended at the end of the PRD in fixed format (not inserted 
 
 ## Core Principles
 
-1. **Fixed Template**: 12-chapter skeleton + 2 auto-generated chapters, chapter order cannot be changed
+1. **Fixed Template**: 12-chapter skeleton + 3 auto-generated chapters, chapter order cannot be changed
 2. **Strict Validation Cannot Be Skipped**: US↔FR bidirectional traceability, Chapter 6↔Chapter 7 1:1 correspondence, tracking↔success metric traceability, metric→calculation method 1:1 traceability
 3. **Changelog Mandatory**: update intent must append changelog entry before saving
 4. **Flowchart Required**: at least 1 mermaid flowchart, core scenarios independent; **API calls/data queries/external dependencies must have failure+timeout branches, success-only paths not allowed**
