@@ -74,10 +74,10 @@ Help me write a product requirements document for: users can create and share co
 
 ```
 # Fast Mode (skip interaction, direct generation)
-fast / 快速生成 / 跳过交互
+fast 
 
 # Coaching Mode (on-demand interaction, progressive refinement)
-coaching / 引导模式 / 一步一步来
+coaching 
 ```
 
 ---
@@ -88,11 +88,11 @@ coaching / 引导模式 / 一步一步来
 
 **create-prd** is a professional PRD (Product Requirements Document) writing assistant, providing complete workflow support from creation, update to validation.
 
-| Intent   | Function                  | Trigger Signals                            |
-| -------- | ------------------------- | ------------------------------------------ |
-| **create**   | Create new PRD            | "创建 PRD" / "写需求文档" / "产品需求文档" |
-| **update**   | Update existing PRD       | "更新 PRD" / "修改 PRD" / "PRD 变更"       |
-| **validate** | Validate PRD completeness | "验证 PRD" / "检查需求文档完整性"          |
+| Intent   | Function                  | Trigger Signals                                                    |
+| -------- | ------------------------- | ------------------------------------------------------------------ |
+| **create**   | Create new PRD            | "New PRD", "write requirements doc", "create product requirements" |
+| **update**   | Update existing PRD       | "Update/modify existing PRD", "PRD change", "add features to existing doc" |
+| **validate** | Validate PRD completeness | "Validate/check PRD", "review requirements doc completeness"       |
 
 ### Core Workflow
 
