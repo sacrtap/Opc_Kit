@@ -1,12 +1,16 @@
 ---
 name: create-prd
 description: >
-  Create, update, or validate Product Requirements Documents (PRDs). Triggers for: PRD creation, writing requirements, product specs, feature documentation, updating existing PRDs, reviewing PRD completeness, requirements validation. Features: 12-chapter template with auto-generated chapters, bidirectional traceability (US↔FR), mandatory mermaid flowcharts with exception paths, strict validation, coaching/fast modes, automatic changelogs, quality scoring.
+  Create, update, or validate Product Requirements Documents (PRDs). Triggers for: PRD creation, writing requirements, product specs, feature documentation, updating existing PRDs, reviewing PRD completeness, requirements validation, 创建PRD, 产品需求文档, 需求规格说明, writing PRD in Chinese or English. Features: 10-chapter template (CN) / 12-chapter template (EN), bidirectional traceability (US↔FR), mandatory mermaid flowcharts with exception paths, strict validation, coaching/fast modes, automatic changelogs, quality scoring, auto language detection, default docs/specs save path, mandatory progress tracking via TodoWrite, cross-platform AI agent compatible (OpenCode/Claude Code/Cursor/Codex).
 category: documentation
 examples:
   - "Create a PRD for user authentication feature"
-  - "Update my PRD to add single sign-on"
-  - "Validate if docs/prd-payment.md is complete"
+  - "创建一个用户认证功能的PRD"
+  - "Update docs/specs/prd-auth.md, add SSO"
+  - "Update docs/specs/prd-auth.md，增加单点登录功能"
+  - "Validate if docs/specs/prd-payment.md is complete"
+  - "校验 docs/specs/prd-payment.md 是否完整"
+  - "写一份收藏分享平台的产品需求文档"
   - "Write product requirements for a collection sharing platform"
 ---
 
@@ -26,6 +30,54 @@ update docs/prd-auth.md, add SSO feature
 # Validate PRD
 validate docs/prd-payment.md
 ```
+
+## 会话设置
+
+### 语言检测与自适应
+在会话开始时检测用户的主要对话语言：
+- **中文为主** → 生成中文 PRD
+- **英文为主** → Generate PRD in English
+- **混合/不明确** → 询问用户偏好
+
+**检测方法：**
+1. 扫描用户前 3 条消息的语言信号
+2. 如果 >60% 消息使用同一语言 → 采用该语言
+3. 用户可随时覆盖："用英文写" / "write this in Chinese"
+4. **输出语言优先级：** 用户明确指令 > 对话语言检测
+
+### 默认文件输出
+保存位置：`docs/specs/`（相对于当前项目目录）
+
+**命名规范：**
+- 用户提供标题：`{title-slug}.md`（如"用户认证" → `user-authentication.md`）
+- 未提供标题：`prd-{YYYY-MM-DD}.md`
+
+**保存前确认：**
+1. 确保 `docs/specs/` 目录存在 → 不存在则自动创建
+2. 向用户展示完整路径："我将保存到 `docs/specs/user-authentication.md`，对吗？"
+3. 用户可覆盖："存到 requirements/ 目录"
+
+### 进度追踪（强制）
+**必须在 PRD 生成开始时创建任务清单（使用你的 TodoWrite 或等效工具）**
+
+#### 初始任务清单（自动创建）
+- [ ] 深度推理分析
+- [ ] 生成第 1-3 章（问题描述、目标定义、目标用户）
+- [ ] 生成第 4-5 章（用户故事、功能交互流程图）
+- [ ] 生成第 6-7 章（详细功能清单、各功能说明）
+- [ ] 生成第 8-10 章（埋点设计、未来改进计划、风险与依赖）
+- [ ] 自动生成第 11-12 章（术语表、假设索引）
+- [ ] 运行强校验清单
+- [ ] 输出完整 PRD
+
+#### 更新规则
+- 只在章节草稿完成之后才标记 `completed`
+- **绝对不要跳过任务** — 按顺序完成
+- 如果某章节需要用户交互 → 标记 `in_progress`，提问，回答后完成
+
+#### 状态沟通
+每完成一个重要步骤后，简要报告进度：
+"✅ 第 1-3 章已完成。正在生成用户故事..."
 
 ## When to Use This Skill
 
@@ -197,6 +249,11 @@ Review results are appended at the end of the PRD in fixed format (not inserted 
 9. **Deep Reasoning First**: Before generating the PRD draft, must conduct deep reasoning analysis (user motivation, business value, technical feasibility, risk matrix), integrating reasoning results into PRD content rather than directly asking the user
 10. **Senior PM Perspective**: Guide and think with the standard of an experienced senior product manager, introducing product thinking frameworks in problem description and goal definition chapters (Why Now, differentiation, user segmentation, business value), and providing industry best practice recommendations in the risks & dependencies chapter
 11. **Recommendation-Driven Interaction**: Every time interacting with the user, provide carefully considered recommendations (no more than 3 in principle), each with clear reasoning, not fabricated, clearly mark the recommended option, let the user make a decision
+12. **Language Adaptation** — Detect user language, match PRD output language without asking (unless mixed); user explicit override takes highest priority
+13. **Default Path Convention** — Auto-save to `docs/specs/` with clear naming; confirm path before saving
+14. **Mandatory Progress Tracking** — Create TodoWrite task list at start, update after each chapter completion
+15. **Cross-Agent Compatible** — Platform-agnostic skill supporting OpenCode, Claude Code, Cursor, Codex. Tool calls use generic descriptions; each agent maps to its own toolset
+16. **Environment Detection First** — Must detect Node.js environment before running validation script; if absent, ask user before installing; never auto-install without confirmation
 
 ## PRD Standard Template
 
@@ -254,12 +311,58 @@ Full template in `assets/prd-template.md`. 12-chapter fixed skeleton + 3 auto-ge
 | Mermaid Snippets | `assets/mermaid-snippets.md` |
 | Validation Script | `scripts/validate-prd.js` |
 
+## 跨平台工具适配
+
+本技能设计为与 AI Coding Agents 平台无关。以下是各平台的工具映射：
+
+### 工具名映射表
+
+| 操作描述      | OpenCode         | Claude Code | Cursor    | Codex      |
+| ------------- | ---------------- | ----------- | --------- | ---------- |
+| 文件读取      | `read`             | `Read`        | 内置读取  | `read_file`  |
+| 文件创建/覆盖 | `write`            | `Write`       | 内置写入  | `write_file` |
+| 精确修改      | `edit`             | `Edit`        | 内置编辑  | `edit_file`  |
+| 文件查找      | `glob`             | `Glob`        | 内置查找  | `glob`       |
+| 内容搜索      | `grep`             | `Grep`        | 内置搜索  | `search`     |
+| 大文件处理    | `ctx_execute_file` | `Bash`        | `Bash`      | `run_shell`  |
+| 任务清单管理  | `todowrite`        | `TodoWrite`   | 内置任务  | 内置任务   |
+| 子代理派遣    | `task`             | `Task`        | ❌ 不支持 | ❌ 不支持  |
+
+### Fallback 策略
+当你没有某个特定工具时：
+1. **大文件分析** → 使用 `bash`/`run_shell` 配合 `head`/`tail`/`grep` 读取关键部分
+2. **子代理** → 在当前会话中顺序执行任务，并在每个任务后报告进度
+3. **任务清单** → 在会话开头用文字列出计划，完成后逐步标记
+
 ## Tool Usage
 
-- File reading: `read`
-- File creation/overwrite: `write`
-- Precise editing: `edit`
-- File lookup: `glob`
-- Content search: `grep`
-- Large file analysis: `ctx_execute_file`
-- PRD strict validation: `node scripts/validate-prd.js <prd-file.md>`
+Use the appropriate tools for your platform. Key principles:
+- **File reading**: Use your file read tool
+- **File creation/overwrite**: Use your file write tool
+- **Precise editing**: Use your edit tool
+- **File lookup**: Use your glob tool
+- **Content search**: Use your search tool
+- **Large file analysis**: Use sandboxed execution if available, otherwise use shell commands to read key sections
+- **PRD strict validation**: Execute `node scripts/validate-prd.js <prd-file.md>` (requires Node.js, see Environment Detection below)
+
+### Validation Script Environment Detection
+
+Before running `validate-prd.js`, you MUST check the Node.js environment:
+
+1. **Check if Node.js exists:**
+   ```bash
+   node --version
+   ```
+
+2. **If Node.js is NOT found:**
+   - Ask the user: "The PRD validation script requires Node.js. Would you like to install it?"
+   - Provide installation options (Homebrew / nvm / official installer)
+   - **Wait for user confirmation before executing any installation**
+
+3. **If environment conflicts exist (multiple versions):**
+   - Show conflict details to the user
+   - Provide solution options (switch version / skip validation / manual checklist review)
+   - **Must get user confirmation before proceeding**
+
+4. **If validation script cannot run:**
+   - Fall back to: Manual checklist review using the "Strict Validation Checklist" in SKILL.md
