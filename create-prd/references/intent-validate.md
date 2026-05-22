@@ -57,11 +57,10 @@
 
 **Fuzzy word blacklist:**
 ```
-正常 / normal, 友好 / friendly, 明显 / obvious, 合理 / reasonable,
-良好 / good, 流畅 / smooth, 及时 / timely, 准确 / accurate (without threshold)
+normal, friendly, obvious, reasonable, good, smooth, timely, accurate (without threshold)
 ```
 
-## D.规范性 (Standards Compliance)
+## D. Standards Compliance
 
 ### D1: Flowchart Check
 

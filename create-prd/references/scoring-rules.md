@@ -23,9 +23,9 @@ After PRD generation and strict validation execution, must output 7-dimension qu
 | Composite Score    | Grade   | Description                                     |
 | ----------- | ------ | ---------------------------------------- |
 | **90-100**  | Excellent   | Complete content, no traceability breaks, review process executed properly, can directly enter review |
-| **75-89**   | Good   | Basically complete,少量 non-critical items pending, recommend quick correction |
+| **75-89**   | Good   | Basically complete, a few non-critical items pending, recommend quick correction |
 | **60-74**   | Pass   | Key chain complete, but multiple items pending confirmation/supplement, needs iteration |
-| **<60**     | Pending   | Missing较多 critical content, recommend re-organize before regeneration     |
+| **<60**     | Pending   | Missing several critical content, recommend re-organize before regeneration     |
 
 ### Score Output Format
 
@@ -106,5 +106,5 @@ Output score result at end of PRD or separately:
 | Why Now is clear           | 2    | Clear articulation of problem urgency and time window gets 2 points   |
 | Differentiated value is explicit         | 2    | Clear explanation of differences from existing solutions or competitors gets 2 points |
 | User segmentation is reasonable           | 2    | Target users and secondary users have priority distinction gets 2 points   |
-| Business value is articulated           | 2    | Explains business收益 or efficiency improvement gets 2 points |
+| Business value is articulated           | 2    | Explains business value or efficiency improvement gets 2 points |
 | Risk prediction is comprehensive           | 2    | Identifies ≥2 types of technical risks with mitigation plans gets 2 points |

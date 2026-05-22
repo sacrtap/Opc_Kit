@@ -4,7 +4,7 @@
 
 Regardless of fast or coaching mode, after PRD draft output, **must** execute the requirements review process.
 
-## Incremental Review Mode (去重审查)
+## Incremental Review Mode (Deduplication)
 
 Review questions are adjusted based on what was already confirmed in Phase 0:
 
@@ -57,7 +57,7 @@ Problem Description → Goal Definition → User Stories → Feature List → Fl
 | Metric→Problem | Each success metric can answer "did we solve the pain point" | 100% |
 
 **Break Point Detection:**
-- Check if each step承接 the previous one
+- Check if each step connects to the previous one
 - Any features without corresponding user stories (over-design)
 - Any user stories without corresponding features (requirements gap)
 - Any tracking events without corresponding success metrics (invalid tracking)
@@ -118,7 +118,7 @@ Review results are appended at the end of the PRD in fixed format (not inserted 
 
 | Methodology | Source | Core Idea | Application Scenario |
 | ----------- | ------ | --------- | -------------------- |
-| First Principles | Elon Musk / Aristotle | Strip away表象, return to irreducible basic facts | Validate if requirement essence is valid |
+| First Principles | Elon Musk / Aristotle | Strip away surface appearances, return to irreducible basic facts | Validate if requirement essence is valid |
 | Working Backwards | Amazon/PRFAQ | Reverse from user pain points | Ensure requirements start from user perspective |
 | YAGNI Principle | XP Extreme Programming | You Ain't Gonna Need It, don't do unnecessary things | Cut over-designed features |
 | MoSCoW Priority | DSDM | Must/Should/Could/Won't classification | Ensure v1 only does must-haves |
@@ -131,7 +131,7 @@ Review results are appended at the end of the PRD in fixed format (not inserted 
 ### User-Related Questions
 - What is the target user's usage scenario? In what environment do they use it?
 - What is the user's technical level? Does the usage threshold need to be lowered?
-- How large is the user base? Is it an internal tool or面向 all customers?
+- How large is the user base? Is it an internal tool or accessible to all customers?
 - What is the user's current alternative solution? Why not use it?
 
 ### Value-Related Questions
