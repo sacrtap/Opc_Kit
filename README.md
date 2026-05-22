@@ -45,10 +45,9 @@ Each interaction provides 1-3 carefully considered recommendation options with r
 
 ## 🎯 Available Skills
 
-| Skill                                    | Language   | Purpose                               | Install Command                                                    |
-| ---------------------------------------- | ---------- | ------------------------------------- | ------------------------------------------------------------------ |
-| [create-prd](create-prd/SKILL.md)        | 🇬🇧 English | Professional PRD writing & validation | `npx skills add sacrtap/Opc_Kit --skill create-prd`                |
-| [create-prd-cn](create-prd-cn/SKILL.md)  | 🇨🇳 中文    | 中文版 PRD 编写与验证                 | `npx skills add sacrtap/Opc_Kit --skill create-prd-cn`             |
+| Skill                            | Language | Purpose                               | Install Command                                   |
+| -------------------------------- | -------- | ------------------------------------- | ------------------------------------------------- |
+| [create-prd](create-prd/SKILL.md) | EN       | Professional PRD writing & validation | `npx skills add sacrtap/Opc_Kit --skill create-prd` |
 
 ## ⚡ Quick Start
 
@@ -73,9 +72,8 @@ npx skills add sacrtap/Opc_Kit --list
 # Clone repository
 git clone https://github.com/sacrtap/Opc_Kit.git
 
-# Copy skills to your project's .agents/skills/ directory
+# Copy skill to your project's .agents/skills/ directory
 cp -r Opc_Kit/create-prd /your/project/.agents/skills/
-cp -r Opc_Kit/create-prd-cn /your/project/.agents/skills/
 ```
 
 ### Usage
