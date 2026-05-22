@@ -88,11 +88,11 @@ coaching / 引导模式 / 一步一步来
 
 **create-prd** 是一个专业的 PRD（产品需求文档）写作助手，提供从创建、更新到验证的完整工作流支持。
 
-| Intent   | 功能            | 触发信号                                                    |
-| -------- | --------------- | ----------------------------------------------------------- |
-| **create**   | 创建新 PRD      | "New PRD", "write requirements doc", "create product requirements" |
-| **update**   | 更新已有 PRD    | "Update/modify existing PRD", "PRD change", "add features to existing doc" |
-| **validate** | 验证 PRD 完整性 | "Validate/check PRD", "review requirements doc completeness" |
+| Intent   | 功能            | 触发信号                                    |
+| -------- | --------------- | ------------------------------------------- |
+| **create**   | 创建新 PRD      | "创建 PRD"、"撰写需求文档"、"产品需求文档"  |
+| **update**   | 更新已有 PRD    | "更新 PRD"、"修改 PRD"、"PRD 变更"          |
+| **validate** | 验证 PRD 完整性 | "验证 PRD"、"检查需求文档完整性"            |
 
 ### 核心工作流
 
