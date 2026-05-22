@@ -1,2 +1,5 @@
 # OpenCode agents/skills cache
 .agents/
+
+# Local-only skills (not published to GitHub)
+create-prd-cn/
