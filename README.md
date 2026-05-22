@@ -1,8 +1,9 @@
 # Opc_Kit
 
-> **Professional AI Agent Skill Toolkit** — High-quality product workflow skills for the OpenCode ecosystem
+> **Professional AI Agent Skill Toolkit** — Cross-platform workflow skills for OpenCode, Claude Code, Cursor, Codex
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Version: v2.0.0](https://img.shields.io/badge/Version-2.0.0-blue.svg)]()
 [![Status: Active](https://img.shields.io/badge/Status-Active-green.svg)]()
 [![skills.sh](https://skills.sh/b/sacrtap/Opc_Kit)](https://skills.sh/sacrtap/Opc_Kit)
 
@@ -10,46 +11,61 @@
 
 ## 🎯 Project Positioning
 
-Opc_Kit is an AI Agent skill toolkit designed specifically for the OpenCode ecosystem. Each skill is a meticulously designed, rigorously validated professional workflow that helps product managers, developers, and designers efficiently complete complex tasks.
+Opc_Kit is a cross-platform AI Agent skill toolkit. Each skill is a meticulously designed, rigor validated professional workflow that helps product managers, developers, and designers efficiently complete complex tasks.
 
 **Core Philosophy**:
-- 📐 **Structured Assurance** — Mandatory templates and validation mechanisms ensure output quality
+- 📐 **Structured Assurance** — Mandatory templates and validation ensure output quality
 - ⚡ **Efficiency Optimization** — Auto-inference + on-demand interaction reduces repetitive work
 - 🔗 **Traceability** — Bidirectional traceability ensures every decision has a source
 - 🎓 **Professional Perspective** — Senior expert mindset frameworks and industry best practices
+- 🌐 **Cross-Platform Compatible** — Platform-agnostic design, auto-adapts to mainstream Agent toolchains
 
 ---
 
 ## ✨ Feature Highlights
 
 ### 🎯 Intelligent Intent Recognition
-Automatically identifies user intent (create/update/validate) without requiring manual workflow specification.
+Automatically identifies user intent (create/update/validate) without manual workflow specification.
 
 ### 🔄 Dual-Mode Workflow
-- **Coaching Mode (Default)** — Autonomous inference → Complete draft generation → Self-review for gaps → On-demand interaction → Reverse question supplement
-- **Fast Mode** — Quick generation of complete document → Reverse question supplement for missing items
+- **Coaching Mode (Default)** — Auto-inference → Complete draft → Self-review → On-demand interaction (~5-10 min)
+- **Fast Mode** — Quick generation of complete document → Reverse question supplement (~2-3 min)
 
 ### 🔍 Strict Validation Mechanisms
 - **First Principles Validation** — 5+ fundamental questions ensure document foundation correctness
 - **Logical Completeness Review** — US↔FR bidirectional traceability, Tracking↔Metrics traceability
 - **Boundary & Risk Scanning** — Proactively identifies exception flows, boundary conditions, external dependencies
 
-### 📝 12-Chapter Standard Template + 3 Auto-Generated Chapters
-- Fixed skeleton: Problem Description, Goal Definition, Target Users, User Stories, Feature Interaction Flowchart, Detailed Feature List, Feature Details, Tracking Design, Future Improvement Plan, Risks & Dependencies
+### 📝 12-Chapter Standard Template + 3 Auto-Generated
+- Fixed skeleton: Problem Description, Goal Definition, Target Users, User Stories, Feature Flowchart, Feature List, Feature Details, Tracking Design, Future Improvements, Risks & Dependencies
 - Auto-generated: Decision Log, Glossary, Assumption Index
 
+### 🌐 Auto Language Adaptation
+Intelligent detection of conversation language (Chinese/English), auto-generates PRD in the matching language. User explicit override takes highest priority.
+
+### 📊 Quality Scoring System
+7-dimension quantitative scoring (max 100 points) with production-ready benchmarks (70+ = ready, 85+ = excellent).
+
+### 🎯 Progress Tracking
+Auto-creates task list at start, real-time progress播报 ("✅ Chapters 1-3 completed. Moving to User Stories...").
+
 ### 💡 Recommendation-Driven Interaction
-Each interaction provides 1-3 carefully considered recommendation options with rationale, guiding users to make decisions rather than fill in blanks.
+Each interaction provides 1-3 carefully considered recommendations with rationale, guiding decisions not fill-in-the-blanks.
 
 ---
 
 ## 🎯 Available Skills
 
-| Skill                            | Language | Purpose                               | Install Command                                   |
-| -------------------------------- | -------- | ------------------------------------- | ------------------------------------------------- |
-| [create-prd](create-prd/SKILL.md) | EN       | Professional PRD writing & validation | `npx skills add sacrtap/Opc_Kit --skill create-prd` |
+| Skill                            | Language | Purpose                              | Version | Install Command                                   |
+| -------------------------------- | -------- | ------------------------------------ | ------- | ------------------------------------------------- |
+| [create-prd](create-prd/SKILL.md) | EN/CN    | PRD creation/update/validation       | v2.0.0  | `npx skills add sacrtap/Opc_Kit --skill create-prd` |
 
 ## ⚡ Quick Start
+
+### Prerequisites
+No installation required. The skill auto-creates `docs/specs/` directory if absent.
+
+**Node.js (optional)**: Only needed for running the PRD validation script `validate-prd.js`.
 
 ### Installation
 
@@ -78,7 +94,7 @@ cp -r Opc_Kit/create-prd /your/project/.agents/skills/
 
 ### Usage
 
-Activate the skill in OpenCode:
+Activate the skill in your AI Agent:
 
 ```
 /create-prd Create a PRD for user authentication feature
@@ -87,107 +103,55 @@ Activate the skill in OpenCode:
 Or directly describe your requirement:
 
 ```
-Help me write a product requirements document for: users can create and share collections on the platform
+/create-prd Help me write a PRD for: users can create and share collections on the platform
 ```
 
 ### Workflow Mode Switching
 
 ```
-# Fast Mode (skip interaction, direct generation)
-fast 
+# Fast Mode (skip interaction, direct generation, ~2-3 min)
+fast
 
-# Coaching Mode (on-demand interaction, progressive refinement)
-coaching 
+# Coaching Mode (on-demand interaction, progressive refinement, ~5-10 min)
+coaching
 ```
 
 ---
 
-## 📚 create-prd Skill Deep Dive
-
-### Core Capabilities
+## 📚 create-prd Overview
 
 **create-prd** is a professional PRD (Product Requirements Document) writing assistant, providing complete workflow support from creation, update to validation.
 
 | Intent   | Function                  | Trigger Signals                                                    |
 | -------- | ------------------------- | ------------------------------------------------------------------ |
-| **create**   | Create new PRD            | "New PRD", "write requirements doc", "create product requirements" |
+| **create**   | Create new PRD            | "New PRD", "write requirements doc", "create product requirements", "创建PRD" |
 | **update**   | Update existing PRD       | "Update/modify existing PRD", "PRD change", "add features to existing doc" |
 | **validate** | Validate PRD completeness | "Validate/check PRD", "review requirements doc completeness"       |
 
-### Core Workflow
+### 8 Core Highlights
 
-#### Coaching Mode (Recommended)
-
-```mermaid
-graph TD
-    A[User initiates requirement] --> B[Deep reasoning analysis]
-    B --> C[Autonomous inference to generate complete draft]
-    C --> D[Self-review to identify gaps]
-    D --> E{Need interaction?}
-    E -->|Critical assumption| F[Real-time confirmation]
-    E -->|Non-critical inference| G[Mark ASSUMPTION]
-    F --> H[Continue generation]
-    G --> H
-    H --> I[Generate complete PRD]
-    I --> J[Reverse question supplement]
-    J --> K[Strict validation]
-    K --> L[Output high-quality PRD]
-```
-
-#### 11 Core Principles
-
-1. **Fixed Template** — 12-chapter skeleton is immutable
-2. **Strict Validation Unskippable** — US↔FR bidirectional traceability, Tracking↔Metrics traceability
-3. **Mandatory Change Log** — update intent must append change records
-4. **Flowchart Required** — At least 1 mermaid flowchart, exception branches fully covered
-5. **Acceptance Criteria Testable** — Each criterion must include quantifiable/executable judgment conditions
-6. **[ASSUMPTION] Marking Mandatory** — Inferred content must be marked and summarized
-7. **One Question at a Time** — coaching mode interaction rule
-8. **Exception Path Coverage** — API calls must include success/failure/timeout branches
-9. **Deep Reasoning First** — Analyze user motivation, business value, technical feasibility first
-10. **Senior PM Perspective** — Introduce product thinking frameworks and industry best practices
-11. **Recommendation-Driven Interaction** — Provide 1-3 recommendation options with rationale each time
+1. **Fixed Template** — 12-chapter skeleton + 3 auto-generated, immutable order
+2. **Strict Validation** — US↔FR bidirectional traceability, 18+ criteria checklist
+3. **Mandatory Change Log** — Every update must append change records
+4. **Exception-Covered Flowcharts** — Every API call has failure + timeout branches
+5. **Testable Acceptance Criteria** — Quantifiable, executable judgment conditions
+6. **Auto Language Detection** — Chinese/English bilingual PRD generation
+7. **Cross-Agent Compatible** — Works on OpenCode, Claude Code, Cursor, Codex
+8. **Progress Tracking** — Auto task list with real-time status updates
 
 ### Usage Scenarios
 
 #### Scenario 1: Create New Feature PRD
 
 ```
-User: Help me write a PRD for user collection feature
+User: /create-prd Help me write a PRD for user collection feature
 
 Skill:
 1. Deep reasoning: Analyze user motivation, business value, technical feasibility
-2. Autonomous inference: Generate 12-chapter complete draft
-3. On-demand interaction: Real-time confirmation for critical assumptions (e.g., "I assume target users are active users, correct?")
-4. Reverse questions: Summarize non-critical inferences (e.g., UI style preferences)
-5. Strict validation: US↔FR bidirectional traceability, flowchart exception branch check
-6. Output: High-quality executable PRD + assumption index
-```
-
-#### Scenario 2: Update Existing PRD
-
-```
-User: Update docs/prd-user-auth.md, add single sign-on feature
-
-Skill:
-1. Read existing PRD
-2. Analyze change impact scope
-3. Generate update content (maintain structural consistency)
-4. Append change log entry
-5. Run strict validation
-6. Output: Updated PRD + change record
-```
-
-#### Scenario 3: Validate PRD Completeness
-
-```
-User: Validate if docs/prd-payment.md is complete
-
-Skill:
-1. First principles validation: 5+ fundamental questions
-2. Logical completeness review: US↔FR bidirectional traceability rate, Tracking↔Metrics traceability rate
-3. Boundary & risk scanning: Exception flows, boundary conditions, external dependencies
-4. Output: Validation report + quality score (7 dimensions, max 100)
+2. Auto inference: Generate 12-chapter complete draft
+3. On-demand interaction: Real-time confirmation for critical assumptions
+4. Strict validation: US↔FR bidirectional traceability, flowchart exception check
+5. Output: High-quality executable PRD + assumption index + quality score
 ```
 
 ### Core Advantages
@@ -203,6 +167,79 @@ Skill:
 
 ---
 
+## 🛡️ Trust & Quality
+
+- **Validation Script** — `scripts/validate-prd.js` programmatically checks 18+ quality criteria
+- **Quality Score** — 7-dimension scoring (max 100 points), see Quality Scoring section
+- **Peer-Reviewed Methodology** — Amazon PRFAQ, First Principles, YAGNI, MoSCoW frameworks
+- **Bidirectional Traceability** — US↔FR 1:1 mapping, no orphaned requirements
+- **Exception Path Coverage** — Every API call and external dependency has failure + timeout branches
+- **Version History** — Mandatory changelog for every update, tracked in PRD metadata
+
+**Benchmark**: 70+ points = production-ready, 85+ = excellent
+
+---
+
+## 📊 PRD Quality Scoring
+
+Every PRD is scored on 7 dimensions (max 100 points):
+
+| Dimension          | Weight | Max Points | Description                                      |
+| ------------------ | ------ | ---------- | ------------------------------------------------ |
+| Completeness       | 20%    | 20         | All 12 chapters present and filled               |
+| Traceability       | 20%    | 20         | US↔FR 1:1 mapping, no orphaned requirements      |
+| Testability        | 15%    | 15         | Acceptance criteria are executable and quantifiable |
+| Clarity            | 15%    | 15         | Unambiguous language, clear terminology          |
+| Exception Coverage | 10%    | 10         | Failure paths documented for all external calls  |
+| Metrics Alignment  | 10%    | 10         | Tracking events map to success metrics 1:1       |
+| Risk Management    | 10%    | 10         | Dependencies, risks, and mitigations addressed   |
+
+**Benchmark Scores**:
+- **70+ points** = production-ready
+- **85+ points** = excellent
+- **< 70 points** = needs revision before sharing
+
+---
+
+## 🔗 Integrations
+
+Generated PRDs integrate with common product development tools:
+
+- **Figma**: Include prototype URLs in PRD metadata (`metadata.prototype`)
+- **Jira**: Export feature list as Jira Epic/Story structure (F-x.x → Story ID mapping)
+- **GitHub**: Link to related issues/PRs in PRD metadata (`metadata.related-docs`)
+- **Confluence**: Mermaid flowcharts render natively in Confluence markdown
+- **Notion**: PRD markdown imports cleanly with table and heading support
+- **Analytics**: Tracking events compatible with Amplitude, Mixpanel, Segment
+
+---
+
+## 🌐 Cross-Platform Compatibility
+
+This skill is platform-agnostic, auto-adapting to mainstream AI Coding Agents:
+
+### Tool Mapping
+
+| Operation             | OpenCode | Claude Code | Cursor   | Codex      |
+| --------------------- | -------- | ----------- | -------- | ---------- |
+| File Read             | `read`     | `Read`        | Built-in | `read_file`  |
+| File Create/Overwrite | `write`    | `Write`       | Built-in | `write_file` |
+| Precise Edit          | `edit`     | `Edit`        | Built-in | `edit_file`  |
+| File Lookup           | `glob`     | `Glob`        | Built-in | `glob`       |
+| Content Search        | `grep`     | `Grep`        | Built-in | `search`     |
+| Large File Processing | `ctx_execute_file` | `Bash`      | `Bash`     | `run_shell`  |
+| Task List Management  | `todowrite` | `TodoWrite`   | Built-in | Built-in   |
+| Subagent Dispatch     | `task`     | `Task`        | ❌ Not supported | ❌ Not supported |
+
+### Fallback Strategies
+
+When a specific tool is unavailable:
+1. **Large file analysis** → Use `bash`/`run_shell` with `head`/`tail`/`grep` to read key sections
+2. **Subagents** → Execute tasks sequentially in current session, report progress after each
+3. **Task list** → Outline plan in text at session start, mark completion step by step
+
+---
+
 ## 🤝 Contributing Guide
 
 We welcome high-quality skill contributions!
@@ -210,15 +247,16 @@ We welcome high-quality skill contributions!
 ### Adding New Skills
 
 1. Fork this repository
-2. Create new skill folder in `.agents/skills/` directory
-3. Write following skill template structure:
-   - Frontmatter (name, description)
-   - Identity & Memory
-   - Core Mission
-   - Critical Rules
-   - Technical Deliverables (with examples)
-   - Workflow Process
-   - Success Metrics
+2. Create new skill folder (e.g., `my-skill/`)
+3. Write SKILL.md following this structure:
+   - Frontmatter (name, description, license, metadata)
+   - Trust & Quality
+   - Quick Start
+   - When to Use / Intent Recognition
+   - Core Principles
+   - Quality Scoring
+   - Template + Validation
+   - Assets & Scripts / Integrations
 4. Submit PR with skill usage examples
 
 ### Skill Quality Standards
@@ -227,6 +265,7 @@ We welcome high-quality skill contributions!
 - ✅ Recommendation-driven interaction (not fill-in-the-blank Q&A)
 - ✅ Bidirectional traceability / traceability assurance
 - ✅ Professional perspective + industry best practices
+- ✅ Cross-platform compatible (no Agent toolchain lock-in)
 - ✅ Complete documentation + usage examples
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
@@ -235,7 +274,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
 ## 📄 License
 
-MIT © sacrtap
+MIT © sacrtap | create-prd v2.0.0
 
 ---
 
