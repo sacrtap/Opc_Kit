@@ -183,29 +183,6 @@ graph TD
 
 ---
 
-## 🗺️ Roadmap
-
-Opc_Kit 将逐步扩展更多专业技能，为产品工作流提供完整工具链：
-
-### Phase 1（当前）
-- ✅ **create-prd** — PRD 写作助手（已发布）
-- 🆕 **create-prd-cn** — 中文版 PRD 写作助手（已发布）
-
-### Phase 2（规划中）
-- 🔜 **create-ux-spec** — UX 设计规范文档助手
-- 🔜 **create-api-spec** — API 设计规范文档助手
-- 🔜 **create-test-plan** — 测试计划文档助手
-
-### Phase 3（未来）
-- 📋 **prd-review** — PRD 同行评审技能
-- 📋 **feature-prioritize** — 功能优先级排序技能
-- 📋 **user-story-split** — 用户故事拆分技能
-
-### 长期愿景
-构建完整的**产品工作流技能生态**，覆盖从需求收集、设计规范、开发指导到测试验证的全流程。
-
----
-
 ## 🤝 贡献指南
 
 我们欢迎高质量的技能贡献！

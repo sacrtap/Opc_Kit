@@ -183,29 +183,6 @@ Skill:
 
 ---
 
-## 🗺️ Roadmap
-
-Opc_Kit will progressively expand with more professional skills, providing a complete toolchain for product workflows:
-
-### Phase 1 (Current)
-- ✅ **create-prd** — PRD writing assistant (released)
-- 🆕 **create-prd-cn** — Chinese PRD writing assistant (released)
-
-### Phase 2 (In Planning)
-- 🔜 **create-ux-spec** — UX design specification document assistant
-- 🔜 **create-api-spec** — API design specification document assistant
-- 🔜 **create-test-plan** — Test plan document assistant
-
-### Phase 3 (Future)
-- 📋 **prd-review** — PRD peer review skill
-- 📋 **feature-prioritize** — Feature prioritization skill
-- 📋 **user-story-split** — User story splitting skill
-
-### Long-term Vision
-Build a complete **product workflow skill ecosystem**, covering the full process from requirement gathering, design specification, development guidance to testing and validation.
-
----
-
 ## 🤝 Contributing Guide
 
 We welcome high-quality skill contributions!
