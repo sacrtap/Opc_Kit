@@ -1,0 +1,256 @@
+{
+  "skill_name": "create-prd-cn",
+  "evals": [
+    {
+      "id": 1,
+      "name": "create-coaching-default",
+      "prompt": "我们要给户型图工具加一个'户型图收藏夹'功能，经纪人可以收藏常用户型图，下次直接调用。当前每次都要重新搜索，平均花费1-2分钟。请帮我写一份 PRD。",
+      "expected_output": "默认进入 coaching 模式，一次一问引导，不直接生成完整 PRD。首轮回复应只问一个问题（如问题描述相关），不批量追问。",
+      "files": [],
+      "assertions": [
+        {
+          "name": "识别 create 意图",
+          "description": "输出中明确识别为 create 意图",
+          "type": "regex",
+          "pattern": "create|新建|创建"
+        },
+        {
+          "name": "进入 coaching 模式",
+          "description": "输出中明确提到 coaching 模式或一次一问",
+          "type": "regex",
+          "pattern": "coaching|一次一问|引导"
+        },
+        {
+          "name": "首轮只问一个问题",
+          "description": "首轮回复中只包含一个主要引导问题，不批量追问",
+          "type": "max_count",
+          "pattern": "\\?",
+          "max": 3
+        },
+        {
+          "name": "未生成完整 PRD",
+          "description": "输出中不包含完整的 10 章 PRD 结构",
+          "type": "not_contains",
+          "pattern": "## 1\\. 问题描述.*## 2\\. 目标定义"
+        },
+        {
+          "name": "包含 Metadata 预填",
+          "description": "输出中包含 Metadata 表格（版本 v1.0.0）",
+          "type": "contains",
+          "pattern": "v1\\.0\\.0"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "create-fast-command",
+      "prompt": "我们要给户型图工具加一个'户型图收藏夹'功能，经纪人可以收藏常用户型图，下次直接调用。当前每次都要重新搜索，平均花费1-2分钟。用 fast 模式直接生成 PRD。",
+      "expected_output": "识别 fast 指令，直接生成完整 PRD（含 10 章骨架），末尾附反向追问和评审记录。",
+      "files": [],
+      "assertions": [
+        {
+          "name": "识别 fast 指令",
+          "description": "输出中明确识别 fast 模式指令",
+          "type": "regex",
+          "pattern": "fast|快速|直接生成"
+        },
+        {
+          "name": "生成完整 PRD",
+          "description": "输出中包含完整的 10 章 PRD 结构",
+          "type": "contains",
+          "pattern": "## 1\\. 问题描述"
+        },
+        {
+          "name": "包含用户故事章节",
+          "description": "输出中包含用户故事章节",
+          "type": "contains",
+          "pattern": "## 4\\. 用户故事|## 目标用户"
+        },
+        {
+          "name": "包含流程图",
+          "description": "输出中包含 mermaid 流程图代码",
+          "type": "contains",
+          "pattern": "```mermaid"
+        },
+        {
+          "name": "包含功能清单",
+          "description": "输出中包含 F-x.x 编号的功能清单",
+          "type": "regex",
+          "pattern": "F-\\d+\\.\\d+"
+        },
+        {
+          "name": "包含评审记录",
+          "description": "输出末尾包含评审记录（第一性原理验证）",
+          "type": "contains",
+          "pattern": "## 评审记录|第一性原理"
+        },
+        {
+          "name": "包含反向追问",
+          "description": "输出中包含 [ASSUMPTION] 标记或反向追问",
+          "type": "contains",
+          "pattern": "\\[ASSUMPTION\\]|反向追问|缺失项"
+        },
+        {
+          "name": "包含异常路径流程图",
+          "description": "流程图中包含失败/超时分支",
+          "type": "contains",
+          "pattern": "\\|失败\\||\\|超时\\||\\|否\\|"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "create-coaching-command",
+      "prompt": "我想创建一个 PRD，用 coaching 模式引导我。",
+      "expected_output": "进入 coaching 模式，一次一问引导，首轮只问一个问题。",
+      "files": [],
+      "assertions": [
+        {
+          "name": "识别 coaching 指令",
+          "description": "输出中明确识别 coaching 模式指令",
+          "type": "regex",
+          "pattern": "coaching|引导|一次一问"
+        },
+        {
+          "name": "首轮只问一个问题",
+          "description": "首轮回复中只包含一个主要引导问题",
+          "type": "max_count",
+          "pattern": "\\?",
+          "max": 3
+        },
+        {
+          "name": "未生成完整 PRD",
+          "description": "输出中不包含完整的 10 章 PRD 结构",
+          "type": "not_contains",
+          "pattern": "## 1\\. 问题描述.*## 2\\. 目标定义"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "name": "update-with-review",
+      "prompt": "在现有 PRD 基础上，增加一个'收藏夹分享给团队成员'的功能，需要支持权限控制(只读/编辑)。",
+      "expected_output": "1) 自动追加变更记录条目(版本+0.1.0)；2) 生成'本次更新关键说明'段落；3) 新增 F-x.x 编号延续；4) 第6章/第7章同步更新；5) PRD 末尾附评审记录（第一性原理验证+逻辑完整度+边界风险）",
+      "files": ["existing-prd.md"],
+      "assertions": [
+        {
+          "name": "识别 update 意图",
+          "description": "输出中明确识别为 update 意图",
+          "type": "regex",
+          "pattern": "update|更新|变更"
+        },
+        {
+          "name": "版本号升级",
+          "description": "版本号从 v1.0.0 升级到 v1.1.0 或更高",
+          "type": "regex",
+          "pattern": "v1\\.1\\.0|v1\\.0\\.1|v2\\.0\\.0"
+        },
+        {
+          "name": "包含变更记录",
+          "description": "输出中包含变更记录表格或章节",
+          "type": "contains",
+          "pattern": "变更记录|修改人|修改内容"
+        },
+        {
+          "name": "包含本次更新关键说明",
+          "description": "输出中包含'本次更新关键说明'段落",
+          "type": "contains",
+          "pattern": "本次更新关键说明"
+        },
+        {
+          "name": "新增功能编号延续",
+          "description": "新增功能编号延续原有 F-x.x 编号",
+          "type": "regex",
+          "pattern": "F-\\d+\\.\\d+"
+        },
+        {
+          "name": "包含评审记录",
+          "description": "输出中包含评审记录（第一性原理验证）",
+          "type": "contains",
+          "pattern": "## 评审记录|第一性原理"
+        },
+        {
+          "name": "包含变更影响分析",
+          "description": "输出中包含变更影响分析或追溯",
+          "type": "contains",
+          "pattern": "影响|追溯|变更"
+        },
+        {
+          "name": "包含异常路径流程图",
+          "description": "新增流程图中包含失败分支",
+          "type": "contains",
+          "pattern": "\\|失败\\||\\|超时\\||\\|否\\|"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "validate-existing",
+      "prompt": "帮我校验这份 PRD 是否符合规范。",
+      "expected_output": "输出分级校验报告(Critical/Warning/Info)：结构完整性、US↔F-x.x双向追溯、第6章↔第7章1:1对应、埋点↔成功指标追溯、验收标准可测试性、流程图规范、术语表覆盖、[ASSUMPTION]索引、外部依赖排期状态。每条问题给章节位置+修复建议。",
+      "files": ["existing-prd.md"],
+      "assertions": [
+        {
+          "name": "识别 validate 意图",
+          "description": "输出中明确识别为 validate 意图",
+          "type": "regex",
+          "pattern": "validate|校验|检查|审查"
+        },
+        {
+          "name": "包含 Critical 级别问题",
+          "description": "输出中包含 Critical 级别问题分类",
+          "type": "contains",
+          "pattern": "Critical|严重"
+        },
+        {
+          "name": "包含 Warning 级别问题",
+          "description": "输出中包含 Warning 级别问题分类",
+          "type": "contains",
+          "pattern": "Warning|警告"
+        },
+        {
+          "name": "包含 Info 级别问题",
+          "description": "输出中包含 Info 级别问题分类",
+          "type": "contains",
+          "pattern": "Info|信息|建议"
+        },
+        {
+          "name": "包含用户故事追溯检查",
+          "description": "输出中包含用户故事与功能清单的追溯检查",
+          "type": "contains",
+          "pattern": "用户故事.*功能|US.*F-|追溯"
+        },
+        {
+          "name": "包含验收标准检查",
+          "description": "输出中包含验收标准可测试性检查",
+          "type": "contains",
+          "pattern": "验收标准|可测试"
+        },
+        {
+          "name": "包含综合评分",
+          "description": "输出中包含综合评分或总体评级",
+          "type": "regex",
+          "pattern": "评分|评级|\\d+/10|Fair|Good|Poor"
+        },
+        {
+          "name": "包含流程图异常检查",
+          "description": "输出中包含流程图异常路径检查",
+          "type": "contains",
+          "pattern": "失败分支|异常路径|超时"
+        },
+        {
+          "name": "包含术语表检查",
+          "description": "输出中包含术语表覆盖度检查",
+          "type": "contains",
+          "pattern": "术语表|术语"
+        },
+        {
+          "name": "包含假设索引检查",
+          "description": "输出中包含假设索引检查",
+          "type": "contains",
+          "pattern": "假设索引|ASSUMPTION"
+        }
+      ]
+    }
+  ]
+}

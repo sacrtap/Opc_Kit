@@ -1,0 +1,244 @@
+{
+  "skill_name": "create-prd",
+  "evals": [
+    {
+      "id": 1,
+      "name": "create-coaching-default",
+      "prompt": "We need to add a 'Floor Plan Favorites' feature to the floor plan tool. Brokers can favorite frequently-used floor plans and call them directly next time. Currently they have to search again each time, averaging 1-2 minutes. Please help me write a PRD.",
+      "expected_output": "Default to coaching mode, one question at a time, do not generate full PRD directly. First response should ask only one question (e.g., about problem description), no batch questioning.",
+      "files": [],
+      "assertions": [
+        {
+          "name": "Identifies create intent",
+          "description": "Output explicitly identifies create intent",
+          "type": "regex",
+          "pattern": "create|new PRD|create product"
+        },
+        {
+          "name": "Enters coaching mode",
+          "description": "Output explicitly mentions coaching mode or one question at a time",
+          "type": "regex",
+          "pattern": "coaching|one question at a time|guide"
+        },
+        {
+          "name": "First round asks only one question",
+          "description": "First response contains only one main guiding question",
+          "type": "max_count",
+          "pattern": "\\?",
+          "max": 3
+        },
+        {
+          "name": "Does not generate full PRD",
+          "description": "Output does not contain complete 12-chapter PRD structure",
+          "type": "not_contains",
+          "pattern": "## 1\\. Problem Description.*## 2\\. Goal Definition"
+        },
+        {
+          "name": "Metadata pre-filled",
+          "description": "Output contains Metadata table with version v1.0.0",
+          "type": "contains",
+          "pattern": "v1\\.0\\.0"
+        },
+        {
+          "name": "Flowchart includes failure/timeout branches",
+          "description": "Flowchart contains failure/timeout branches",
+          "type": "contains",
+          "pattern": "\\|Failure\\||\\|Timeout\\||\\|No\\|"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "create-fast-command",
+      "prompt": "We need to add a 'Floor Plan Favorites' feature to the floor plan tool. Brokers can favorite frequently-used floor plans and call them directly next time. Currently they have to search again each time, averaging 1-2 minutes. Use fast mode to generate PRD directly.",
+      "expected_output": "Recognizes fast command, generates complete PRD (with 12-chapter skeleton), appends reverse questions and review record at the end.",
+      "files": [],
+      "assertions": [
+        {
+          "name": "Recognizes fast command",
+          "description": "Output explicitly identifies fast mode command",
+          "type": "regex",
+          "pattern": "fast|skip|just generate"
+        },
+        {
+          "name": "Generates complete PRD",
+          "description": "Output contains complete 12-chapter PRD structure",
+          "type": "contains",
+          "pattern": "## 1\\. Problem Description"
+        },
+        {
+          "name": "Contains user stories chapter",
+          "description": "Output contains user stories chapter",
+          "type": "contains",
+          "pattern": "## 4\\. User Stories|## 3\\. Target Users"
+        },
+        {
+          "name": "Contains flowchart",
+          "description": "Output contains mermaid flowchart code",
+          "type": "contains",
+          "pattern": "```mermaid"
+        },
+        {
+          "name": "Contains feature list",
+          "description": "Output contains F-x.x numbered feature list",
+          "type": "regex",
+          "pattern": "F-\\d+\\.\\d+"
+        },
+        {
+          "name": "Contains review record",
+          "description": "Output contains review record (First Principles Validation) at the end",
+          "type": "contains",
+          "pattern": "## Review Record|First Principles"
+        },
+        {
+          "name": "Contains reverse questions",
+          "description": "Output contains [ASSUMPTION] tags or reverse questions",
+          "type": "contains",
+          "pattern": "\\[ASSUMPTION\\]|Reverse Questions|missing items"
+        },
+        {
+          "name": "Flowchart includes failure/timeout branches",
+          "description": "Flowchart contains failure/timeout branches",
+          "type": "contains",
+          "pattern": "\\|Failure\\||\\|Timeout\\||\\|No\\|"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "create-coaching-command",
+      "prompt": "I want to create a PRD, guide me using coaching mode.",
+      "expected_output": "Enters coaching mode, one question at a time, first round asks only one question.",
+      "files": [],
+      "assertions": [
+        {
+          "name": "Recognizes coaching command",
+          "description": "Output explicitly identifies coaching mode command",
+          "type": "regex",
+          "pattern": "coaching|guide|one question at a time"
+        },
+        {
+          "name": "First round asks only one question",
+          "description": "First response contains only one main guiding question",
+          "type": "max_count",
+          "pattern": "\\?",
+          "max": 3
+        },
+        {
+          "name": "Does not generate full PRD",
+          "description": "Output does not contain complete 12-chapter PRD structure",
+          "type": "not_contains",
+          "pattern": "## 1\\. Problem Description.*## 2\\. Goal Definition"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "name": "update-with-review",
+      "prompt": "Based on the existing PRD, add a 'Share favorites with team members' feature, supporting permission control (read/edit).",
+      "expected_output": "1) Auto-append changelog entry (version +0.1.0); 2) Generate 'Key Update Notes' paragraph; 3) New F-x.x numbering continues; 4) Chapter 6/7 synced; 5) PRD ends with review record (First Principles + Logical Completeness + Boundary Risk)",
+      "files": ["existing-prd.md"],
+      "assertions": [
+        {
+          "name": "Identifies update intent",
+          "description": "Output explicitly identifies update intent",
+          "type": "regex",
+          "pattern": "update|change|modify"
+        },
+        {
+          "name": "Version upgrade",
+          "description": "Version upgraded from v1.0.0 to v1.1.0 or higher",
+          "type": "regex",
+          "pattern": "v1\\.1\\.0|v1\\.0\\.1|v2\\.0\\.0"
+        },
+        {
+          "name": "Contains changelog",
+          "description": "Output contains changelog table or section",
+          "type": "contains",
+          "pattern": "Changelog|Date.*Version.*Author.*Changes"
+        },
+        {
+          "name": "Contains Key Update Notes",
+          "description": "Output contains 'Key Update Notes' paragraph",
+          "type": "contains",
+          "pattern": "Key Update Notes"
+        },
+        {
+          "name": "New feature numbering continues",
+          "description": "New feature numbering continues from existing F-x.x numbering",
+          "type": "regex",
+          "pattern": "F-\\d+\\.\\d+"
+        },
+        {
+          "name": "Contains review record",
+          "description": "Output contains review record (First Principles Validation)",
+          "type": "contains",
+          "pattern": "## Review Record|First Principles"
+        },
+        {
+          "name": "Contains change impact analysis",
+          "description": "Output contains change impact analysis or traceability",
+          "type": "contains",
+          "pattern": "impact|traceability|change"
+        },
+        {
+          "name": "Flowchart includes failure/timeout branches",
+          "description": "Flowchart contains failure/timeout branches",
+          "type": "contains",
+          "pattern": "\\|Failure\\||\\|Timeout\\||\\|No\\|"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "validate-existing",
+      "prompt": "Please validate this PRD against the standard.",
+      "expected_output": "Output graded validation report (Critical/Warning/Info): structural completeness, US↔F-x.x bidirectional traceability, Chapter 6↔7 1:1 correspondence, tracking↔success metric traceability, acceptance criteria testability, flowchart standards, glossary coverage, [ASSUMPTION] index, external dependency schedule status. Each issue includes chapter location + fix suggestion.",
+      "files": ["existing-prd.md"],
+      "assertions": [
+        {
+          "name": "Identifies validate intent",
+          "description": "Output explicitly identifies validate intent",
+          "type": "regex",
+          "pattern": "validate|check|review|audit"
+        },
+        {
+          "name": "Contains Critical level issues",
+          "description": "Output contains Critical level issue category",
+          "type": "contains",
+          "pattern": "Critical"
+        },
+        {
+          "name": "Contains Warning level issues",
+          "description": "Output contains Warning level issue category",
+          "type": "contains",
+          "pattern": "Warning"
+        },
+        {
+          "name": "Contains Info level issues",
+          "description": "Output contains Info level issue category",
+          "type": "contains",
+          "pattern": "Info"
+        },
+        {
+          "name": "Contains user story traceability check",
+          "description": "Output contains user story to feature list traceability check",
+          "type": "contains",
+          "pattern": "User Story.*Feature|US.*F-|traceability"
+        },
+        {
+          "name": "Contains acceptance criteria check",
+          "description": "Output contains acceptance criteria testability check",
+          "type": "contains",
+          "pattern": "Acceptance Criteria|testable"
+        },
+        {
+          "name": "Contains overall score",
+          "description": "Output contains overall score or rating",
+          "type": "regex",
+          "pattern": "Score|Rating|\\d+/10|Fair|Good|Poor"
+        }
+      ]
+    }
+  ]
+}
