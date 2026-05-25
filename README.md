@@ -47,7 +47,7 @@ Intelligent detection of conversation language (Chinese/English), auto-generates
 7-dimension quantitative scoring (max 100 points) with production-ready benchmarks (70+ = ready, 85+ = excellent).
 
 ### 🎯 Progress Tracking
-Auto-creates task list at start, real-time progress播报 ("✅ Chapters 1-3 completed. Moving to User Stories...").
+Auto-creates task list at start, real-time progress updates ("✅ Chapters 1-3 completed. Moving to User Stories...").
 
 ### 💡 Recommendation-Driven Interaction
 Each interaction provides 1-3 carefully considered recommendations with rationale, guiding decisions not fill-in-the-blanks.
@@ -124,7 +124,7 @@ coaching
 
 | Intent   | Function                  | Trigger Signals                                                    |
 | -------- | ------------------------- | ------------------------------------------------------------------ |
-| **create**   | Create new PRD            | "New PRD", "write requirements doc", "create product requirements", "创建PRD" |
+| **create**   | Create new PRD            | "New PRD", "write requirements doc", "create product requirements" |
 | **update**   | Update existing PRD       | "Update/modify existing PRD", "PRD change", "add features to existing doc" |
 | **validate** | Validate PRD completeness | "Validate/check PRD", "review requirements doc completeness"       |
 
