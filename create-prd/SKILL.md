@@ -325,13 +325,13 @@ Every PRD is scored on 7 dimensions (max 100 points):
 
 | Dimension          | Weight | Max Points | Description                                      |
 | ------------------ | ------ | ---------- | ------------------------------------------------ |
-| Completeness       | 20%    | 20         | All 12 chapters present and filled               |
-| Traceability       | 20%    | 20         | US↔FR 1:1 mapping, no orphaned requirements      |
+| Completeness       | 25%    | 25         | All chapters present and filled                  |
+| Traceability       | 25%    | 25         | US↔FR 1:1 mapping, no orphaned requirements      |
 | Testability        | 15%    | 15         | Acceptance criteria are executable and quantifiable |
-| Clarity            | 15%    | 15         | Unambiguous language, clear terminology          |
-| Exception Coverage | 10%    | 10         | Failure paths documented for all external calls  |
-| Metrics Alignment  | 10%    | 10         | Tracking events map to success metrics 1:1       |
-| Risk Management    | 10%    | 10         | Dependencies, risks, and mitigations addressed   |
+| Exception Coverage | 15%    | 15         | Failure paths documented for all external calls  |
+| Assumption Coverage| 10%    | 10         | All inferences tagged and summarized             |
+| Review Completeness| 5%     | 5          | Three review steps executed with fixed format    |
+| Product Thinking   | 5%     | 5          | Why Now, differentiation, user segmentation, risk |
 
 **Benchmark Scores:**
 - **70+ points** = production-ready

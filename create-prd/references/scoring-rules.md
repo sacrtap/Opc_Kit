@@ -7,14 +7,14 @@ After PRD generation and strict validation execution, must output 7-dimension qu
 ### Dimension Definitions
 
 | Dimension                | Weight | Max | Evaluation Content                                       | Scoring Method                                                                 |
-| ------------------- | ---- | ---- | -------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| **A. Content Completeness**       | 30%  | 30   | 10-chapter coverage, Metadata field completeness, changelog completeness | Deduct 5 points per missing chapter; Metadata deduct 2 points per missing field; no changelog deduct 3 points |
-| **B. Traceability Pass**          | 25%  | 25   | US↔FR bidirectional traceability, Tracking↔Metric↔Calculation method three-way traceability       | Each traceability pass rate × corresponding weight proportion (US→FR 8pts, FR→US 8pts, Tracking↔Metric 5pts, Metric→Calculation Method 4pts) |
-| **C. Acceptance Criteria Testability**    | 15%  | 15   | Whether each acceptance criterion contains quantifiable/executable conditions, no fuzzy words      | Testable acceptance criteria count / total acceptance criteria count × 15                                     |
-| **D. Flowchart Compliance**        | 15%  | 15   | Whether mermaid exists, syntax correctness, whether exception/failure branches exist | Has chart and syntax correct gets 5 points; each API/dependency node has failure branch gets 5 points; each judgment node has degradation strategy gets 5 points |
-| **E. [ASSUMPTION] Coverage** | 10%  | 10   | Whether all inferences are tagged and summarized to assumption index                | Tagged count / actual inference count (≥2 times) × 5; index table summarized gets 5 points                      |
-| **F. Review Record Completeness**      | 10%  | 10   | Whether three review steps are executed and fixed format output (First Principles + Logical Completeness + Boundary Risk) | Each completed step gets 3 points, fixed format output gets 1 point                                    |
-| **G. Product Thinking Depth**     | 10%  | 10   | Whether Why Now is clear, differentiated value is explicit, user segmentation is reasonable, business value is articulated, risk prediction is comprehensive | Why Now explicit gets 2 points; differentiation clear gets 2 points; user segmentation explicit gets 2 points; business value articulated gets 2 points; risk prediction comprehensive gets 2 points |
+| ------------------------ | ------ | --- | -------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| **A. Content Completeness**       | 25%  | 25  | Chapter coverage, Metadata field completeness, changelog completeness | Deduct 5 points per missing chapter; Metadata deduct 2 points per missing field; no changelog deduct 3 points |
+| **B. Traceability Pass**          | 25%  | 25  | US↔FR bidirectional traceability, Tracking↔Metric↔Calculation method three-way traceability       | Each traceability pass rate × corresponding weight proportion (US→FR 8pts, FR→US 8pts, Tracking↔Metric 5pts, Metric→Calculation Method 4pts) |
+| **C. Acceptance Criteria Testability**    | 15%  | 15  | Whether each acceptance criterion contains quantifiable/executable conditions, no fuzzy words      | Testable acceptance criteria count / total acceptance criteria count × 15                                     |
+| **D. Flowchart Compliance**        | 15%  | 15  | Whether mermaid exists, syntax correctness, whether exception/failure branches exist | Has chart and syntax correct gets 5 points; each API/dependency node has failure branch gets 5 points; each judgment node has degradation strategy gets 5 points |
+| **E. [ASSUMPTION] Coverage** | 10%  | 10  | Whether all inferences are tagged and summarized to assumption index                | Tagged count / actual inference count × 5; index table summarized gets 5 points                      |
+| **F. Review Record Completeness**      | 5%   | 5   | Whether three review steps are executed and fixed format output (First Principles + Logical Completeness + Boundary Risk) | Each completed step gets 1.5 points, fixed format output gets 0.5 point                                    |
+| **G. Product Thinking Depth**     | 5%   | 5   | Whether Why Now is clear, differentiated value is explicit, user segmentation is reasonable, business value is articulated, risk prediction is comprehensive | Why Now explicit gets 1 point; differentiation clear gets 1 point; user segmentation explicit gets 1 point; business value articulated gets 1 point; risk prediction comprehensive gets 1 point |
 
 **Composite Score = Σ (Dimension Score × Weight)**
 
@@ -36,24 +36,24 @@ Output score result at end of PRD or separately:
 
 | Dimension                | Weight | Score | Deduction Reason                               |
 | ------------------- | ---- | ---- | -------------------------------------- |
-| A. Content Completeness       | 30%  | X/30 | {specific deduction reason}                         |
+| A. Content Completeness       | 25%  | X/25 | {specific deduction reason}                         |
 | B. Traceability Pass         | 25%  | X/25 | {specific traceability break point}                       |
 | C. Acceptance Criteria Testability | 15%  | X/15 | {untestable entry count}                       |
 | D. Flowchart Compliance     | 15%  | X/15 | {missing branch/node count}                      |
-| E. [ASSUMPTION] Coverage | 10% | X/10 | {un-tagged inference count / un-summarized count}               |
-| F. Review Record Completeness   | 10%  | X/10 | {un-executed review step}                     |
-| G. Product Thinking Depth     | 10%  | X/10 | {Why Now / differentiation / user segmentation / business value / risk} |
+| E. [ASSUMPTION] Coverage | 10%  | X/10 | {un-tagged inference count / un-summarized count}               |
+| F. Review Record Completeness   | 5%   | X/5  | {un-executed review step}                     |
+| G. Product Thinking Depth     | 5%   | X/5  | {Why Now / differentiation / user segmentation / business value / risk} |
 |                     |      |      |                                        |
 | **Composite Score**        | 100% | **XX/100** | **Grade: Excellent/Good/Pass/Pending**      |
 ```
 
 ### Dimension Detailed Scoring Standards
 
-#### A. Content Completeness (30 points)
+#### A. Content Completeness (25 points)
 
 | Check Item                       | Points | Deduction Rule                          |
 | ---------------------------- | ---- | --------------------------------- |
-| Chapters 1-10 all present           | 20   | Deduct 5 points per missing chapter                 |
+| Chapters 1-10 all present           | 15   | Deduct 5 points per missing chapter                 |
 | Metadata 8 fields complete          | 5    | Deduct 2 points per missing field, until depleted      |
 | Changelog exists and has content         | 5    | No changelog deduct 3 points; empty record deduct 1 point   |
 
@@ -90,21 +90,21 @@ Output score result at end of PRD or separately:
 | Whether inferred content is tagged with `[ASSUMPTION]`     | 5    | Tagged count / actual inference count × 5                |
 | Whether assumption index table summarizes all `[ASSUMPTION]`  | 5    | Complete summary gets 5 points, deduct 2 points per missed entry       |
 
-#### F. Review Record Completeness (10 points)
+#### F. Review Record Completeness (5 points)
 
 | Check Item                               | Points | Scoring Method                           |
 | ------------------------------------ | ---- | -------------------------------------- |
-| First Principles Validation executed               | 3    | Fixed format output gets 3 points                     |
-| Logical Completeness Review executed               | 3    | Fixed format output gets 3 points                     |
-| Boundary & Risk Scan executed               | 3    | Fixed format output gets 3 points                     |
-| Review record fixed format complete             | 1    | Format correct (includes traceability pass rates, etc.) gets 1 point        |
+| First Principles Validation executed               | 1.5  | Fixed format output gets 1.5 points                     |
+| Logical Completeness Review executed               | 1.5  | Fixed format output gets 1.5 points                     |
+| Boundary & Risk Scan executed               | 1.5  | Fixed format output gets 1.5 points                     |
+| Review record fixed format complete             | 0.5  | Format correct (includes traceability pass rates, etc.) gets 0.5 point        |
 
-#### G. Product Thinking Depth (10 points)
+#### G. Product Thinking Depth (5 points)
 
 | Check Item                     | Points | Scoring Standard                               |
 | -------------------------- | ---- | -------------------------------------- |
-| Why Now is clear           | 2    | Clear articulation of problem urgency and time window gets 2 points   |
-| Differentiated value is explicit         | 2    | Clear explanation of differences from existing solutions or competitors gets 2 points |
-| User segmentation is reasonable           | 2    | Target users and secondary users have priority distinction gets 2 points   |
-| Business value is articulated           | 2    | Explains business value or efficiency improvement gets 2 points |
-| Risk prediction is comprehensive           | 2    | Identifies ≥2 types of technical risks with mitigation plans gets 2 points |
+| Why Now is clear           | 1    | Clear articulation of problem urgency and time window gets 1 point   |
+| Differentiated value is explicit         | 1    | Clear explanation of differences from existing solutions or competitors gets 1 point |
+| User segmentation is reasonable           | 1    | Target users and secondary users have priority distinction gets 1 point   |
+| Business value is articulated           | 1    | Explains business value or efficiency improvement gets 1 point |
+| Risk prediction is comprehensive           | 1    | Identifies ≥2 types of technical risks with mitigation plans gets 1 point |
