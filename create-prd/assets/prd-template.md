@@ -1,12 +1,12 @@
 ---
-title: PRD: {Product Name} - {Feature Name}
-status: Draft
-created: {YYYY-MM-DD}
-updated: {YYYY-MM-DD}
-version: v1.0.0
-project: {Project Name}
-related_docs: None
-prototype: None
+title: "PRD: {Product Name} - {Feature Name}"
+status: "Draft"
+created: "{YYYY-MM-DD}"
+updated: "{YYYY-MM-DD}"
+version: "v1.0.0"
+project: "{Project Name}"
+related_docs: "None"
+prototype: "None"
 ---
 
 # PRD: {Product Name} - {Feature Name}

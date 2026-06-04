@@ -14,10 +14,10 @@ Auto-infer and fill all Metadata fields from conversation context, only ask unif
 | Field | Inference Source | Inference Strategy |
 | ----- | ---------------- | ------------------ |
 | Author | Mentioned in conversation / git config user.name / history session memory | Prioritize author name explicitly mentioned in conversation |
-| Status | Fixed | `Draft` |
-| Created | System date | Today |
-| Last Updated | System date | Today |
-| Version | Fixed for new | `v1.0.0` |
+| Status | Fixed | `"Draft"` |
+| Created | System date | `"Today"` |
+| Last Updated | System date | `"Today"` |
+| Version | Fixed for new | `"v1.0.0"` |
 | Project | Requirement name / mentioned in conversation | Extract from requirement name in user's first message |
 | Related Docs | Default | "None" |
 | Prototype | Default | "None" |
