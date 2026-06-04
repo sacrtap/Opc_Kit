@@ -5,7 +5,7 @@ description: >
 license: MIT
 metadata:
   author: sacrtap
-  version: "2.0.0"
+  version: "2.1.0"
   category: documentation
 examples:
   - "Create a PRD for user authentication feature"
@@ -67,6 +67,12 @@ Detect user's primary conversation language at session start:
 3. User can override anytime: "用英文写" / "write this in Chinese"
 4. **Output language priority:** User explicit override > conversation language detection
 
+### Language consistency rules (MANDATORY):
+
+1. **ALL thinking and reasoning processes MUST use the user's conversation language** — If user writes in Chinese, all thinking, analysis, and reasoning must be in Chinese. If user writes in English, all thinking and reasoning must be in English.
+2. **Generated PRD chapter titles MUST match the conversation language** — Chinese conversation → use Chinese column titles; English conversation → use English column titles (see bilingual mapping table below).
+3. **NEVER mix languages in the same PRD** — every chapter title in the document must use the same language. Do not use Chinese titles in an English PRD or English titles in a Chinese PRD.
+
 ### Default File Output
 Save location: `docs/specs/` (relative to current project directory)
 
@@ -83,14 +89,15 @@ Save location: `docs/specs/` (relative to current project directory)
 **Must create task list at PRD generation start (use TodoWrite or platform equivalent)**
 
 #### Initial Task List (auto-created)
-- [ ] Deep reasoning analysis
-- [ ] Generate Chapters 1-3 (Problem Description, Goal Definition, Target Users)
-- [ ] Generate Chapters 4-5 (User Stories, Feature Flowcharts)
-- [ ] Generate Chapters 6-7 (Feature List, Feature Details)
-- [ ] Generate Chapters 8-10 (Tracking Design, Future Improvements, Risks & Dependencies)
-- [ ] Auto-generate Chapters 11-12 (Glossary, Assumption Index)
-- [ ] Run strict validation checklist
-- [ ] Output completed PRD
+- [ ] Phase 0: deep reasoning analysis + key assumption confirmation
+- [ ] Generate + write Chapters 1-3 (Problem Description, Goal Definition, Target Users)
+- [ ] Generate + write Chapters 4-5 (User Stories, Feature Flowcharts)
+- [ ] Generate + write Chapters 6-7 (Feature List, Feature Details)
+- [ ] Generate + write Chapters 8-10 (Tracking Design, Future Improvements, Risks & Dependencies)
+- [ ] Generate + write Chapters 11-13 (Decision Log, Glossary, Assumption Index)
+- [ ] Run strict validation checklist (incl. mermaid syntax)
+- [ ] Mandatory feedback confirmation for all [ASSUMPTION] items
+- [ ] Final quality score output
 
 #### Update Rules
 - Mark task `completed` ONLY after chapter draft is written
@@ -101,6 +108,25 @@ Save location: `docs/specs/` (relative to current project directory)
 After each major step, briefly report progress:
 "✅ Chapters 1-3 completed. Moving to User Stories..."
 
+### Incremental Write Strategy
+
+**Batch writing approach** (reduces wait time, improves reliability):
+1. **Batch 1**: Generate Ch1-3 → write() to file
+2. **Batch 2**: Append Ch4-5 → write() overwrite
+3. **Batch 3**: Append Ch6-7 → write() overwrite
+4. **Batch 4**: Append Ch8-10 → write() overwrite
+5. **Batch 5**: Append Ch11-13 → write() overwrite
+
+**Principle**: Each batch only appends its chapters, does NOT modify already-written earlier chapters.
+
+**Cross-platform implementation**:
+| Platform | Method |
+|----------|--------|
+| OpenCode | write() overwrite or edit append per batch |
+| Claude Code | Write overwrite or Edit append per batch |
+| Cursor/Codex | Write overwrite per batch, IDE auto-save |
+| Fallback | Generate all → single write (degraded) |
+
 ## When to Use This Skill
 
 ✅ Use when:
@@ -108,6 +134,20 @@ After each major step, briefly report progress:
 - Updating existing PRDs with new features
 - Validating PRD completeness and quality
 - Creating feature specifications with bidirectional traceability
+- Creating prototypes or UI designs (MUST check PRD readiness first)
+
+### Prototype Gate (Mandatory)
+
+If user intent is "create prototype/UI design/wireframe", AI MUST:
+
+1. **Search for existing PRD** — glob `docs/specs/*{feature-name}*.md`
+2. **If PRD not found** → prompt user:
+   > "No PRD found for this feature. To ensure the prototype is based on validated requirements, create a PRD first. Options:
+   > A) Create PRD now (Recommended) — ensures prototype is designed around verified user needs
+   > B) Proceed without PRD — prototype may need redesign if assumptions change
+   > C) Cancel"
+3. **If PRD exists but status is not "Confirmed" or "In Development"** → warn about unconfirmed [ASSUMPTION] items
+4. **Allow prototype only for**: `Draft (Confirmed)` or `In Development` status
 
 ❌ Don't use when:
 - Writing technical design docs (use technical-spec skill)
@@ -123,6 +163,7 @@ When a user message arrives, determine the intent:
 | **create** | New PRD, write requirements doc, create product requirements | Read `references/intent-create.md`   |
 | **update** | Update/modify existing PRD, PRD change, add features to existing doc | Read `references/intent-update.md`   |
 | **validate** | Validate/check PRD, review requirements doc completeness   | Read `references/intent-validate.md` |
+| **prototype** | Design prototype, create UI mockup, Figma prototype, 设计原型, 画界面 | Check PRD readiness → Gate: allow if PRD Confirmed / block if missing PRD (offer create PRD first) |
 
 If intent is ambiguous, confirm with the user once. Update intent must provide a target file path.
 
@@ -276,6 +317,7 @@ Review results are appended at the end of the PRD in fixed format (not inserted 
 14. **Mandatory Progress Tracking** — Create TodoWrite task list at start, update after each chapter completion
 15. **Cross-Agent Compatible** — Platform-agnostic skill supporting OpenCode, Claude Code, Cursor, Codex. Tool calls use generic descriptions; each agent maps to its own toolset
 16. **Environment Detection First** — Must detect Node.js environment before running validation script; if absent, ask user before installing; never auto-install without confirmation
+17. **Mandatory Feedback Loop**: After PRD draft output, ALL [ASSUMPTION] tags and reverse questions MUST be confirmed by the user before the document is considered "complete". Present all [ASSUMPTION] items in a structured list; user must choose: Accept / Reject & Provide Correction / Defer with Reason. The PRD status remains "Draft (Pending Confirmation)" until all items are confirmed or explicitly deferred. Document cannot be saved as "Approved" or "In Development" with unconfirmed [ASSUMPTION] items.
 
 ## PRD Quality Scoring
 
@@ -296,14 +338,39 @@ Every PRD is scored on 7 dimensions (max 100 points):
 - **85+ points** = excellent
 - **< 70 points** = needs revision before sharing with stakeholders
 
+### Re-scoring After Updates (MANDATORY)
+
+- **Every PRD update (update intent) MUST re-run quality scoring** after all modifications are complete
+- Compare old vs new score; if score drops below 70 or drops by >10 points → warn user: "This update has reduced quality below threshold"
+- Record the new score in changelog entry (e.g., "v1.1.0 — Quality: 85 → 82 (-3, feature expansion)")
+- If `validate-prd.js` is unavailable, fall back to manual checklist review + manual scoring
+
 ## PRD Standard Template
 
-Full template in `assets/prd-template.md`. 12-chapter fixed skeleton + 3 auto-generated:
+Full template in `assets/prd-template.md`. Use the bilingual title mapping below to select chapter titles based on conversation language.
 
-1. Problem Description / 2. Goal Definition / 3. Target Users / 4. User Stories /
-5. Feature Interaction Flowcharts / 6. Detailed Feature List / 7. Feature Details /
-8. Tracking Design / 9. Future Improvement Plans / 10. Risks & Dependencies
-+ 11. Decision Log (auto-generated) / 12. Glossary (auto-generated) / 13. Assumption Index (auto-generated)
+### Bilingual Chapter Title Mapping
+
+| # | Chinese 标题 | English Title |
+|---|-------------|--------------|
+| 1 | 问题描述 | Problem Description |
+| 2 | 目标定义 | Goal Definition |
+| 3 | 目标用户 | Target Users |
+| 4 | 用户故事 | User Stories |
+| 5 | 功能交互流程图 | Feature Interaction Flowcharts |
+| 6 | 功能清单 | Detailed Feature List |
+| 7 | 功能详情 | Feature Details |
+| 8 | 埋点设计 | Tracking Design |
+| 9 | 未来改进计划 | Future Improvement Plans |
+| 10 | 风险与依赖 | Risks & Dependencies |
+| 11 | 决策日志（自动生成） | Decision Log (auto-generated) |
+| 12 | 术语表（自动生成） | Glossary (auto-generated) |
+| 13 | 假设索引（自动生成） | Assumption Index (auto-generated) |
+
+**Usage rules:**
+- English conversation → use **English** column titles for all chapters
+- Chinese conversation → use **Chinese** column titles for all chapters
+- **Do NOT mix languages** in the same PRD — choose one column and use it consistently
 
 ## Strict Validation Checklist (must run before saving)
 

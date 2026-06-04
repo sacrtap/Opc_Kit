@@ -3,7 +3,7 @@
 > **Professional AI Agent Skill Toolkit** — Cross-platform workflow skills for OpenCode, Claude Code, Cursor, Codex
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version: v2.0.0](https://img.shields.io/badge/Version-2.0.0-blue.svg)]()
+[![Version: v2.1.0](https://img.shields.io/badge/Version-2.0.0-blue.svg)]()
 [![Status: Active](https://img.shields.io/badge/Status-Active-green.svg)]()
 [![skills.sh](https://skills.sh/b/sacrtap/Opc_Kit)](https://skills.sh/sacrtap/Opc_Kit)
 
@@ -58,7 +58,7 @@ Each interaction provides 1-3 carefully considered recommendations with rational
 
 | Skill                            | Language | Purpose                              | Version | Install Command                                   |
 | -------------------------------- | -------- | ------------------------------------ | ------- | ------------------------------------------------- |
-| [create-prd](create-prd/SKILL.md) | EN/CN    | PRD creation/update/validation       | v2.0.0  | `npx skills add sacrtap/Opc_Kit --skill create-prd` |
+| [create-prd](create-prd/SKILL.md) | EN/CN    | PRD creation/update/validation       | v2.1.0  | `npx skills add sacrtap/Opc_Kit --skill create-prd` |
 
 ## ⚡ Quick Start
 
@@ -274,7 +274,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
 ## 📄 License
 
-MIT © sacrtap | create-prd v2.0.0
+MIT © sacrtap | create-prd v2.1.0
 
 ---
 

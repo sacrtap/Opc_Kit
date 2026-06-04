@@ -51,7 +51,14 @@ Based on user's first message and all visible context, infer content for all cha
    - Technical feasibility: Is the solution technically viable? What is the biggest risk?
    - Risk matrix: List the top 3 possible risks and mitigation plans
 
-2. **Autonomously infer all chapter content**: Do not ask chapter by chapter, instead complete the draft inference for all 12 chapters at once based on available information
+2. **分批次推理与写入（按 Progress Tracking 分5批）**：
+   - Batch 1：Ch1-3 推理 → write() 写入文件
+   - Batch 2：追加 Ch4-5 → write() 覆盖
+   - Batch 3：追加 Ch6-7 → write() 覆盖
+   - Batch 4：追加 Ch8-10 → write() 覆盖
+   - Batch 5：追加 Ch11-13 → write() 覆盖
+   
+   原则：每批次只追加自己的章节内容，不修改已写入的前序章节。
 
 3. **Self-review**: Run the strict validation checklist, checking US↔FR traceability, tracking↔metric traceability, metric→calculation method traceability, etc.
 
@@ -74,9 +81,15 @@ After self-review, decide whether to interact with the user based on the type of
   - **B. Push method**: Server notifies App via push/WebSocket after config update → Requires additional push service support
   - **C. Hybrid method**: Polling as primary, push as supplement → Suitable for high-frequency update scenarios with high real-time requirements"
 
-### Step 3: Generate PRD Draft + Reverse Questions
+### Step 3b: Reverse Questions — 强制确认关卡
 
-After all key assumptions are confirmed, generate the complete PRD draft. Append a "Reverse Questions" section at the end:
+After all key assumptions are confirmed, generate the complete PRD draft. Append a "Reverse Questions" section listing all remaining [ASSUMPTION] items. **User MUST confirm each item** by choosing one of:
+
+- **Accept** — Confirmed as-is
+- **Reject & Provide Correction** — User provides replacement content
+- **Defer with Reason** — Must include a reason; deferred items auto-logged to Chapter 12 (Assumption Index)
+
+All items must reach Accept or Defer status before proceeding to next step. Provide a **"Accept All"** batch option at the top of the section.
 
 ```markdown
 ## Reverse Questions

@@ -132,6 +132,38 @@ When success metrics are defined, suggest counter-metrics to prevent optimizatio
 | Search time < 1 minute | Search result accuracy (don't sacrifice accuracy for speed) |
 | Favorites usage rate > 60% | Favorites removal rate (are users removing bad favorites?) |
 
+## feature-list Rules (Chapter 6)
+
+### Platform/System Column Rules
+
+Each feature in the feature list must include a Platform/System column to specify the technical carrier.
+
+#### Scenario Handling Table
+
+| Scenario | Handling |
+| -------- | -------- |
+| User explicitly specifies target platform | Fill directly (Web/iOS/Android/Admin/All) |
+| User not specified but inferable from context | Infer and mark `[ASSUMPTION: 假设目标平台为...]` |
+| Completely uninferable | Must confirm as Key Assumption |
+
+**Why**: Platform column disambiguates feature scope. Without it, a single feature F-1.0 could mean "all platforms" or "iOS only", causing development estimation errors.
+
+#### Value Constraints
+
+- Value must be a platform name, not a vague description:
+  ```
+  ✅ iOS
+  ⚠️ 移动端 — suggest 明确 iOS/Android
+  ✅ All
+  ```
+- Multi-platform: use `/` separator: `Web/iOS/Android`
+- All platforms covered: `All`
+- Feature Module (business domain) and Platform (technical carrier) are orthogonal concepts
+
+#### Single-platform Product
+
+If the product is confirmed single-platform (e.g., iOS-only app), this column can be omitted. Document this decision in the Decision Log.
+
 ## Future Improvement Plan Rules (Chapter 9)
 
 | Field | Description | Example |

@@ -151,3 +151,41 @@ Review results are appended at the end of the PRD in fixed format (not inserted 
 - What happens after data volume grows?
 - What about concurrent scenarios?
 - If the project fails in 3 months, what went wrong?
+
+## Mandatory Feedback Confirmation Flow
+
+After PRD draft generation, ALL [ASSUMPTION] items must be presented to the user for mandatory confirmation.
+
+### Presentation Format
+
+```
+## 待确认项（必填）
+
+请选择操作（逐项或批量Accept All）：
+
+| # | [ASSUMPTION] 内容 | 影响如果错误 | Accept / Reject / Defer | 修正/原因 |
+|---|-------------------|-------------|------------------------|-----------|
+| 1 | {assumption text}  | {impact}    | [ ] [ ] [ ]            |           |
+| 2 | {assumption text}  | {impact}    | [ ] [ ] [ ]            |           |
+```
+
+### Confirmation Rules
+
+1. 每项 [ASSUMPTION] 用户必须做出选择：
+   - **Accept**: 确认假设正确
+   - **Reject & Provide Correction**: 提供修正后的内容
+   - **Defer with Reason**: 暂不确认，记录原因
+
+2. 提供 **Accept All** 选项在顶部，但默认展开每项供用户审阅
+
+3. 未完成全部确认或 Defer 前，PRD 状态保持 `Draft (Pending Confirmation)`
+
+4. 全部 Accept 或 Defer 后，状态升级为 `Draft (Confirmed)` 并写入 Assumption Index 的 Confirmation Status 列
+
+5. 如果用户 Defer 3+ 项，询问："部分假设被推迟确认。是否需要后续session专门处理这些项，或在已知风险下继续？"
+
+### Integration with Existing Review Flow
+
+- 原有的 First Principles、Logical Completeness、Boundary & Risk 提问保持不变
+- 强制确认流程在这些审查步骤**之后**执行
+- 已在前序交互中确认的 Key Assumption（8类）自动标记 ✅ 跳过，不重复提问

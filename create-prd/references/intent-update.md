@@ -127,3 +127,18 @@ Added F-2.13 favorites sharing feature, supports read/edit permission control
 Updated F-2.6 auto-fill logic, added race condition handling branch
 Modified success metric: auto-fill adoption rate from >80% to >85%
 ```
+
+## Re-score Quality (Mandatory After Every Update)
+
+After all update modifications are complete, MUST re-run quality scoring:
+
+1. Re-run `validate-prd.js` (or manual checklist if script unavailable)
+2. Compare old score vs new score
+3. **Warning triggers** if:
+   - New score drops below 70 (production-ready threshold)
+   - Score decreases by >10 points from previous version
+4. If warning triggered → alert user: "此更新使质量评分从 X 降至 Y，建议审查变更"
+5. Record new score in changelog: "v{version} — Quality: {old} → {new} ({delta})"
+6. If `validate-prd.js` unavailable → fall back to manual checklist review with 7-dimension scoring
+
+**Why**: Updates can break US↔FR traceability, testability, and metric alignment. Without re-scoring, a degraded PRD still shows a stale high score.

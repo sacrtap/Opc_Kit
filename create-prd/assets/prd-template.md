@@ -109,15 +109,20 @@ flowchart TD
 
 ## 6. Detailed Feature List
 
-| ID | Feature Module | Feature Name | Priority | Description |
-|----|---------------|-------------|----------|-------------|
-| F-1.1 | {Module} | {Feature} | P0 | {Brief description} |
-| F-1.2 | {Module} | {Feature} | P1 | {Brief description} |
+| ID | Feature Module | Feature Name | Platform | Priority | Description |
+|----|---------------|-------------|----------|----------|-------------|
+| F-1.1 | {Module} | {Feature} | All | P0 | {Brief description} |
+| F-1.2 | {Module} | {Feature} | iOS/Android | P1 | {Brief description} |
 
 **Priority Definition:**
 - **P0 (Critical)**: Feature is unusable without it, must deliver in v1
 - **P1 (Important)**: User experience significantly impacted, should deliver in v1
 - **P2 (Nice-to-have)**: Better to have, but doesn't block core flow
+
+**Platform Value Notes:**
+- Values must be specific platform names: `iOS` ✅ | `移动端` ⚠️ Use explicit `iOS/Android`
+- Use `All` when feature covers all platforms
+- For single-platform products, this column can be auto-hidden during PRD generation
 
 ## 7. Feature Details
 
