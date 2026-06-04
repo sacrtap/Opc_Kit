@@ -1,5 +1,10 @@
 # OpenCode agents/skills cache
 .agents/
+.opencode/
+.omo/
+
+# macOS
+.DS_Store
 
 # Local-only skills (not published to GitHub)
 create-prd-cn/
