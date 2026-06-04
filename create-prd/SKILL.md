@@ -198,11 +198,11 @@ During coaching conversation, handle inferred content in tiers:
 **Non-key Inference Definition:** interaction details, UI style preferences, default parameter values, exception flow handling.
 
 **Coaching Supplemental Behavior:**
-- After generating the full PRD, append a "Reverse Questions" section at the end, listing all unconfirmed [ASSUMPTION] tags and inferred content
+- After generating the full PRD, use the unified confirmation gate (see references/intent-create.md Step 3b) to present all unconfirmed [ASSUMPTION] tags and inferred content for mandatory user confirmation
 - User can say "rewrite chapter X" or "add Y details" for specific chapters
 
 **Fast Path Supplemental Behavior:**
-- After generating the full PRD, append a "Reverse Questions" section at the end, listing all [ASSUMPTION] tags and missing items
+- After generating the full PRD, use the unified confirmation gate (see references/intent-create.md Step 3b) to present all [ASSUMPTION] tags and missing items for mandatory user confirmation
 - User can say "rewrite chapter X" or "add Y details" for specific chapters
 
 ## Mode Switch Command Recognition
@@ -317,7 +317,7 @@ Review results are appended at the end of the PRD in fixed format (not inserted 
 14. **Mandatory Progress Tracking** — Create TodoWrite task list at start, update after each chapter completion
 15. **Cross-Agent Compatible** — Platform-agnostic skill supporting OpenCode, Claude Code, Cursor, Codex. Tool calls use generic descriptions; each agent maps to its own toolset
 16. **Environment Detection First** — Must detect Node.js environment before running validation script; if absent, ask user before installing; never auto-install without confirmation
-17. **Mandatory Feedback Loop**: After PRD draft output, ALL [ASSUMPTION] tags and reverse questions MUST be confirmed by the user before the document is considered "complete". Present all [ASSUMPTION] items in a structured list; user must choose: Accept / Reject & Provide Correction / Defer with Reason. The PRD status remains "Draft (Pending Confirmation)" until all items are confirmed or explicitly deferred. Document cannot be saved as "Approved" or "In Development" with unconfirmed [ASSUMPTION] items.
+17. **Mandatory Feedback Loop**: After PRD draft output, ALL [ASSUMPTION] items MUST be presented in a **unified confirmation list/table** and confirmed by the user before the document is considered complete. Each table row includes: content, corresponding chapter, impact if wrong, and confirmation status. User must choose: **Accept** / **Reject & Provide Correction** / **Defer with Reason**. Confirmed items transition from "Pending Confirmation" → "Confirmed". Rejected items trigger automatic content substitution in the corresponding chapter. Deferred items are logged to Chapter 12 (Assumption Index). The PRD status remains "Draft (Pending Confirmation)" until all items reach Confirmed or Deferred status. The document cannot be saved as "Approved" or "In Development" with any unconfirmed [ASSUMPTION] items.
 
 ## PRD Quality Scoring
 

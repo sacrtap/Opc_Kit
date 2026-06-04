@@ -2,7 +2,7 @@
 .agents/
 .opencode/
 .omo/
-
+create-prd-workspace/
 # macOS
 .DS_Store
 

@@ -80,9 +80,15 @@ Rules detailed in `references/review-rules.md`
 ```markdown
 ## Pending Confirmations (Update)
 
-| #   | Chapter | Assumption        | Impact if Wrong      | Status     |
-| --- | ------- | ----------------- | -------------------- | ---------- |
-| 1   | Ch.X    | {New assumption}  | {What breaks if wrong} | ⏳ Pending |
+Unified confirmation gate (aligned with intent-create.md Step 3b):
+
+| #   | Chapter | Assumption        | Impact if Wrong      | Status     | Modification/Reason |
+| --- | ------- | ----------------- | -------------------- | ---------- | ------------------- |
+| 1   | Ch.X    | {New assumption}  | {What breaks if wrong} | ⏳ Pending | —                   |
+
+**操作选项**:
+- **Accept All**: 一次性确认所有待确认项（状态改为 ✅ Confirmed）
+- **逐项确认**: 用户可对每项选择 Accept / Reject (自动替换内容/记录至 Ch12) / Defer (记录原因)
 ```
 
 ## Step 8: Save
