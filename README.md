@@ -78,6 +78,9 @@ npx skills add sacrtap/Opc_Kit
 # Install specific skill
 npx skills add sacrtap/Opc_Kit --skill create-prd
 
+# Update specific skill to latest version
+npx skills update create-prd
+
 # List available skills before installing
 npx skills add sacrtap/Opc_Kit --list
 ```
