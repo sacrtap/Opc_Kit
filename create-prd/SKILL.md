@@ -444,6 +444,101 @@ During Deep Reasoning (Step 1), automatically infer the product's platform ecosy
 17. **Prototype Workflow Constraint** — Requirements first, prototype after. Guide users to complete PRD before prototype design. Respect explicit override but warn about rework risk.
 18. **Platform Inference First** — Infer platform ecosystem, core problem, and target users from Deep Reasoning. Only ask for confirmation on low-confidence items. Merge confirmation questions into one consolidated message.
 
+## Incremental Write Strategy (MANDATORY)
+
+Never generate all 13 chapters in one shot. Always write in 5 batches,
+appending each batch to the file immediately.
+
+### Batch Definitions
+
+| Batch | Chapters | Content                                                    | Write Method             |
+| ----- | -------- | ---------------------------------------------------------- | ------------------------ |
+| **1** | Ch1-3    | Problem Description, Goal Definition, Target Users         | `write()` create/overwrite |
+| **2** | Ch4-5    | User Stories, Feature Flowcharts                           | Append to existing file  |
+| **3** | Ch6-7    | Feature List, Feature Details                              | Append to existing file  |
+| **4** | Ch8-10   | Tracking Design, Future Improvements, Risks & Dependencies | Append to existing file  |
+| **5** | Ch11-13  | Decision Log, Glossary, Assumption Index                   | Append to existing file  |
+
+### Rules
+
+1. **Append-only**: Each batch appends its chapters, NEVER modifies already-written
+   earlier chapters. If earlier chapters need correction (e.g. logical gaps found),
+   mark them in a note and handle in the next iteration or post-generation pass.
+2. **Progress notification**: After each batch save, output structured progress
+   update (see "Progress Notification Rules").
+3. **Checkpoint tracking**: Before writing each batch, update the `generate_progress`
+   field in the PRD front matter with current batch status.
+4. **Cross-platform adaptation**:
+   | Platform     | Method                                                  |
+   | ------------ | ------------------------------------------------------- |
+   | OpenCode     | `write()` overwrite (batch 1) + `edit` append (batches 2-5) |
+   | Claude Code  | `Write` overwrite (batch 1) + `Edit` append (batches 2-5)   |
+   | Cursor/Codex | `Write` overwrite per batch, IDE auto-save                |
+   | Fallback     | Generate all → single write (degraded mode)             |
+
+## Progress Notification Rules (MANDATORY)
+
+After each batch is saved, MUST output a structured progress update to the user.
+
+### Format
+
+Use the following format (language matches conversation language):
+
+**English session**:
+```
+📋 PRD Generation Progress
+✅ Batch 1/5: Chapters 1-3 (Problem Description, Goal Definition, Target Users) — Saved
+⏳ Generating Batch 2/5: Chapters 4-5 (User Stories, Feature Flowcharts)...
+```
+
+**Chinese session**:
+```
+📋 PRD 生成进度
+✅ Batch 1/5: 第 1-3 章（问题描述、目标定义、目标用户）— 已保存
+⏳ 正在生成 Batch 2/5: 第 4-5 章（用户故事、功能交互流程图）...
+```
+
+### Rules
+
+1. Show **current batch number / total batches** (e.g. "Batch 2/5")
+2. Show **saved chapter names** for completed batches
+3. Show **next batch content** being generated
+4. Language MUST match detected conversation language
+5. Include remaining time estimate when possible (e.g. "~2 batches remaining")
+
+## Checkpoint & Recovery (MANDATORY)
+
+### Checkpoint Tracking
+
+Before writing each batch, update the `generate_progress` field in the PRD
+front matter:
+
+```yaml
+generate_progress:
+  batch_1: completed
+  batch_2: in_progress
+  batch_3: pending
+  batch_4: pending
+  batch_5: pending
+  started_at: "2026-06-09T10:30:00Z"
+```
+
+### Recovery on Resume
+
+New session opening an in-progress PRD file:
+1. Read `generate_progress` field from front matter
+2. Find first batch with status `pending` or `in_progress`
+3. Resume generation from that batch (do NOT regenerate completed batches)
+4. Update checkpoint after each batch save
+
+### Status Values
+
+| Status      | Meaning                         |
+| ----------- | ------------------------------- |
+| `completed`   | Batch fully written and saved   |
+| `in_progress` | Batch currently being generated |
+| `pending`     | Batch not yet started           |
+
 ## PRD Quality Scoring
 
 Every PRD is scored on 7 dimensions (max 100 points):
