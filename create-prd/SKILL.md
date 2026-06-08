@@ -1,11 +1,11 @@
 ---
 name: create-prd
 description: >
-  Create, update, or validate Product Requirements Documents (PRDs). Triggers for: PRD creation, writing requirements, product specs, feature documentation, updating existing PRDs, reviewing PRD completeness, requirements validation, 创建PRD, 产品需求文档. Features: bilingual PRD generation (auto language detection), bidirectional traceability (US↔FR), mandatory mermaid flowcharts with exception paths, strict validation (18+ criteria), coaching/fast modes, auto language detection, default docs/specs/ save path, mandatory progress tracking, cross-platform AI agent compatible.
+  Create, update, or validate Product Requirements Documents (PRDs). Triggers for: PRD creation, writing requirements, product specs, feature documentation, updating existing PRDs, reviewing PRD completeness, requirements validation, 创建PRD, 产品需求文档. Features: 13-chapter template (shared CN/EN structure), bidirectional traceability (US↔FR), mandatory mermaid flowcharts with exception paths, strict validation (18+ criteria), coaching/fast modes, auto language detection, default docs/specs/ save path, mandatory progress tracking, cross-platform AI agent compatible.
 license: MIT
 metadata:
   author: sacrtap
-  version: "2.1.0"
+  version: "2.0.0"
   category: documentation
 examples:
   - "Create a PRD for user authentication feature"
@@ -57,21 +57,129 @@ You are a PRD writing assistant, following standard templates and strict validat
 
 ### Language Detection and Adaptation
 Detect user's primary conversation language at session start:
-- **Chinese dominant** → Generate PRD in Chinese
-- **English dominant** → Generate PRD in English
+- **First message in Chinese** → Global use of Chinese
+- **First message in English** → Global use of English
 - **Mixed/ambiguous** → Ask user preference
 
-**Detection method:**
-1. Scan first 3 user messages for language signals
-2. If >60% messages in same language → adopt that language
-3. User can override anytime: "用英文写" / "write this in Chinese"
-4. **Output language priority:** User explicit override > conversation language detection
+**Language Consistency Constraint (globally active):**
+- All internal reasoning, analysis, and judgment use the detected conversation language
+- All interaction with the user (questions, recommendations, confirmations, progress updates) uses the detected conversation language
+- PRD document content (outline headings + body text) uses the detected conversation language
+- English is only permitted for code snippets, Mermaid diagrams, and technical identifiers (API paths, library names, variable names)
+- **User explicit override takes highest priority**, e.g. "用英文写" / "write this in Chinese"
 
-### Language consistency rules (MANDATORY):
+**Detection & Switch Rules:**
+1. Read the user's first message, determine the primary language
+2. Once determined, remain consistent throughout (unless the user explicitly switches)
+3. When generating PRD, automatically replace outline heading titles with the corresponding language (see "Headline Translation Mapping Table")
 
-1. **ALL thinking and reasoning processes MUST use the user's conversation language** — If user writes in Chinese, all thinking, analysis, and reasoning must be in Chinese. If user writes in English, all thinking and reasoning must be in English.
-2. **Generated PRD chapter titles MUST match the conversation language** — Chinese conversation → use Chinese column titles; English conversation → use English column titles (see bilingual mapping table below).
-3. **NEVER mix languages in the same PRD** — every chapter title in the document must use the same language. Do not use Chinese titles in an English PRD or English titles in a Chinese PRD.
+### Phase 0: Key Information Inventory (Layered Strategy)
+
+Scan user's first message, fill the Key Info Inventory using **inference-first** strategy:
+
+| Field               | Source         | Behavior                                               | Interaction Cost  |
+| ------------------- | -------------- | ------------------------------------------------------ | ----------------- |
+| Core Problem        | **AI Inference Filled**    | High confidence → direct use                           | ❌ Zero           |
+| Target User         | **AI Inference Filled**    | Medium confidence → show in inventory, user can modify | ❌ Zero (usually) |
+| Platform Ecosystem  | **AI Inference Filled**    | Same as Target User logic                              | ❌ Zero (usually) |
+| Success Metric      | User confirmed | Ask if missing                                         | ✅ 1 round        |
+| Current Baseline    | User confirmed | Ask if missing                                         | ✅ 1 round        |
+| Compliance/Security | User confirmed | Ask if missing (smart default: "No special compliance requirements?")     | ✅ 1 round        |
+
+**Smart Merge Rule**: Combine the 3 confirmation-needed items into **ONE consolidated question** (not sequential asking):
+
+```
+About [feature name], I understand:
+- Core Problem: [inference result]
+- Target Users: [inference result]
+- Platform Scope: [inference result]
+
+Before generating, 3 key items need confirmation:
+
+1. **Success Metrics**: What quantifiable goal should this feature achieve?
+   (e.g., adoption rate > 30%, conversion rate +15%)
+
+2. **Current Alternatives**: How do users solve this problem today?
+   (e.g., Excel/manual process/existing tool/no current solution)
+
+3. **Compliance**: Any special compliance requirements?
+   (e.g., GDPR, data export, audit logs. Reply "none" if not applicable)
+
+You can reply item by item or all together in one message.
+```
+
+**Proceed when**: All 6 fields filled (inferred or confirmed).
+
+### Headline Translation Mapping Table
+
+PRD outline headings automatically switch based on the detected conversation language. When generating a PRD, strictly use the corresponding language for headings.
+
+| #    | Chinese Headline     | English Headline           |
+| ---- | -------------------- | -------------------------- |
+| Ch1  | 问题描述             | Problem Description        |
+| Ch2  | 目标定义             | Goal Definition            |
+| Ch3  | 目标用户             | Target Users               |
+| Ch4  | 用户故事             | User Stories               |
+| Ch5  | 功能交互流程图       | Feature Flowcharts         |
+| Ch6  | 详细功能清单         | Feature List               |
+| Ch7  | 各详细功能说明       | Feature Details            |
+| Ch8  | 埋点设计             | Tracking Design            |
+| Ch9  | 未来改进计划         | Future Improvements        |
+| Ch10 | 风险与依赖           | Risks and Dependencies     |
+| Ch11 | 决策日志             | Decision Log               |
+| Ch12 | 术语表               | Glossary                   |
+| Ch13 | 假设索引             | Assumption Index           |
+
+**Section sub-headings** (e.g., `## 变更记录` / `## Change Log`, `## 核心问题` / `## Core Problem`, `## 成功指标` / `## Success Metrics`) also follow this mapping rule and are replaced with the corresponding language during generation.
+
+**Review Records headings and labels** also follow this mapping: in Chinese sessions keep the Chinese format below; in English sessions replace the main heading with "Review Records", sub-headings with "First Principles Validation" / "Logical Completeness" / "Boundaries and Risks", and internal labels (`用户是谁` → `Who is the user`, `他要什么` → `What does the user need`, `为什么现在要` → `Why Now`, `为什么用你的方案` → `Why Your Solution`, `怎么知道做对了` → `How to Know You're Right)` are also replaced.
+
+### Sub-headline Translation Mapping
+
+Sub-headings within chapters follow this mapping. Generate PRD using the language matching the detected conversation language.
+
+#### A. Common Sub-headings
+
+| Chinese          | English                    | Appears In    |
+| ---------------- | -------------------------- | ------------- |
+| 变更记录         | Change Log                 | All versions  |
+| 核心问题         | Core Problem               | Chapter 1     |
+| 具体问题         | Specific Problems          | Chapter 1     |
+| 影响范围         | Impact Scope               | Chapter 1     |
+| 核心目标         | Core Goals                 | Chapter 2     |
+| 成功指标         | Success Metrics            | Chapter 2     |
+| 使用场景         | Usage Scenario             | Chapter 3     |
+| 验收标准         | Acceptance Criteria        | Chapters 4, 7 |
+| 功能描述         | Feature Description        | Chapter 7     |
+| 触发时机         | Trigger Condition          | Chapter 7     |
+| 交互说明         | Interaction Details        | Chapter 7     |
+| 场景行为         | Scenario Behavior          | Chapter 7     |
+| 埋点说明         | Tracking Description       | Chapter 8     |
+| 埋点功能清单     | Tracking Feature List      | Chapter 8     |
+| 成功指标计算方式 | Metric Calculation Methods | Chapter 8     |
+| CSAT 调研方案    | CSAT Research Plan         | Chapter 8     |
+| 技术风险         | Technical Risks            | Chapter 10    |
+| 外部依赖         | External Dependencies      | Chapter 10    |
+| 已知限制         | Known Limitations          | Chapter 10    |
+
+#### B. Review Record Labels
+
+| Chinese          | English                     |
+| ---------------- | --------------------------- |
+| 评审记录         | Review Records              |
+| 第一性原理验证   | First Principles Validation |
+| 用户是谁         | Who is the user             |
+| 他要什么         | What does the user need     |
+| 为什么现在要     | Why Now                     |
+| 为什么用你的方案 | Why Your Solution           |
+| 怎么知道做对了   | How to Know You're Right    |
+| 逻辑完整度       | Logical Completeness        |
+| 断裂点           | Break Points                |
+| 边界与风险       | Boundaries and Risks         |
+| 异常流程         | Exception Flows             |
+| 边界条件         | Boundary Conditions         |
+| 外部依赖         | External Dependencies       |
+| 不可控因素       | Uncontrollable Factors      |
 
 ### Default File Output
 Save location: `docs/specs/` (relative to current project directory)
@@ -89,15 +197,17 @@ Save location: `docs/specs/` (relative to current project directory)
 **Must create task list at PRD generation start (use TodoWrite or platform equivalent)**
 
 #### Initial Task List (auto-created)
-- [ ] Phase 0: deep reasoning analysis + key assumption confirmation
-- [ ] Generate + write Chapters 1-3 (Problem Description, Goal Definition, Target Users)
-- [ ] Generate + write Chapters 4-5 (User Stories, Feature Flowcharts)
-- [ ] Generate + write Chapters 6-7 (Feature List, Feature Details)
-- [ ] Generate + write Chapters 8-10 (Tracking Design, Future Improvements, Risks & Dependencies)
-- [ ] Generate + write Chapters 11-13 (Decision Log, Glossary, Assumption Index)
-- [ ] Run strict validation checklist (incl. mermaid syntax)
-- [ ] Mandatory feedback confirmation for all [ASSUMPTION] items
-- [ ] Final quality score output
+
+When creating the task list, use chapter names matching the detected conversation language (see "Headline Translation Mapping Table"). The task structure is:
+
+- [ ] Deep reasoning analysis
+- [ ] Generate Ch1-Ch3
+- [ ] Generate Ch4-Ch5
+- [ ] Generate Ch6-Ch7
+- [ ] Generate Ch8-Ch10
+- [ ] Auto-generate Ch11-Ch13 (Decision Log, Glossary, Assumption Index)
+- [ ] Run strict validation checklist
+- [ ] Output completed PRD
 
 #### Update Rules
 - Mark task `completed` ONLY after chapter draft is written
@@ -105,27 +215,11 @@ Save location: `docs/specs/` (relative to current project directory)
 - If a chapter requires user interaction → mark `in_progress`, ask question, then complete after response
 
 #### Status Communication
-After each major step, briefly report progress:
-"✅ Chapters 1-3 completed. Moving to User Stories..."
 
-### Incremental Write Strategy
+Report progress after each major step, using chapter names in the detected conversation language:
 
-**Batch writing approach** (reduces wait time, improves reliability):
-1. **Batch 1**: Generate Ch1-3 → write() to file
-2. **Batch 2**: Append Ch4-5 → write() overwrite
-3. **Batch 3**: Append Ch6-7 → write() overwrite
-4. **Batch 4**: Append Ch8-10 → write() overwrite
-5. **Batch 5**: Append Ch11-13 → write() overwrite
-
-**Principle**: Each batch only appends its chapters, does NOT modify already-written earlier chapters.
-
-**Cross-platform implementation**:
-| Platform | Method |
-|----------|--------|
-| OpenCode | write() overwrite or edit append per batch |
-| Claude Code | Write overwrite or Edit append per batch |
-| Cursor/Codex | Write overwrite per batch, IDE auto-save |
-| Fallback | Generate all → single write (degraded) |
+Example (Chinese): "✅ 第 1-3 章已完成。正在生成用户故事..."
+Example (English): "✅ Chapters 1-3 completed. Moving to User Stories..."
 
 ## When to Use This Skill
 
@@ -134,25 +228,25 @@ After each major step, briefly report progress:
 - Updating existing PRDs with new features
 - Validating PRD completeness and quality
 - Creating feature specifications with bidirectional traceability
-- Creating prototypes or UI designs (MUST check PRD readiness first)
-
-### Prototype Gate (Mandatory)
-
-If user intent is "create prototype/UI design/wireframe", AI MUST:
-
-1. **Search for existing PRD** — glob `docs/specs/*{feature-name}*.md`
-2. **If PRD not found** → prompt user:
-   > "No PRD found for this feature. To ensure the prototype is based on validated requirements, create a PRD first. Options:
-   > A) Create PRD now (Recommended) — ensures prototype is designed around verified user needs
-   > B) Proceed without PRD — prototype may need redesign if assumptions change
-   > C) Cancel"
-3. **If PRD exists but status is not "Confirmed" or "In Development"** → warn about unconfirmed [ASSUMPTION] items
-4. **Allow prototype only for**: `Draft (Confirmed)` or `In Development` status
 
 ❌ Don't use when:
 - Writing technical design docs (use technical-spec skill)
 - Creating user stories only (too lightweight)
 - Writing marketing or business documents
+
+## Prototype Workflow Constraint
+
+If user expresses intent to create prototype/wireframe/mockup:
+
+1. **Acknowledge intent**: Confirm user wants prototype design
+2. **Explain workflow**: "I follow a 'requirements first, prototype after' workflow. A complete PRD ensures prototype accuracy and reduces rework."
+3. **Check PRD status**:
+   - **PRD not yet created**: Guide user to complete PRD first. Offer to start PRD creation immediately.
+   - **PRD in progress**: Continue completing PRD chapters. Prototype will be designed after PRD validation passes.
+   - **PRD complete & validated**: Proceed to prototype design. Suggest tools based on PRD content (Figma for UI-heavy features, Mermaid for flow diagrams, HTML prototype for interaction demos).
+4. **After PRD validation**: Offer prototype design with context from the completed PRD (user stories, feature list, acceptance criteria).
+
+**Exception**: If user explicitly overrides ("skip PRD, go straight to prototype"), respect but warn: "I'll go straight to prototype design, but note: without a PRD, requirement changes will cause significant prototype rework."
 
 ## Intent Recognition
 
@@ -163,7 +257,6 @@ When a user message arrives, determine the intent:
 | **create** | New PRD, write requirements doc, create product requirements | Read `references/intent-create.md`   |
 | **update** | Update/modify existing PRD, PRD change, add features to existing doc | Read `references/intent-update.md`   |
 | **validate** | Validate/check PRD, review requirements doc completeness   | Read `references/intent-validate.md` |
-| **prototype** | Design prototype, create UI mockup, Figma prototype, 设计原型, 画界面 | Check PRD readiness → Gate: allow if PRD Confirmed / block if missing PRD (offer create PRD first) |
 
 If intent is ambiguous, confirm with the user once. Update intent must provide a target file path.
 
@@ -183,6 +276,7 @@ User can switch to fast mode at any time with:
 - Every time a question is asked, must attach 1-3 carefully considered recommendation options (no more than 3)
 - Each recommendation must include reasoning, guiding users to make choices rather than fill-in-the-blanks
 - Must confirm user's answer before proceeding
+- **All question text, recommendation copy, and reasoning explanations use the detected conversation language**
 
 ## Lightweight Real-time Confirmation (coaching mode)
 
@@ -198,11 +292,11 @@ During coaching conversation, handle inferred content in tiers:
 **Non-key Inference Definition:** interaction details, UI style preferences, default parameter values, exception flow handling.
 
 **Coaching Supplemental Behavior:**
-- After generating the full PRD, use the unified confirmation gate (see references/intent-create.md Step 3b) to present all unconfirmed [ASSUMPTION] tags and inferred content for mandatory user confirmation
+- After generating the full PRD, append a "Reverse Questions" section at the end, listing all unconfirmed [ASSUMPTION] tags and inferred content
 - User can say "rewrite chapter X" or "add Y details" for specific chapters
 
 **Fast Path Supplemental Behavior:**
-- After generating the full PRD, use the unified confirmation gate (see references/intent-create.md Step 3b) to present all [ASSUMPTION] tags and missing items for mandatory user confirmation
+- After generating the full PRD, append a "Reverse Questions" section at the end, listing all [ASSUMPTION] tags and missing items
 - User can say "rewrite chapter X" or "add Y details" for specific chapters
 
 ## Mode Switch Command Recognition
@@ -266,6 +360,10 @@ When the number of questions exceeds 10, after completing 10 rounds ask the user
 
 ### Output Format
 
+Review results are appended at the end of the PRD (not inserted into main document). **Heading and label language follows the detected conversation language:**
+- Chinese sessions keep the Chinese format below
+- English sessions replace the main heading with "Review Records", sub-headings with "First Principles Validation" / "Logical Completeness" / "Boundaries and Risks", and internal labels (`用户是谁`→`Who is the user`, `他要什么`→`What does the user need`, `为什么现在要`→`Why Now`, `为什么用你的方案`→`Why Your Solution`, `怎么知道做对了`→`How to Know You're Right`)
+
 Review results are appended at the end of the PRD in fixed format (not inserted into main document):
 
 ```
@@ -301,23 +399,50 @@ Review results are appended at the end of the PRD in fixed format (not inserted 
 
 ## Core Principles
 
-1. **Fixed Template**: 12-chapter skeleton + 3 auto-generated chapters, chapter order cannot be changed
+1. **Fixed Template**: CN and EN share the same 13-chapter structure (10 fixed skeleton + 3 auto-generated), heading language switches automatically based on detected conversation language, chapter order cannot be changed. See "Headline Translation Mapping Table"
 2. **Strict Validation Cannot Be Skipped**: US↔FR bidirectional traceability, Chapter 6↔Chapter 7 1:1 correspondence, tracking↔success metric traceability, metric→calculation method 1:1 traceability
 3. **Changelog Mandatory**: update intent must append changelog entry before saving
-4. **Flowchart Required**: at least 1 mermaid flowchart, core scenarios independent; **API calls/data queries/external dependencies must have failure+timeout branches, success-only paths not allowed**
+4. **Flowchart Required**: at least 1 mermaid flowchart, core scenarios independent; **Cross-engine compatibility (MANDATORY)**:
+   - No ASCII double quotes `"` in mermaid code blocks — use single quotes `'` or no quotes
+   - No circle nodes `((text))` — use rounded rectangles `(text)` for API/service calls
+   - No HTML tags `<br/>` in node text — split long text into separate nodes
+   - API calls/data queries/external dependencies must have failure+timeout branches
 5. **Acceptance Criteria Testable**: each must contain quantifiable/executable judgment conditions
 6. **[ASSUMPTION] Tag Mandatory**: inferred content must be tagged, auto-summarized to assumption index after completion
 7. **One Question at a Time** (coaching mode interaction): no batch questioning
 8. **Exception Path Coverage**: every API call/external dependency node in flowcharts must have success/failure/timeout branches, user operation nodes must have exception paths (network disconnect, insufficient permissions, data not found)
 9. **Deep Reasoning First**: Before generating the PRD draft, must conduct deep reasoning analysis (user motivation, business value, technical feasibility, risk matrix), integrating reasoning results into PRD content rather than directly asking the user
+
+### Platform Ecosystem Inference (Inference-first, zero-interaction design)
+
+During Deep Reasoning (Step 1), automatically infer the product's platform ecosystem from user input:
+
+**Inference signals**:
+- Direct mentions: "iOS App", "Web", "Mini Program", "Admin Backend" → **High confidence** 🔴
+- Implied needs: "Operations staff manage content" → Admin Backend; "Push notifications" → Mobile; "Scan QR code" → Mini Program; "Share to social media" → Mobile App
+- Project context: Inherit platform info from referenced related docs
+
+**Confidence levels & behavior**:
+| Level | Trigger | Action | Interrupt User |
+| ----- | ------- | ------ | -------------- |
+| 🔴 High | User explicitly mentions | Adopt directly, generate Target Platform column | ❌ No |
+| 🟡 Medium | Reasonable inference from context | Use in generation, flag for confirmation in Reverse Questions | ❌ No |
+| ⚪ Low | No clear clues or pure speculation | One-line confirmation before generation: "I infer the platform is X, correct?" | ✅ Confirm |
+
+**Chapter 6 Target Platform Column Rule**:
+- Use inferred/confirmed platform for each feature in the `Target Platform` column
+- If a feature's platform differs from the main product or involves cross-platform interaction → ask user to confirm
+- Platform was not inferred or confirmed → use `TBD` and flag in Reverse Questions
+
 10. **Senior PM Perspective**: Guide and think with the standard of an experienced senior product manager, introducing product thinking frameworks in problem description and goal definition chapters (Why Now, differentiation, user segmentation, business value), and providing industry best practice recommendations in the risks & dependencies chapter
 11. **Recommendation-Driven Interaction**: Every time interacting with the user, provide carefully considered recommendations (no more than 3 in principle), each with clear reasoning, not fabricated, clearly mark the recommended option, let the user make a decision
-12. **Language Adaptation** — Detect user language, match PRD output language without asking (unless mixed); user explicit override takes highest priority
+12. **Global Language Consistency** — Detect user's first message language, global match: reasoning process, conversation interaction, PRD headings, PRD body all in the same language; English only permitted for code/technical identifiers; user explicit override takes highest priority
 13. **Default Path Convention** — Auto-save to `docs/specs/` with clear naming; confirm path before saving
 14. **Mandatory Progress Tracking** — Create TodoWrite task list at start, update after each chapter completion
 15. **Cross-Agent Compatible** — Platform-agnostic skill supporting OpenCode, Claude Code, Cursor, Codex. Tool calls use generic descriptions; each agent maps to its own toolset
 16. **Environment Detection First** — Must detect Node.js environment before running validation script; if absent, ask user before installing; never auto-install without confirmation
-17. **Mandatory Feedback Loop**: After PRD draft output, ALL [ASSUMPTION] items MUST be presented in a **unified confirmation list/table** and confirmed by the user before the document is considered complete. Each table row includes: content, corresponding chapter, impact if wrong, and confirmation status. User must choose: **Accept** / **Reject & Provide Correction** / **Defer with Reason**. Confirmed items transition from "Pending Confirmation" → "Confirmed". Rejected items trigger automatic content substitution in the corresponding chapter. Deferred items are logged to Chapter 12 (Assumption Index). The PRD status remains "Draft (Pending Confirmation)" until all items reach Confirmed or Deferred status. The document cannot be saved as "Approved" or "In Development" with any unconfirmed [ASSUMPTION] items.
+17. **Prototype Workflow Constraint** — Requirements first, prototype after. Guide users to complete PRD before prototype design. Respect explicit override but warn about rework risk.
+18. **Platform Inference First** — Infer platform ecosystem, core problem, and target users from Deep Reasoning. Only ask for confirmation on low-confidence items. Merge confirmation questions into one consolidated message.
 
 ## PRD Quality Scoring
 
@@ -325,52 +450,27 @@ Every PRD is scored on 7 dimensions (max 100 points):
 
 | Dimension          | Weight | Max Points | Description                                      |
 | ------------------ | ------ | ---------- | ------------------------------------------------ |
-| Completeness       | 25%    | 25         | All chapters present and filled                  |
-| Traceability       | 25%    | 25         | US↔FR 1:1 mapping, no orphaned requirements      |
+| Completeness       | 20%    | 20         | All 13 chapters present and filled               |
+| Traceability       | 20%    | 20         | US↔FR 1:1 mapping, no orphaned requirements      |
 | Testability        | 15%    | 15         | Acceptance criteria are executable and quantifiable |
-| Exception Coverage | 15%    | 15         | Failure paths documented for all external calls  |
-| Assumption Coverage| 10%    | 10         | All inferences tagged and summarized             |
-| Review Completeness| 5%     | 5          | Three review steps executed with fixed format    |
-| Product Thinking   | 5%     | 5          | Why Now, differentiation, user segmentation, risk |
+| Clarity            | 15%    | 15         | Unambiguous language, clear terminology          |
+| Exception Coverage | 10%    | 10         | Failure paths documented for all external calls  |
+| Metrics Alignment  | 10%    | 10         | Tracking events map to success metrics 1:1       |
+| Risk Management    | 10%    | 10         | Dependencies, risks, and mitigations addressed   |
 
 **Benchmark Scores:**
 - **70+ points** = production-ready
 - **85+ points** = excellent
 - **< 70 points** = needs revision before sharing with stakeholders
 
-### Re-scoring After Updates (MANDATORY)
-
-- **Every PRD update (update intent) MUST re-run quality scoring** after all modifications are complete
-- Compare old vs new score; if score drops below 70 or drops by >10 points → warn user: "This update has reduced quality below threshold"
-- Record the new score in changelog entry (e.g., "v1.1.0 — Quality: 85 → 82 (-3, feature expansion)")
-- If `validate-prd.js` is unavailable, fall back to manual checklist review + manual scoring
-
 ## PRD Standard Template
 
-Full template in `assets/prd-template.md`. Use the bilingual title mapping below to select chapter titles based on conversation language.
+Full template in `assets/prd-template.md`. 13-chapter shared structure (10 fixed skeleton + 3 auto-generated), heading language follows conversation language during generation:
 
-### Bilingual Chapter Title Mapping
-
-| # | Chinese 标题 | English Title |
-|---|-------------|--------------|
-| 1 | 问题描述 | Problem Description |
-| 2 | 目标定义 | Goal Definition |
-| 3 | 目标用户 | Target Users |
-| 4 | 用户故事 | User Stories |
-| 5 | 功能交互流程图 | Feature Interaction Flowcharts |
-| 6 | 功能清单 | Detailed Feature List |
-| 7 | 功能详情 | Feature Details |
-| 8 | 埋点设计 | Tracking Design |
-| 9 | 未来改进计划 | Future Improvement Plans |
-| 10 | 风险与依赖 | Risks & Dependencies |
-| 11 | 决策日志（自动生成） | Decision Log (auto-generated) |
-| 12 | 术语表（自动生成） | Glossary (auto-generated) |
-| 13 | 假设索引（自动生成） | Assumption Index (auto-generated) |
-
-**Usage rules:**
-- English conversation → use **English** column titles for all chapters
-- Chinese conversation → use **Chinese** column titles for all chapters
-- **Do NOT mix languages** in the same PRD — choose one column and use it consistently
+1. Problem Description / 2. Goal Definition / 3. Target Users / 4. User Stories /
+5. Feature Interaction Flowcharts / 6. Detailed Feature List / 7. Feature Details /
+8. Tracking Design / 9. Future Improvement Plans / 10. Risks & Dependencies
++ 11. Decision Log (auto-generated) / 12. Glossary (auto-generated) / 13. Assumption Index (auto-generated)
 
 ## Strict Validation Checklist (must run before saving)
 
@@ -393,6 +493,18 @@ Full template in `assets/prd-template.md`. Use the bilingual title mapping below
 - [ ] Future improvement plan numbering continues from main feature numbering
 - [ ] All feature priorities use P0/P1/P2 format (not Must/Should/Could/Won't)
 - [ ] PRD quality score output (7 dimensions, max 100 points)
+
+## Post-Update Quality Re-scoring (Mandatory)
+
+After saving an updated PRD, perform the following re-scoring:
+
+1. **Re-run** full 7-dimension quality scoring
+2. **Read** previous score from changelog entry
+3. **Calculate** delta (= new score - old score)
+4. **If delta < -10 OR new score < 70**:
+   Output warning (in conversation language):
+   "⚠️ This update reduced quality score from {old} to {new} (Δ{delta}). Review recommended before sharing."
+5. **Append** score record to changelog: `"v{version} — Quality: {old} → {new} ({delta})"`
 
 ## Chapter Rules Index
 

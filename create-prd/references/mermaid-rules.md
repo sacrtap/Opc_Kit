@@ -6,6 +6,19 @@
 - Each core business scenario **independent chart**
 - Use `flowchart TD` (top-down direction) uniformly
 
+## Cross-Engine Compatibility Rules (MANDATORY)
+
+All mermaid code blocks MUST comply with these rules to ensure correct rendering
+across all editor engines (Zed, VS Code, GitHub, Obsidian, etc.):
+
+1. **No ASCII double quotes** — `"` characters have special semantics in some
+   mermaid.js versions and may cause parse failures when combined with HTML tags
+   or non-ASCII characters. Use single quotes `'` or no quotes for all labels.
+2. **No circle nodes** — `((text))` is not universally supported. Replace with
+   `(text)` (rounded rectangle) for all external API/service calls.
+3. **No HTML tags in node text** — `<br/>`, `<strong>`, etc. may fail to parse.
+   Split long node text into separate nodes instead.
+
 ## Granularity
 
 | Rule | Description |
@@ -22,14 +35,14 @@
 | Shape | Mermaid Syntax | Usage |
 | ----- | -------------- | ----- |
 | Rectangle | `[text]` | Start/end/normal processing step |
+| Rounded Rect | `(text)` | External API call (was circle, now compatible) |
 | Diamond | `{text}` | Judgment node (success/failure/timeout branches) |
-| Circle | `((text))` | External API call |
 | Parallelogram | `[/text/]` | Data input/output |
 
 **Example**:
 ```mermaid
 flowchart TD
-    A[User uploads project] --> B((Baidu Maps API))
+    A[User uploads project] --> B(Baidu Maps API)
     B --> C{GPS parsing result}
     C -->|Success| D[/Get province/city/district/]
     C -->|Failure| E[Province/city empty]
@@ -48,18 +61,6 @@ Each judgment node must have clear branches:
 | Timeout | When applicable (external calls with timeout) | `-->|Timeout|` |
 
 **Why**: PRD flowcharts must cover exception paths, otherwise developers don't know how to handle failures.
-
-## Multi-line Node Text
-
-Use `<br/>` to separate title and description:
-
-```
-[GPS Reverse Geocoding<br/>Baidu Maps API]
-[LLM Property Name Parsing<br/>Qwen API]
-[Query project_location_parse Table<br/>Cache miss]
-```
-
-**Why**: Single-line text lacks information, two-line format explains both "what" and "with what".
 
 ## State Value Alignment Rules
 
@@ -104,13 +105,13 @@ Reference common web application exception paths, apply directly when generating
 
 ```mermaid
 flowchart TD
-    A[User initiates request] --> B((Call External API))
+    A[User initiates request] --> B(Call External API)
     B --> C{Response Result}
     C -->|Success| D[Process returned data]
-    C -->|Failure| E{Retry count < 3?}
+    C -->|Failure| E{Retry count < 3}
     E -->|Yes| B
-    E -->|No| F[Show friendly error message<br/>with retry button]
-    C -->|Timeout| G[Show timeout prompt<br/>guide to check network]
+    E -->|No| F[Show friendly error message with retry button]
+    C -->|Timeout| G[Show timeout prompt guide to check network]
 ```
 
 ### 2. Insufficient Permissions → Block → Guide
@@ -120,36 +121,36 @@ flowchart TD
     A[User action] --> B{Permission check}
     B -->|Has permission| C[Execute action]
     B -->|Not logged in| D[Guide to login dialog]
-    B -->|No permission| E[Show insufficient permission prompt<br/>guide to request permission]
+    B -->|No permission| E[Show insufficient permission prompt guide to request permission]
 ```
 
 ### 3. Data Not Found → Empty State Guide
 
 ```mermaid
 flowchart TD
-    A[Query data] --> B{Result set empty?}
+    A[Query data] --> B{Result set empty}
     B -->|Has data| C[Render list]
-    B -->|Empty| D[Show empty state guide<br/>guide to create/search]
+    B -->|Empty| D[Show empty state guide guide to create/search]
 ```
 
 ### 4. Concurrency Conflict → Optimistic Lock → Conflict Prompt
 
 ```mermaid
 flowchart TD
-    A[User submits change] --> B{Data version match?}
+    A[User submits change] --> B{Data version match}
     B -->|Yes| C[Update success]
-    B -->|No| D[Show conflict prompt<br/>suggest refresh and retry]
+    B -->|No| D[Show conflict prompt suggest refresh and retry]
 ```
 
 ### 5. External Dependency Unavailable → Degrade → Cache Fallback
 
 ```mermaid
 flowchart TD
-    A[Request external service] --> B{Service available?}
+    A[Request external service] --> B{Service available}
     B -->|Yes| C[Return real-time data]
-    B -->|No| D{Local cache usable?}
-    D -->|Yes| E[Return cached data<br/>mark 'data may not be latest']
-    D -->|No| F[Show degraded prompt<br/>guide to retry later]
+    B -->|No| D{Local cache usable}
+    D -->|Yes| E[Return cached data mark data may not be latest]
+    D -->|No| F[Show degraded prompt guide to retry later]
 ```
 
 ## Common Errors
@@ -158,7 +159,10 @@ flowchart TD
 | ----- | ---------------- |
 | Using `graph TD` | Use `flowchart TD` (new syntax) |
 | Judgment nodes only have success branch | Add failure/timeout branches |
-| Node text too long | Use `<br/>` for line breaks, or split nodes |
+| Node text too long | Split into multiple nodes instead of line breaks |
 | State values don't match data table | Cross-validate after generation |
 | Single chart over 20 nodes | Split into sub-flowcharts |
 | API calls without failure handling | Must add failure+timeout branches |
+| Using `((circle))` nodes | Use `(rounded rect)` instead |
+| Using double quotes in labels | Use single quotes `'text'` or no quotes |
+| Using `<br/>` in node text | Split into separate nodes |

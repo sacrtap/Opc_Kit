@@ -80,15 +80,9 @@ Rules detailed in `references/review-rules.md`
 ```markdown
 ## Pending Confirmations (Update)
 
-Unified confirmation gate (aligned with intent-create.md Step 3b):
-
-| #   | Chapter | Assumption        | Impact if Wrong      | Status     | Modification/Reason |
-| --- | ------- | ----------------- | -------------------- | ---------- | ------------------- |
-| 1   | Ch.X    | {New assumption}  | {What breaks if wrong} | ⏳ Pending | —                   |
-
-**操作选项**:
-- **Accept All**: 一次性确认所有待确认项（状态改为 ✅ Confirmed）
-- **逐项确认**: 用户可对每项选择 Accept / Reject (自动替换内容/记录至 Ch12) / Defer (记录原因)
+| #   | Chapter | Assumption        | Impact if Wrong      | Status     |
+| --- | ------- | ----------------- | -------------------- | ---------- |
+| 1   | Ch.X    | {New assumption}  | {What breaks if wrong} | ⏳ Pending |
 ```
 
 ## Step 8: Save
@@ -134,17 +128,19 @@ Updated F-2.6 auto-fill logic, added race condition handling branch
 Modified success metric: auto-fill adoption rate from >80% to >85%
 ```
 
-## Re-score Quality (Mandatory After Every Update)
+## Mandatory Re-scoring After Update
 
-After all update modifications are complete, MUST re-run quality scoring:
+Every PRD update requires full re-scoring against all 7 dimensions:
 
-1. Re-run `validate-prd.js` (or manual checklist if script unavailable)
-2. Compare old score vs new score
-3. **Warning triggers** if:
-   - New score drops below 70 (production-ready threshold)
-   - Score decreases by >10 points from previous version
-4. If warning triggered → alert user: "此更新使质量评分从 X 降至 Y，建议审查变更"
-5. Record new score in changelog: "v{version} — Quality: {old} → {new} ({delta})"
-6. If `validate-prd.js` unavailable → fall back to manual checklist review with 7-dimension scoring
+1. Re-run all 7 dimensions per `references/scoring-rules.md`
+2. Read previous score from changelog entry in the PRD
+3. Calculate delta (= new score - old score)
+4. **If delta < -10 OR new score < 70**:
+   Output warning (in conversation language):
+   "⚠️ This update reduced quality score from {old} to {new} (Δ{delta}).
+   Review recommended before sharing."
+5. Append score record to changelog section:
+   `"v{version} — Quality: {old} → {new} ({delta})"`
 
-**Why**: Updates can break US↔FR traceability, testability, and metric alignment. Without re-scoring, a degraded PRD still shows a stale high score.
+This ensures every PRD update maintains or improves quality,
+and degrades are flagged for user attention.

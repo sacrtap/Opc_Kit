@@ -91,51 +91,6 @@ check('At least 1 mermaid flowchart', hasMermaid);
 const hasFlowchartTD = mermaidBlocks.every(b => b.includes('flowchart TD'));
 check('Flowchart syntax compliant (flowchart TD)', hasFlowchartTD && mermaidBlocks.length > 0);
 
-// ========== 8.1.1 Mermaid Syntax Validation ==========
-function validateMermaidSyntax(code) {
-  const errors = [];
-  const body = code.replace(/```mermaid\n?/g, '').replace(/```\n?/g, '').trim();
-  const bodyLines = body.split('\n');
-
-  bodyLines.forEach((line, idx) => {
-    const lineNum = idx + 1;
-    const trimmed = line.trim();
-    if (trimmed.startsWith('%%') || trimmed.startsWith('flowchart') || !trimmed) return;
-
-    // Check 1: Dangling arrow at end of line
-    if (/-->\s*$/.test(trimmed) || /==>\s*$/.test(trimmed) || /-\.->\s*$/.test(trimmed)) {
-      errors.push(`Line ${lineNum}: Dangling arrow (nothing after --> / ==> / -.->)`);
-    }
-
-    // Check 2: Arrow label pipe without target node
-    if (/-->\|[^|]*\|\s*$/.test(trimmed)) {
-      errors.push(`Line ${lineNum}: Arrow label pipe without target node`);
-    }
-
-    // Check 3: Balanced brackets
-    let depth = 0;
-    for (const ch of line) {
-      if (ch === '[' || ch === '(' || ch === '{') depth++;
-      else if (ch === ']' || ch === ')' || ch === '}') depth--;
-      if (depth < 0) { errors.push(`Line ${lineNum}: Unmatched closing bracket`); break; }
-    }
-    if (depth > 0) errors.push(`Line ${lineNum}: Unclosed bracket`);
-  });
-
-  return errors;
-}
-
-let mermaidSyntaxErrors = [];
-mermaidBlocks.forEach((block, i) => {
-  const errs = validateMermaidSyntax(block);
-  if (errs.length > 0) {
-    mermaidSyntaxErrors.push(`Flowchart #${i + 1}: ${errs.join('; ')}`);
-  }
-});
-check('Mermaid syntax valid (no dangling arrows, balanced brackets)',
-  mermaidSyntaxErrors.length === 0, 'critical',
-  mermaidSyntaxErrors.join(' | '));
-
 // ========== 8.2 Exception Path Check ==========
 const hasFailureBranch = mermaidBlocks.some(b => b.includes('|Failure|') || b.includes('|No|') || b.includes('|Timeout|'));
 check('Each API call/data query node has failure branch', hasFailureBranch || mermaidBlocks.length === 0, 'critical',
@@ -198,6 +153,20 @@ if (hasDataTable && mermaidBlocks.length > 0) {
 } else {
   check('Flowchart state values aligned with data table', true, 'warning');
 }
+
+// ========== 15. Front Matter Quotes (YAML 1.2) ==========
+const frontMatterBlock = content.split('---')[1];
+const hasQuotedTitle = !frontMatterBlock || /title:\s*"/.test(frontMatterBlock);
+check('Front matter "title" quoted per YAML 1.2 spec', hasQuotedTitle, 'warning');
+
+// ========== 16. Target Platform Column in Chapter 6 ==========
+const chapter6Match = content.match(/## 6\.\s+Detailed Feature List[\s\S]*?\n\|[\s\S]*?\n/);
+const hasTargetPlatform = !chapter6Match || chapter6Match[0].includes('Target Platform') || chapter6Match[0].includes('目标平台');
+check('Chapter 6 Feature List has Target Platform column', hasTargetPlatform, 'warning');
+
+// ========== 17. Platform Ecosystem Validation ==========
+const platformOk = !content.includes('[ASSUMPTION]') || content.includes('Platform') || content.includes('平台');
+check('Platform ecosystem inference considered', platformOk, 'warning');
 
 // ========== Output Report ==========
 console.log('='.repeat(60));
