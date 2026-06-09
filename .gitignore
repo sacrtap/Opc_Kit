@@ -5,6 +5,5 @@
 create-prd-workspace/
 # macOS
 .DS_Store
-
-# Local-only skills (not published to GitHub)
+docs/ Local-only skills (not published to GitHub)
 create-prd-cn/
