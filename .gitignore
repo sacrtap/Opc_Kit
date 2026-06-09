@@ -6,5 +6,6 @@ create-prd-workspace/
 create-prd/evals/sample-existing-prd.md
 # macOS
 .DS_Store
-docs/ Local-only skills (not published to GitHub)
+# Local-only skills (not published to GitHub)
+docs/
 create-prd-cn/
