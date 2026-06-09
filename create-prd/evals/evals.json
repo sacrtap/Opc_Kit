@@ -239,6 +239,141 @@
           "pattern": "Score|Rating|\\d+/10|Fair|Good|Poor"
         }
       ]
+    },
+    {
+      "id": 6,
+      "name": "progress-notification",
+      "prompt": "Create a PRD for a comprehensive floor plan tool with search filters, favorites management, team sharing, and analytics dashboard. Generate with incremental batch writes showing progress notifications.",
+      "expected_output": "Generates PRD in 5-batch incremental write (Ch1-3 → Ch4-5 → Ch6-7 → Ch8-10 → Ch11-13) with real-time progress notifications after each batch completion.",
+      "files": [],
+      "assertions": [
+        {
+          "name": "Identifies create intent",
+          "description": "Output explicitly identifies create intent",
+          "type": "regex",
+          "pattern": "create|new PRD|create product"
+        },
+        {
+          "name": "Contains batch progress format",
+          "description": "Output contains Batch X/5 incremental write progress format",
+          "type": "regex",
+          "pattern": "Batch \\d+/5|progress|\\d/5"
+        },
+        {
+          "name": "Contains progress status indicator",
+          "description": "Output contains progress status or chapter completion indicator",
+          "type": "contains",
+          "pattern": "✅|progress|completed|moving to"
+        },
+        {
+          "name": "Contains quality score",
+          "description": "Output contains quality score or rating",
+          "type": "regex",
+          "pattern": "Score|\\d+/100|Quality"
+        },
+        {
+          "name": "Contains review record",
+          "description": "Output contains review record (First Principles Validation)",
+          "type": "contains",
+          "pattern": "## Review Record|First Principles"
+        },
+        {
+          "name": "Flowchart includes failure/timeout branches",
+          "description": "Flowchart contains failure/timeout branches",
+          "type": "contains",
+          "pattern": "\\|Failure\\||\\|Timeout\\||\\|No\\|"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "name": "platform-inference",
+      "prompt": "I need a PRD for a WeChat Mini Program that allows users to browse and search floor plans. Focus on the mobile-first experience and mini program specific features.",
+      "expected_output": "Auto-infers target platform as WeChat Mini Program, includes platform-specific considerations and features.",
+      "files": [],
+      "assertions": [
+        {
+          "name": "Identifies create intent",
+          "description": "Output explicitly identifies create intent",
+          "type": "regex",
+          "pattern": "create|new PRD|create product"
+        },
+        {
+          "name": "Contains platform inference",
+          "description": "Output mentions WeChat Mini Program or similar platform",
+          "type": "regex",
+          "pattern": "Mini Program|WeChat|platform"
+        },
+        {
+          "name": "Contains platform-specific features",
+          "description": "Output includes mini program specific features",
+          "type": "contains",
+          "pattern": "mini program|WeChat|scan QR code"
+        },
+        {
+          "name": "Contains user stories chapter",
+          "description": "Output contains user stories chapter",
+          "type": "contains",
+          "pattern": "## 4\\. User Stories|## 3\\. Target Users"
+        },
+        {
+          "name": "Contains flowchart",
+          "description": "Output contains mermaid flowchart code",
+          "type": "contains",
+          "pattern": "```mermaid"
+        },
+        {
+          "name": "Contains feature list",
+          "description": "Output contains F-x.x numbered feature list",
+          "type": "regex",
+          "pattern": "F-\\d+\\.\\d+"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "name": "breakpoint-recovery",
+      "prompt": "Resume PRD generation from where we left off. The previous session was interrupted after completing chapters 1-3. Continue generating chapters 4-13 with proper checkpoint recovery.",
+      "expected_output": "Detects checkpoint data, resumes from last completed chapter, continues incremental write without regenerating completed sections.",
+      "files": [],
+      "assertions": [
+        {
+          "name": "Identifies recovery intent",
+          "description": "Output recognizes resume/recovery intent",
+          "type": "regex",
+          "pattern": "resume|recover|checkpoint|continue"
+        },
+        {
+          "name": "Contains checkpoint reference",
+          "description": "Output mentions checkpoint or recovery mechanism",
+          "type": "contains",
+          "pattern": "checkpoint|resume|recover|session"
+        },
+        {
+          "name": "References specific chapter recovery",
+          "description": "Output references recovery from specific chapters",
+          "type": "regex",
+          "pattern": "Chapter 4|chapters 4-13|after chapter 3"
+        },
+        {
+          "name": "Shows progress recovery indicator",
+          "description": "Output shows recovery or continuation status",
+          "type": "contains",
+          "pattern": "Resuming|Recovering|Continuing|from where"
+        },
+        {
+          "name": "Contains complete PRD structure",
+          "description": "Output contains complete 13-chapter PRD structure",
+          "type": "contains",
+          "pattern": "## 1\\. Problem Description"
+        },
+        {
+          "name": "Contains progress tracking",
+          "description": "Output contains progress tracking information",
+          "type": "contains",
+          "pattern": "progress|batch|tracking"
+        }
+      ]
     }
   ]
 }

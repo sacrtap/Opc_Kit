@@ -168,6 +168,11 @@ check('Chapter 6 Feature List has Target Platform column', hasTargetPlatform, 'w
 const platformOk = !content.includes('[ASSUMPTION]') || content.includes('Platform') || content.includes('平台');
 check('Platform ecosystem inference considered', platformOk, 'warning');
 
+// ========== Review Record Note ==========
+if (!content.includes('## Review Record')) {
+  console.log('\n\u2139\uFE0F Note: "Review Record" is only generated in create/update modes. Validate mode performs static scanning only.');
+}
+
 // ========== Output Report ==========
 console.log('='.repeat(60));
 console.log(`PRD Strict Validation Report`);

@@ -267,6 +267,7 @@ If intent is ambiguous, confirm with the user once. Update intent must provide a
 | Mode       | Behavior                                                    |
 | ---------- | ----------------------------------------------------------- |
 | **coaching** | First autonomously infer all chapter content to generate a full draft → self-review to find breaks/gaps → conditional interaction (only engage user when uncertainty affects subsequent chapter accuracy) → reverse questions to complete non-key inferences |
+| **coaching --auto** | Same as coaching, but skips the user confirmation gate (Step 3: Boundary & Risk) and auto-accepts all [ASSUMPTION]s. Designed for automated testing where user interaction is unavailable. |
 | **fast**     | Generate full PRD from existing info → reverse-question missing items |
 
 User can switch to fast mode at any time with:
@@ -307,12 +308,38 @@ Users can explicitly control the working mode with the following commands (highe
 | ----------------------------------------------------- | -------- |
 | "use fast/fast path/skip/just generate/don't ask just write" | fast     |
 | "use coaching/coach/guide/one question at a time/take it slow" | coaching |
+| "coaching --auto" | coaching --auto |
 
 **Recognition Rules:**
 1. Keywords appear in user's first message → adopt specified mode directly
 2. User says "switch to X" during conversation → switch immediately, no confirmation
 3. User doesn't explicitly specify → default coaching
 4. Neither mode fits → ask user preference
+
+### Auto-Testing Mode (--auto flag)
+
+If `--auto` flag is active (e.g. user input "coaching --auto"):
+- Execute Step 1 (First Principles) and Step 2 (Logical Completeness) normally
+- Skip Step 3 (Boundary & Risk) — no user interaction possible in automated testing
+- Auto-accept all [ASSUMPTION]s with note: "[AUTO] Accepted in --auto mode for testing"
+- Append auto-acceptance summary to Review Record
+
+Output the same Review Record format, with [AUTO] prefixed items where applicable.
+
+### Fast Mode Self-Check & Auto-Fix (MANDATORY)
+
+After generating the full PRD in fast mode, MUST run self-check before delivering:
+
+1. **Run validation**: Execute the Strict Validation Checklist against the generated PRD
+2. **Check US↔FR traceability**: For each F-x.x in Chapter 6 Feature List, verify `### F-x.x` section exists in Chapter 7 Feature Details
+3. **Auto-fix gaps**: If any feature is missing expansion in Chapter 7:
+   - Generate ONLY the missing `### F-x.x` section (User Story, Description, Acceptance Criteria, Edge Cases)
+   - Append to Chapter 7 after the last existing feature section
+   - Do NOT rewrite or modify existing feature sections
+4. **Re-check**: Run validation again — all checks must pass
+5. **If still failing**: Report remaining gaps to user with specific feature numbers
+
+**Exception**: If `--auto` mode is also active (automated testing), auto-accept gaps and log them without asking user.
 
 ## Requirements Review
 
