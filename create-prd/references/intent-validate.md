@@ -10,7 +10,7 @@
 
 | Check Item | Rule | Level |
 | ---------- | ---- | ----- |
-| Chapter presence | All 12 chapters present (1-10 + 11 Glossary + 12 Assumption Index) | Critical |
+| Chapter presence | All 13 chapters present (1-10 + 11 Decision Log + 12 Glossary + 13 Assumption Index) | Critical |
 | Metadata | 8 fields complete (author/status/created/updated/version/project/related-docs/prototype) | Critical |
 | Changelog | Has changelog table with at least one version entry | Critical |
 | Version format | Matches vX.Y.Z pattern | Warning |

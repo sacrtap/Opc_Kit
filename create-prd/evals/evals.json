@@ -29,7 +29,7 @@
         },
         {
           "name": "Does not generate full PRD",
-          "description": "Output does not contain complete 12-chapter PRD structure",
+          "description": "Output does not contain complete 13-chapter PRD structure",
           "type": "not_contains",
           "pattern": "## 1\\. Problem Description.*## 2\\. Goal Definition"
         },
@@ -51,7 +51,7 @@
       "id": 2,
       "name": "create-fast-command",
       "prompt": "We need to add a 'Floor Plan Favorites' feature to the floor plan tool. Brokers can favorite frequently-used floor plans and call them directly next time. Currently they have to search again each time, averaging 1-2 minutes. Use fast mode to generate PRD directly.",
-      "expected_output": "Recognizes fast command, generates complete PRD (with 12-chapter skeleton), appends reverse questions and review record at the end.",
+      "expected_output": "Recognizes fast command, generates complete PRD (with 13-chapter skeleton), appends reverse questions and review record at the end.",
       "files": [],
       "assertions": [
         {
@@ -62,7 +62,7 @@
         },
         {
           "name": "Generates complete PRD",
-          "description": "Output contains complete 12-chapter PRD structure",
+          "description": "Output contains complete 13-chapter PRD structure",
           "type": "contains",
           "pattern": "## 1\\. Problem Description"
         },
@@ -126,7 +126,7 @@
         },
         {
           "name": "Does not generate full PRD",
-          "description": "Output does not contain complete 12-chapter PRD structure",
+          "description": "Output does not contain complete 13-chapter PRD structure",
           "type": "not_contains",
           "pattern": "## 1\\. Problem Description.*## 2\\. Goal Definition"
         }
