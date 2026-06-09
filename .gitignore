@@ -3,6 +3,7 @@
 .opencode/
 .omo/
 create-prd-workspace/
+create-prd/evals/sample-existing-prd.md
 # macOS
 .DS_Store
 docs/ Local-only skills (not published to GitHub)
