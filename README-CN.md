@@ -3,7 +3,7 @@
 > **专业的 AI Agent 技能工具集** — 为 OpenCode、Claude Code、Cursor、Codex 等跨平台 AI 编程代理设计的高质量产品工作流技能包
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version: v2.0.0](https://img.shields.io/badge/Version-2.0.0-blue.svg)]()
+[![Version: v2.2.0](https://img.shields.io/badge/Version-2.2.0-blue.svg)]()
 [![Status: Active](https://img.shields.io/badge/Status-Active-green.svg)]()
 [![skills.sh](https://skills.sh/b/sacrtap/Opc_Kit)](https://skills.sh/sacrtap/Opc_Kit)
 
@@ -52,13 +52,25 @@ Opc_Kit 是一个专为 AI Agent 生态设计的跨平台技能工具集。每�
 ### 💡 推荐驱动交互
 每次交互提供 1-3 个经过深思熟虑的推荐选项及理由，引导用户做决策而非填空。
 
+### 🧠 平台生态智能推断
+AI 从用户输入自动推断目标平台（iOS/Android/Web/小程序/后台管理等），按置信度级别采用对应策略。
+高置信度：直接使用；中置信度：使用+标注待确认；低置信度：一句话确认。
+
+### 📦 分步写入 + 进度可视化
+PRD 采用 5 批次增量写入（1-3章→4-5章→6-7章→8-10章→11-13章），每批完成后推送结构化进度通知。
+会话中断后通过 Checkpoint 机制自动从断点继续，不重复生成已完成内容。
+
+### 🎨 原型工作流约束
+需求先行、原型后到工作流。检测 PRD 状态为 Confirmed/In Development 后才允许原型设计，
+跳过时会警告返工风险。
+
 ---
 
 ## 🎯 可用技能
 
 | 技能                              | 语言  | 用途                            | 版本    | 安装命令                                                    |
 | --------------------------------- | ----- | ------------------------------- | ------- | ----------------------------------------------------------- |
-| [create-prd](create-prd/SKILL.md) | EN/CN | PRD 编写/更新/验证（中英双语）  | v2.0.0  | `npx skills add sacrtap/Opc_Kit --skill create-prd`        |
+| [create-prd](create-prd/SKILL.md) | EN/CN | PRD 编写/更新/验证（中英双语）  | v2.2.0  | `npx skills add sacrtap/Opc_Kit --skill create-prd`        |
 
 ## ⚡ 快速开始
 
@@ -176,6 +188,12 @@ coaching
 14. **强制进度追踪** — 开始时创建 TodoWrite 任务清单，每章完成后更新状态
 15. **跨 Agent 兼容** — 平台无关技能，支持 OpenCode、Claude Code、Cursor、Codex。工具调用使用通用描述，各 Agent 根据自身工具集映射执行
 16. **环境检测优先** — 运行校验脚本前自动检测 Node.js 环境
+17. **推理优先，零交互设计** — 从用户输入自动推断平台生态、核心问题、目标用户，高置信度直接使用
+18. **分步写入策略** — 严禁一次性生成全部 13 章，必须按 5 批次增量写入，每批写入后推送进度通知
+19. **Checkpoint 中断恢复** — 每批写入前更新 front matter 进度状态，新会话自动从断点继续
+20. **原型约束** — 用户发起原型设计时验证 PRD 状态，未确认需求时警告返工风险
+21. **PRD 更新后强制重评** — 每次更新后重新 7 维度评分，评分下降 >10 或 <70 时发出警告
+22. **流程图跨引擎兼容** — 禁止 ASCII 双引号、圆形节点、HTML 标签，确保所有编辑器正确渲染 — 运行校验脚本前自动检测 Node.js 环境
 
 ### 需求评审流程
 
@@ -250,13 +268,13 @@ coaching
 
 | 维度                        | 权重 | 满分 | 说明                                      |
 | --------------------------- | ---- | ---- | ----------------------------------------- |
-| 完整性 Completeness         | 20%  | 20   | 12 章齐全且已填充                         |
-| 追溯性 Traceability         | 20%  | 20   | US↔FR 1:1 映射，无孤立需求                |
+| 完整性 Completeness         | 30%  | 30   | 12 章齐全且已填充                         |
+| 追溯性 Traceability         | 25%  | 25   | US↔FR 1:1 映射，无孤立需求                |
 | 可测试性 Testability        | 15%  | 15   | 验收标准可量化/可执行                     |
 | 清晰性 Clarity              | 15%  | 15   | 无歧义用语，术语清晰                      |
 | 异常覆盖 Exception Coverage | 10%  | 10   | 所有外部调用均有失败路径                  |
-| 指标对齐 Metrics Alignment  | 10%  | 10   | 追踪事件与成功指标 1:1 映射               |
-| 风险管理 Risk Management    | 10%  | 10   | 依赖、风险、缓解措施齐备                  |
+| 指标对齐 Metrics Alignment   | 5%   | 5   | 追踪事件与成功指标 1:1 映射               |
+| 风险管理 Risk Management     | 5%   | 5   | 依赖、风险、缓解措施齐备                  |
 
 **评分基准**：
 - **70+ 分** → 生产就绪
@@ -336,7 +354,7 @@ coaching
 
 ## 📄 许可证
 
-MIT © sacrtap | create-prd v2.0.0
+MIT © sacrtap | create-prd v2.2.0
 
 ---
 

@@ -3,7 +3,7 @@
 > **Professional AI Agent Skill Toolkit** — Cross-platform workflow skills for OpenCode, Claude Code, Cursor, Codex
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version: v2.1.0](https://img.shields.io/badge/Version-2.0.0-blue.svg)]()
+[![Version: v2.2.0](https://img.shields.io/badge/Version-2.2.0-blue.svg)]()
 [![Status: Active](https://img.shields.io/badge/Status-Active-green.svg)]()
 [![skills.sh](https://skills.sh/b/sacrtap/Opc_Kit)](https://skills.sh/sacrtap/Opc_Kit)
 
@@ -52,13 +52,25 @@ Auto-creates task list at start, real-time progress updates ("✅ Chapters 1-3 c
 ### 💡 Recommendation-Driven Interaction
 Each interaction provides 1-3 carefully considered recommendations with rationale, guiding decisions not fill-in-the-blanks.
 
+### 🧠 Platform Ecosystem Inference
+Auto-infers target platform (iOS/Android/Web/Mini Program/Admin Backend) from user input using
+confidence-level strategy. High confidence: direct use. Medium: use + flag. Low: one-line confirm.
+
+### 📦 Incremental Write with Progress Tracking
+PRD generation follows 5-batch incremental write (Ch1-3 → Ch4-5 → Ch6-7 → Ch8-10 → Ch11-13).
+Real-time progress notifications after each batch. Session-interrupt recovery via checkpoint tracking.
+
+### 🎨 Prototype Workflow Constraint
+Requirements-first, prototype-after workflow. Validates PRD status before prototype design,
+warning users about rework risk when skipping PRD.
+
 ---
 
 ## 🎯 Available Skills
 
 | Skill                            | Language | Purpose                              | Version | Install Command                                   |
 | -------------------------------- | -------- | ------------------------------------ | ------- | ------------------------------------------------- |
-| [create-prd](create-prd/SKILL.md) | EN/CN    | PRD creation/update/validation       | v2.1.0  | `npx skills add sacrtap/Opc_Kit --skill create-prd` |
+| [create-prd](create-prd/SKILL.md) | EN/CN    | PRD creation/update/validation       | v2.2.0  | `npx skills add sacrtap/Opc_Kit --skill create-prd` |
 
 ## ⚡ Quick Start
 
@@ -131,7 +143,7 @@ coaching
 | **update**   | Update existing PRD       | "Update/modify existing PRD", "PRD change", "add features to existing doc" |
 | **validate** | Validate PRD completeness | "Validate/check PRD", "review requirements doc completeness"       |
 
-### 8 Core Highlights
+### 11 Core Highlights
 
 1. **Fixed Template** — 12-chapter skeleton + 3 auto-generated, immutable order
 2. **Strict Validation** — US↔FR bidirectional traceability, 18+ criteria checklist
@@ -140,7 +152,10 @@ coaching
 5. **Testable Acceptance Criteria** — Quantifiable, executable judgment conditions
 6. **Auto Language Detection** — Chinese/English bilingual PRD generation
 7. **Cross-Agent Compatible** — Works on OpenCode, Claude Code, Cursor, Codex
-8. **Progress Tracking** — Auto task list with real-time status updates
+8. **Incremental Write + Progress** — 5-batch write with real-time notifications and checkpoint recovery
+9. **Platform Inference** — Auto-detects target ecosystem from user input, zero-interaction fill
+10. **Prototype Constraint** — Requirements-first workflow, validates PRD status before prototype design
+11. **Cross-Engine Flowcharts** — Mermaid syntax compatible with Zed, VS Code, GitHub (no quotes, no circles, no HTML)
 
 ### Usage Scenarios
 
@@ -189,11 +204,11 @@ Every PRD is scored on 7 dimensions (max 100 points):
 
 | Dimension          | Weight | Max Points | Description                                      |
 | ------------------ | ------ | ---------- | ------------------------------------------------ |
-| Completeness       | 25%    | 25         | All chapters present and filled                  |
+| Completeness       | 30%    | 30         | All 13 chapters present and filled                  |
 | Traceability       | 25%    | 25         | US↔FR 1:1 mapping, no orphaned requirements      |
 | Testability        | 15%    | 15         | Acceptance criteria are executable and quantifiable |
 | Exception Coverage | 15%    | 15         | Failure paths documented for all external calls  |
-| Assumption Coverage| 10%    | 10         | All inferences tagged and summarized             |
+| Assumption Coverage| 5%     | 5         | All inferences tagged and summarized             |
 | Review Completeness| 5%     | 5          | Three review steps executed with fixed format    |
 | Product Thinking   | 5%     | 5          | Why Now, differentiation, user segmentation      |
 
@@ -277,7 +292,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
 ## 📄 License
 
-MIT © sacrtap | create-prd v2.1.0
+MIT © sacrtap | create-prd v2.2.0
 
 ---
 

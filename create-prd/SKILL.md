@@ -5,7 +5,7 @@ description: >
 license: MIT
 metadata:
   author: sacrtap
-  version: "2.0.0"
+  version: "2.2.0"
   category: documentation
 examples:
   - "Create a PRD for user authentication feature"
