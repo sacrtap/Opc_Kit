@@ -1,6 +1,15 @@
 name: PRD Validation
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'tests/samples/*.md'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'tests/samples/*.md'
+  
   workflow_dispatch:
     inputs:
       prd_path:
@@ -14,17 +23,65 @@ on:
         default: false
 
 jobs:
-  validate-prd:
+  # Auto-triggered batch validation for push/PR events
+  validate-all-samples:
+    name: Validate All Test Samples
     runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
+    
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
+      
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-
+      
+      - name: Find and validate all test PRDs
+        run: |
+          echo "🔍 Running batch validation on all test PRDs..."
+          echo ""
+          
+          FAILED=0
+          
+          # Validate English sample
+          if [ -f "tests/samples/prd-sample-en.md" ]; then
+            echo "=== Validating tests/samples/prd-sample-en.md ==="
+            node create-prd/scripts/validate-prd.js tests/samples/prd-sample-en.md || FAILED=1
+            echo ""
+          fi
+          
+          # Validate Chinese sample
+          if [ -f "tests/samples/prd-sample-zh.md" ]; then
+            echo "=== Validating tests/samples/prd-sample-zh.md ==="
+            node create-prd/scripts/validate-prd.js tests/samples/prd-sample-zh.md || FAILED=1
+            echo ""
+          fi
+          
+          if [ $FAILED -eq 0 ]; then
+            echo "✅ All test PRDs validated successfully!"
+            exit 0
+          else
+            echo "❌ Some PRD validations failed"
+            exit 1
+          fi
+  
+  # Manual single-file validation for on-demand use
+  validate-single-prd:
+    name: Validate Single PRD (Manual Trigger)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
       - name: Validate PRD file exists
         run: |
           if [ ! -f "${{ inputs.prd_path }}" ]; then
@@ -32,13 +89,13 @@ jobs:
             exit 1
           fi
           echo "Validating: ${{ inputs.prd_path }}"
-
+      
       - name: Run PRD strict validation
         run: |
           node create-prd/scripts/validate-prd.js "${{ inputs.prd_path }}"
-
+      
       - name: Check for warnings (optional strict mode)
-        if: inputs.fail_on_warning
+        if: inputs.fail_on_warning == true
         run: |
           OUTPUT=$(node create-prd/scripts/validate-prd.js "${{ inputs.prd_path }}" 2>&1)
           if echo "$OUTPUT" | grep -q "Warning"; then
