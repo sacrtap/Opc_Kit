@@ -137,7 +137,7 @@
       "name": "update-with-review",
       "prompt": "Based on the existing PRD, add a 'Share favorites with team members' feature, supporting permission control (read/edit).",
       "expected_output": "1) Auto-append changelog entry (version +0.1.0); 2) Generate 'Key Update Notes' paragraph; 3) New F-x.x numbering continues; 4) Chapter 6/7 synced; 5) PRD ends with review record (First Principles + Logical Completeness + Boundary Risk)",
-      "files": ["existing-prd.md"],
+      "files": ["../tests/baseline-prd-en.md"],
       "assertions": [
         {
           "name": "Identifies update intent",
@@ -194,7 +194,7 @@
       "name": "validate-existing",
       "prompt": "Please validate this PRD against the standard.",
       "expected_output": "Output graded validation report (Critical/Warning/Info): structural completeness, US↔F-x.x bidirectional traceability, Chapter 6↔7 1:1 correspondence, tracking↔success metric traceability, acceptance criteria testability, flowchart standards, glossary coverage, [ASSUMPTION] index, external dependency schedule status. Each issue includes chapter location + fix suggestion.",
-      "files": ["existing-prd.md"],
+      "files": ["../tests/baseline-prd-en.md"],
       "assertions": [
         {
           "name": "Identifies validate intent",

@@ -1,14 +1,10 @@
 # OpenCode agents/skills cache
 .agents/
 .opencode/
-.omo/
-!.omo/plans/
 create-prd-workspace/
-create-prd/evals/sample-existing-prd.md
+.omo/
 # macOS
 .DS_Store
 # Local-only skills (not published to GitHub)
 docs/
 create-prd-cn/
-tests/
-!tests/samples/
