@@ -206,12 +206,12 @@ check('Platform ecosystem inference considered', platformOk, 'warning');
 
 // ========== 18. Metadata Table Completeness ==========
 const hasMetadataTable = content.includes('## Metadata') &&
-                        content.includes('| Field        | Value        |') &&
-                        content.includes('| Author       |') &&
-                        content.includes('| Status       |') &&
-                        content.includes('| Created      |') &&
-                        content.includes('| Version      |') &&
-                        content.includes('| Project      |');
+                        /\|\s*Field\s*\|\s*Value\s*\|/.test(content) &&
+                        content.includes('| Author') &&
+                        content.includes('| Status') &&
+                        content.includes('| Created') &&
+                        content.includes('| Version') &&
+                        content.includes('| Project');
 check('Metadata table complete (8 fields)', hasMetadataTable, 'critical');
 
 // ========== Review Record Note ==========
