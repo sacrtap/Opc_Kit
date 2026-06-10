@@ -8,12 +8,12 @@
 
 ---
 
-## Key Improvements (v2.2.0 → v2.2.1)
+## Key Improvements Documented in v2.2.1
 
-### ⚡ Performance Enhancements
+### ⚡ Performance Enhancements (v2.2.0 Benchmark Results vs v2.1.0 Baseline)
 
-| Metric | v2.1.0 | v2.2.0 | Improvement |
-|--------|--------|--------|-------------|
+| Metric | v2.1.0 Baseline | v2.2.0 Verified Result | Improvement |
+|--------|-----------------|------------------------|-------------|
 | Coaching mode time | ~42s | ~11s | **-77%** |
 | Update-with-review time | ~50s | ~10s | **-81%** |
 | validate-existing score | 16/100 | 78/100 | **+387%** |
@@ -28,10 +28,10 @@
 5. **Platform ecosystem inference** — Zero-interaction auto-inference for iOS/Android/Web
 6. **Post-update quality re-scoring** — Mandatory 7-dimension quality scoring after each update
 
-### 🔒 Structural Integrity
+### 🔒 Structural Integrity (v2.2.0 Verified)
 
-| Metric | v2.1.0 | v2.2.0 | Status |
-|--------|--------|--------|--------|
+| Metric | v2.1.0 Baseline | v2.2.0 Verified Result | Status |
+|--------|-----------------|------------------------|--------|
 | 13-chapter completeness | 92% | 99% | ↑7pt |
 | Test scenarios | 10 | 10 | ✓ |
 | PRD samples | 30 | 30 | ✓ |
@@ -62,18 +62,18 @@
 ```markdown
 # Create-PRD Skill v2.2.1 Release Notes
 
-## 🚀 v2.2.0 → v2.2.1 Major Improvements
+## 🚀 v2.2.1: Documented v2.2.0 Benchmark Results
 
-### Performance Leap ⚡
+### Performance Leap ⚡ (v2.2.0 vs v2.1.0 Baseline)
 
-| Metric | v2.1.0 | v2.2.0 | Improvement |
-|--------|--------|--------|-------------|
+| Metric | v2.1.0 Baseline | v2.2.0 Verified Result | Improvement |
+|--------|-----------------|------------------------|-------------|
 | Coaching mode time | ~42s | ~11s | **-77%** |
 | Update-with-review time | ~50s | ~10s | **-81%** |
 | validate-existing score | 16/100 | 78/100 | **+387%** |
 | Quality score average | 93-97 | 96-98 | **+3 pts** |
 
-> **Core Conclusion**: All workflows 3-4x faster, quality issue detection +387%
+> **Core Conclusion**: v2.2.0 benchmark shows 3-4x faster workflows, quality issue detection +387% vs v2.1.0 baseline
 
 ### 6 New Features Verified ✨
 
@@ -86,19 +86,19 @@
 | Platform inference | Zero-interaction auto-inference for iOS/Android/Web | 6/6 ✅ |
 | Post-update re-scoring | Mandatory 7-dimension quality scoring after updates | Mandatory trigger |
 
-### Structural Integrity 🔒
+### Structural Integrity 🔒 (v2.2.0 Verified vs v2.1.0 Baseline)
 
-| Metric | v2.1.0 | v2.2.0 | Status |
-|--------|--------|--------|--------|
+| Metric | v2.1.0 Baseline | v2.2.0 Verified Result | Status |
+|--------|-----------------|------------------------|--------|
 | 13-chapter completeness | 92% | 99% | ↑7pt |
 | Test coverage | 10 typical scenarios | ✓ |
 | PRD samples | 30 files | ✓ |
 | Assertion pass rate | N/A | 97/97 | 100% |
 
-### Three-Way Comparison Summary
+### Three-Way Comparison Summary (v2.2.0 Execution Results)
 
-| Test Type | with_skill (v2.2.0) | baseline (v2.1.0) | without_skill | delta (vs v2.1.0) |
-|-----------|---------------------|-------------------|---------------|-------------------|
+| Test Type | with_skill (v2.2.0) | baseline (v2.1.0) | without_skill | delta (v2.2.0 vs v2.1.0) |
+|-----------|---------------------|-------------------|---------------|--------------------------|
 | coaching-default | ~11s, 515 lines, 98/100 | ~42s, 412 lines, 93/100 | ~65s, 92 lines | ↓74% time |
 | fast-command | ~3min10s, 511 lines, 98/100 | ~2min48s, 505 lines, 95/100 | ~1min46s, 435 lines | Quality↑3pts |
 | update-with-review | ~36s, 374 lines, Pass 18 | ~40s, 321 lines, Pass 17 | ~30s, 242 lines | ↑1 feature |

@@ -7,7 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.2.1] - 2026-06-10
 
-### Performance Improvements
+### Release Documentation
+- Updated all public version references to v2.2.1
+- Added consolidated technical release notes
+- Added CHANGELOG.md for version history
+- Added PRD Validation CI badge
+
+### Verified Benchmark Results (v2.2.0 vs v2.1.0 baseline)
 - **Coaching mode time reduction**: ~42s → ~11s (**-77%**)
 - **Update-with-review mode time reduction**: ~50s → ~10s (**-81%**)
 - **validate-existing score improvement**: 16/100 → 78/100 (**+387%**)
@@ -69,6 +75,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Release Date | Key Improvements |
 |---------|--------------|------------------|
-| 2.2.1   | 2026-06-10 | Performance +387%, 6 new features verified |
+| 2.2.1   | 2026-06-10 | Documented v2.2.0 benchmark results, release notes, CI validation |
 | 2.2.0   | 2026-06-09 | Cross-engine Mermaid, Progress notifications, Checkpoint recovery |
 | 2.1.0   | 2026-06-04 | Initial release with coaching/fast modes |
