@@ -2,6 +2,7 @@
 .agents/
 .opencode/
 .omo/
+!.omo/plans/
 create-prd-workspace/
 create-prd/evals/sample-existing-prd.md
 # macOS
@@ -10,3 +11,4 @@ create-prd/evals/sample-existing-prd.md
 docs/
 create-prd-cn/
 tests/
+!tests/samples/
