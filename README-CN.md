@@ -3,7 +3,7 @@
 > **专业的 AI Agent 技能工具集** — 为 OpenCode、Claude Code、Cursor、Codex 等跨平台 AI 编程代理设计的高质量产品工作流技能包
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version: v2.2.1](https://img.shields.io/badge/Version-2.2.1-blue.svg)]()
+[![Version: v2.2.2](https://img.shields.io/badge/Version-2.2.2-blue.svg)]()
 [![Status: Active](https://img.shields.io/badge/Status-Active-green.svg)]()
 [![skills.sh](https://skills.sh/b/sacrtap/Opc_Kit)](https://skills.sh/sacrtap/Opc_Kit)
 
@@ -72,7 +72,7 @@ PRD 采用 5 批次增量写入（1-3章→4-5章→6-7章→8-10章→11-13章�
 
 | 技能                              | 语言  | 用途                            | 版本    | 安装命令                                                    |
 | --------------------------------- | ----- | ------------------------------- | ------- | ----------------------------------------------------------- |
-| [create-prd](create-prd/SKILL.md) | EN/CN | PRD 编写/更新/验证（中英双语）  | v2.2.1  | `npx skills add sacrtap/Opc_Kit --skill create-prd`        |
+| [create-prd](create-prd/SKILL.md) | EN/CN | PRD 编写/更新/验证（中英双语）  | v2.2.2  | `npx skills add sacrtap/Opc_Kit --skill create-prd`        |
 
 ## ⚡ 快速开始
 
@@ -356,7 +356,7 @@ coaching
 
 ## 📄 许可证
 
-MIT © sacrtap | create-prd v2.2.1
+MIT © sacrtap | create-prd v2.2.2
 
 ---
 

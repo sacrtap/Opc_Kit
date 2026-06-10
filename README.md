@@ -3,7 +3,7 @@
 > **Professional AI Agent Skill Toolkit** — Cross-platform workflow skills for OpenCode, Claude Code, Cursor, Codex
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version: v2.2.1](https://img.shields.io/badge/Version-2.2.1-blue.svg)]()
+[![Version: v2.2.2](https://img.shields.io/badge/Version-2.2.2-blue.svg)]()
 [![Status: Active](https://img.shields.io/badge/Status-Active-green.svg)]()
 [![skills.sh](https://skills.sh/b/sacrtap/Opc_Kit)](https://skills.sh/sacrtap/Opc_Kit)
 [![PRD Validation](https://github.com/sacrtap/Opc_Kit/actions/workflows/prd-validation.yml/badge.svg)](https://github.com/sacrtap/Opc_Kit/actions/workflows/prd-validation.yml)
@@ -73,7 +73,7 @@ warning users about rework risk when skipping PRD.
 
 | Skill                            | Language | Purpose                              | Version | Install Command                                   |
 | -------------------------------- | -------- | ------------------------------------ | ------- | ------------------------------------------------- |
-| [create-prd](create-prd/SKILL.md) | EN/CN    | PRD creation/update/validation       | v2.2.1  | `npx skills add sacrtap/Opc_Kit --skill create-prd` |
+| [create-prd](create-prd/SKILL.md) | EN/CN    | PRD creation/update/validation       | v2.2.2  | `npx skills add sacrtap/Opc_Kit --skill create-prd` |
 
 ## ⚡ Quick Start
 
@@ -295,7 +295,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
 ## 📄 License
 
-MIT © sacrtap | create-prd v2.2.1
+MIT © sacrtap | create-prd v2.2.2
 
 ---
 
