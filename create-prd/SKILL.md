@@ -719,3 +719,24 @@ Before running `validate-prd.js`, you MUST check the Node.js environment:
 
 4. **If validation script cannot run:**
    - Fall back to: Manual checklist review using the "Strict Validation Checklist" in SKILL.md
+
+### Validation Script Bilingual Support (MANDATORY)
+
+The validation script `scripts/validate-prd.js` fully supports both English and Chinese PRDs. All checks are language-agnostic:
+
+| Check Item | English Keywords | Chinese Keywords |
+|------------|-----------------|------------------|
+| Changelog | Changelog, \| Date \| | 变更记录，\|\s*Date\s*\| |
+| Key Update Notes | Key Update Notes | 关键更新说明 |
+| Chapter 6 | Detailed Feature List | 详细功能清单 |
+| Chapter 7 | Feature Details | 各详细功能说明 |
+| Chapter 9 | Future Improvement Plans | 未来改进计划 |
+| Success Metric | Success Metric | 成功指标 |
+| Calculation Method | Calculation Method | 计算方式 |
+| External Dependencies | External Dependencies, Dependency Item | 外部依赖，依赖项 |
+| Assumption Index | Assumption Index | 假设索引 |
+| Data Table | Field, Type, Description | 字段，类型，描述 |
+| Review Record | ## Review Record | ## 评审记录 |
+| Degradation Strategy | retry, degrade, fallback | 重试，降级，回退 |
+
+**Verification**: Both English PRDs and Chinese PRDs will pass all validation checks without modifications.

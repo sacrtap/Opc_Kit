@@ -1,0 +1,47 @@
+name: PRD Validation
+
+on:
+  workflow_dispatch:
+    inputs:
+      prd_path:
+        description: 'Path to the PRD markdown file to validate'
+        required: true
+        type: string
+      fail_on_warning:
+        description: 'Treat warnings as failures'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  validate-prd:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Validate PRD file exists
+        run: |
+          if [ ! -f "${{ inputs.prd_path }}" ]; then
+            echo "::error::PRD file not found: ${{ inputs.prd_path }}"
+            exit 1
+          fi
+          echo "Validating: ${{ inputs.prd_path }}"
+
+      - name: Run PRD strict validation
+        run: |
+          node create-prd/scripts/validate-prd.js "${{ inputs.prd_path }}"
+
+      - name: Check for warnings (optional strict mode)
+        if: inputs.fail_on_warning
+        run: |
+          OUTPUT=$(node create-prd/scripts/validate-prd.js "${{ inputs.prd_path }}" 2>&1)
+          if echo "$OUTPUT" | grep -q "Warning"; then
+            echo "::warning::PRD validation completed with warnings"
+            echo "$OUTPUT"
+          fi

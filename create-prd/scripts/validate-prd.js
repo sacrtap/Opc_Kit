@@ -91,6 +91,24 @@ check('At least 1 mermaid flowchart', hasMermaid);
 const hasFlowchartTD = mermaidBlocks.every(b => b.includes('flowchart TD'));
 check('Flowchart syntax compliant (flowchart TD)', hasFlowchartTD && mermaidBlocks.length > 0);
 
+// ========== 8.1.1 No ASCII Double Quotes in Mermaid ==========
+const hasDoubleQuotes = mermaidBlocks.some(b => {
+  const inner = b.replace(/```mermaid\s*/g, '').replace(/```/g, '');
+  return /"[^"]*"/.test(inner);
+});
+check('No ASCII double quotes in mermaid blocks', !hasDoubleQuotes || mermaidBlocks.length === 0, 'critical',
+  'Double quotes found in mermaid blocks — use single quotes or no quotes');
+
+// ========== 8.1.2 No Circle Nodes ((text)) ==========
+const hasCircleNodes = mermaidBlocks.some(b => /\(\([^)]*\)\)/.test(b));
+check('No circle nodes ((text)) in mermaid blocks', !hasCircleNodes || mermaidBlocks.length === 0, 'critical',
+  'Circle nodes found — use (rounded rect) instead of ((circle))');
+
+// ========== 8.1.3 No HTML Tags in Mermaid ==========
+const hasHtmlTags = mermaidBlocks.some(b => /<[a-zA-Z][^>]*>/.test(b));
+check('No HTML tags in mermaid blocks', !hasHtmlTags || mermaidBlocks.length === 0, 'critical',
+  'HTML tags found in mermaid blocks — split long text into separate nodes');
+
 // ========== 8.2 Exception Path Check ==========
 const hasFailureBranch = mermaidBlocks.some(b => b.includes('|Failure|') || b.includes('|No|') || b.includes('|Timeout|'));
 check('Each API call/data query node has failure branch', hasFailureBranch || mermaidBlocks.length === 0, 'critical',

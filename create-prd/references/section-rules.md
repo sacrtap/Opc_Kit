@@ -134,7 +134,36 @@ When success metrics are defined, suggest counter-metrics to prevent optimizatio
 
 ## feature-list Rules (Chapter 6)
 
-- **Target Platform Column**: Each feature in Chapter 6 must specify its target platform in the `Target Platform` column. Use platform ecosystem inference from Deep Reasoning. If unclear, ask user to confirm before finalizing.
+### Target Platform Column (MANDATORY)
+
+Each feature in Chapter 6 must specify its target platform in the `Target Platform` column.
+
+**Valid Values (closed set):**
+
+| Value | Description | Example |
+| ----- | ----------- | ------- |
+| `iOS` | iOS native app | iPhone/iPad only feature |
+| `Android` | Android native app | Android-specific feature |
+| `Web` | Web browser application | Dashboard, admin panel |
+| `Backend` | Server-side only | API, batch job, cron task |
+| `API` | Public/internal API endpoint | REST/GraphQL endpoint |
+| `All` | Cross-platform feature | Core business logic on all platforms |
+
+**Combination Rules:**
+- Single platform: `iOS`, `Web`, `Backend`
+- Multi-platform: `iOS / Android / Web` (slash-separated)
+- All platforms: `All` (not `iOS / Android / Web / Backend / API`)
+
+**Invalid Values (common mistakes):**
+
+| Invalid | Correct | Reason |
+| ------- | ------- | ------ |
+| `Mobile` | `iOS / Android` | Too vague, specify each |
+| `Frontend` | `iOS / Android / Web` | Not a platform name |
+| `Server` | `Backend` | Use canonical name |
+| `Full Stack` | `Web + Backend` | Split by actual platform |
+
+**Source**: Use platform ecosystem inference from Deep Reasoning. If unclear, ask user to confirm before finalizing.
 
 ## Future Improvement Plan Rules (Chapter 9)
 

@@ -9,3 +9,4 @@ create-prd/evals/sample-existing-prd.md
 # Local-only skills (not published to GitHub)
 docs/
 create-prd-cn/
+tests/

@@ -4,13 +4,13 @@
 
 ```mermaid
 flowchart TD
-    A[User initiates request] --> B((Call External API))
+    A[User initiates request] --> B(Call External API)
     B --> C{Response Result}
     C -->|Success| D[Process returned data]
     C -->|Failure| E{Retry count < 3?}
     E -->|Yes| B
-    E -->|No| F[Show friendly error message<br/>with retry button]
-    C -->|Timeout| G[Show timeout prompt<br/>guide to check network]
+    E -->|No| F[Show friendly error message with retry button]
+    C -->|Timeout| G[Show timeout prompt guide to check network]
 ```
 
 ## Snippet 2: Parallel Processing + Merge
@@ -49,7 +49,7 @@ flowchart TD
     A[User searches for item] --> B[(Query database)]
     B --> C{Results found?}
     C -->|Yes| D[Render results list]
-    C -->|No| E[Show empty state<br/>guide to refine search]
+    C -->|No| E[Show empty state guide to refine search]
     D --> F{User clicks item?}
     F -->|Yes| G[Load item details]
     F -->|No| H[Return to search]
