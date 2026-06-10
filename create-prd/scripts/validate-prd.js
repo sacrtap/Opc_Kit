@@ -46,19 +46,19 @@ const hasMetadata = content.includes('Author') && content.includes('Status') && 
 check('Metadata complete (Author/Status/Created/Version)', hasMetadata);
 
 // ========== 2. Changelog (update intent) ==========
-const hasChangelog = content.includes('Changelog') && content.includes('| Date |') && content.match(/v\d+\.\d+\.\d+/);
+const hasChangelog = (content.includes('Changelog') || content.includes('变更记录')) && content.match(/\|\s*Date\s*\|/) && content.match(/v\d+\.\d+\.\d+/);
 check('Changelog has current version entry', hasChangelog, 'warning');
 
 // ========== 3. "Key Update Notes" (update intent) ==========
-const hasUpdateNote = content.includes('Key Update Notes');
+const hasUpdateNote = content.includes('Key Update Notes') || content.includes('关键更新说明');
 check('"Key Update Notes" paragraph exists (update intent)', hasUpdateNote, 'warning');
 
 // ========== 4. US → F-x.x Traceability ==========
 const usMatches = content.match(/US-\d+\.\d+/g) || [];
 const usList = [...new Set(usMatches)];
-const ch7Section = content.match(/## 7\. Feature Details[\s\S]*?(?=## 8\.)/);
+const ch7Section = content.match(/## 7\.\s+(Feature Details|各详细功能说明)[\s\S]*?(?=## 8\.)/);
 const fInCh7 = ch7Section ? [...new Set((ch7Section[0].match(/### (F-\d+\.\d+)/g) || []).map(f => f.replace('### ', '')))] : [];
-const ch6Section = content.match(/## 6\. Detailed Feature List[\s\S]*?(?=## 7\.)/);
+const ch6Section = content.match(/## 6\.\s+(Detailed Feature List|详细功能清单)[\s\S]*?(?=## 7\.)/);
 const fInCh6 = ch6Section ? [...new Set(ch6Section[0].match(/F-\d+\.\d+/g) || [])] : [];
 
 // Simplified check: has US and has F = pass
@@ -97,7 +97,7 @@ check('Each API call/data query node has failure branch', hasFailureBranch || me
   mermaidBlocks.length === 0 ? 'No flowchart' : 'Flowchart missing failure branch');
 
 // ========== 8.3 Degradation/Retry Strategy ==========
-const hasRetryOrFallback = content.includes('retry') || content.includes('degrade') || content.includes('fallback') || content.includes('Retry') || content.includes('Fallback');
+const hasRetryOrFallback = content.includes('retry') || content.includes('degrade') || content.includes('fallback') || content.includes('Retry') || content.includes('Fallback') || content.includes('重试') || content.includes('降级') || content.includes('回退');
 check('Each judgment node has clear degradation/retry strategy', hasRetryOrFallback || mermaidBlocks.length === 0, 'warning');
 
 // ========== 8.4 User Operation Exception Paths ==========
@@ -107,26 +107,26 @@ check('User operation nodes cover exception paths', hasUserException || mermaidB
 // ========== 9. Tracking → Success Metric Traceability ==========
 const btMatches = content.match(/BT-\d+\.\d+/g) || [];
 const btList = [...new Set(btMatches)];
-const hasBtAndMetric = btList.length > 0 && content.includes('Success Metric');
+const hasBtAndMetric = btList.length > 0 && (content.includes('Success Metric') || content.includes('成功指标'));
 check('Each tracking event serves at least one success metric', hasBtAndMetric);
 
 // ========== 10. Success Metric Calculation Methods ==========
-const hasMetricCalc = content.includes('Calculation Method') && content.includes('BT-');
+const hasMetricCalc = (content.includes('Calculation Method') || content.includes('计算方式')) && content.includes('BT-');
 check('Each success metric has calculation method', hasMetricCalc);
 
 // ========== 11. External Dependency Schedule Status ==========
 const validStatuses = ['pending-review', 'pending-confirm', 'confirmed', 'completed', 'blocked'];
-const hasDepSection = content.includes('External Dependencies') || content.includes('Dependency Item');
+const hasDepSection = content.includes('External Dependencies') || content.includes('Dependency Item') || content.includes('外部依赖') || content.includes('依赖项');
 const hasDepStatus = hasDepSection && validStatuses.some(s => content.includes(s));
 check('External dependencies have schedule status field', hasDepStatus || !hasDepSection, 'warning');
 
 // ========== 12. [ASSUMPTION] Tag Summary ==========
 const assumptionTags = content.match(/\[ASSUMPTION[^\]]*\]/g) || [];
-const hasAssumptionIndex = content.includes('Assumption Index') && assumptionTags.length > 0;
+const hasAssumptionIndex = (content.includes('Assumption Index') || content.includes('假设索引')) && assumptionTags.length > 0;
 check('[ASSUMPTION] tags summarized to Assumption Index', hasAssumptionIndex || assumptionTags.length === 0, 'warning');
 
 // ========== 13. Future Improvement Plan Numbering Continuation ==========
-const futureSection = content.match(/## 9\. Future Improvement Plans[\s\S]*?(?=## 10\.)/);
+const futureSection = content.match(/## 9\.\s+(Future Improvement Plans|未来改进计划)[\s\S]*?(?=## 10\.)/);
 if (futureSection) {
   const futureFeatures = futureSection[0].match(/F-\d+\.\d+/g) || [];
   const maxCh7 = fInCh7.length > 0 ? Math.max(...fInCh7.map(f => {
@@ -145,7 +145,7 @@ if (futureSection) {
 
 // ========== 14. Flowchart State Values Aligned with Data Tables ==========
 // Simplified check: if has flowchart and data table, check
-const hasDataTable = content.includes('Field') && content.includes('Type') && content.includes('Description');
+const hasDataTable = (content.includes('Field') && content.includes('Type') && content.includes('Description')) || (content.includes('字段') && content.includes('类型') && content.includes('描述'));
 if (hasDataTable && mermaidBlocks.length > 0) {
   // Check if state words in flowchart appear in data table ENUM
   const enumMatches = content.match(/ENUM|values|enum/g) || [];
@@ -160,7 +160,7 @@ const hasQuotedTitle = !frontMatterBlock || /title:\s*"/.test(frontMatterBlock);
 check('Front matter "title" quoted per YAML 1.2 spec', hasQuotedTitle, 'warning');
 
 // ========== 16. Target Platform Column in Chapter 6 ==========
-const chapter6Match = content.match(/## 6\.\s+Detailed Feature List[\s\S]*?\n\|[\s\S]*?\n/);
+const chapter6Match = content.match(/## 6\.\s+(Detailed Feature List|详细功能清单)[\s\S]*?\n\|[\s\S]*?\n/);
 const hasTargetPlatform = !chapter6Match || chapter6Match[0].includes('Target Platform') || chapter6Match[0].includes('目标平台');
 check('Chapter 6 Feature List has Target Platform column', hasTargetPlatform, 'warning');
 
@@ -169,7 +169,7 @@ const platformOk = !content.includes('[ASSUMPTION]') || content.includes('Platfo
 check('Platform ecosystem inference considered', platformOk, 'warning');
 
 // ========== Review Record Note ==========
-if (!content.includes('## Review Record')) {
+if (!content.includes('## Review Record') && !content.includes('## 评审记录')) {
   console.log('\n\u2139\uFE0F Note: "Review Record" is only generated in create/update modes. Validate mode performs static scanning only.');
 }
 

@@ -32,7 +32,7 @@ generate_progress:
 
 ## Changelog
 
-| Date       | Version | Author  | Changes |
+| Date | Version | Author | Changes |
 | ---------- | ------- | ------- | ------- |
 | {YYYY-MM-DD} | v1.0.0  | {Author} | Initial version created |
 
