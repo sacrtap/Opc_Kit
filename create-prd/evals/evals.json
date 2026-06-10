@@ -374,6 +374,33 @@
           "pattern": "progress|batch|tracking"
         }
       ]
+    },
+    {
+      "id": 9,
+      "name": "final-frontmatter-cleanup",
+      "prompt": "Create a PRD for user authentication feature using default coaching mode.",
+      "expected_output": "After generation completes, final PRD file must NOT contain YAML front matter block",
+      "files": [],
+      "assertions": [
+        {
+          "name": "Final PRD no front matter",
+          "description": "Generated PRD should not have YAML front matter after completion",
+          "type": "not_contains",
+          "pattern": "^---\\n.*^---"
+        },
+        {
+          "name": "Metadata table present",
+          "description": "Metadata section should exist in body",
+          "type": "contains",
+          "pattern": "## Metadata"
+        },
+        {
+          "name": "No generate_progress in final",
+          "description": "Should not contain checkpoint field in final version",
+          "type": "not_contains",
+          "pattern": "generate_progress:"
+        }
+      ]
     }
   ]
 }
