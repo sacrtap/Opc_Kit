@@ -137,11 +137,24 @@ Rules detailed in `references/review-rules.md`
 2. Scan `[ASSUMPTION]` tags → summarize to Chapter 12
 3. Show candidate glossary to user, confirm entries
 
-## Step 8: Save
+## Step 8: Save + Final Cleanup
 
-1. Ask save path (default `docs/{product}_prd/PRD-{product}-{feature}.md`)
-2. Write file, return path
-3. Prompt user can continue with update or validate
+1. Update Metadata "Last Updated" date and "Version" fields in **正文**
+2. Append changelog entry to end of table
+3. **Generate quality score and re-scoring summary**
+4. **Final Cleanup Gate**:
+   - If ALL batches completed (`batch_5: completed`) AND validation passed:
+     a. Remove entire YAML front matter block (including `generate_progress`)
+     b. Keep only `## Metadata` section as official metadata source
+   - If ANY batch pending/in_progress:
+     a. DO NOT remove front matter
+     b. Preserve checkpoint for recovery
+5. Write file, return path
+6. Display change summary:
+   - Version number change
+   - Added/modified/deleted features
+   - Strict validation result (pass/warning/fail)
+   - Quality score (new vs old delta)
 
 ## Incremental Write + Progress Tracking
 

@@ -566,6 +566,27 @@ New session opening an in-progress PRD file:
 | `in_progress` | Batch currently being generated |
 | `pending`     | Batch not yet started           |
 
+## Final Cleanup (MANDATORY for completed PRDs)
+
+After Batch 5 completes AND validation passes, execute final cleanup:
+
+1. **Remove entire front matter block** from PRD file
+2. **Keep only** the `## Metadata` section as official business metadata source
+3. **Verify** no `generate_progress` or other temporary fields remain
+
+**Rationale**:
+- Prevents duplicate metadata (front matter vs Metadata table)
+- Cleaner final document for human reading and tool integration
+- Eliminates risk of metadata inconsistency
+
+**Exception**: Do NOT cleanup if session interrupted with `pending` batches;
+preserve checkpoint for recovery.
+
+**Verification command**:
+```bash
+grep -c "^---$" prd-file.md   # Should return 0 after cleanup
+```
+
 ## PRD Quality Scoring
 
 Every PRD is scored on 7 dimensions (max 100 points):

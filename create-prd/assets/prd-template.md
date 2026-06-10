@@ -1,12 +1,4 @@
 ---
-title: "PRD: {Product Name} - {Feature Name}"
-status: "Draft"
-created: "{YYYY-MM-DD}"
-updated: "{YYYY-MM-DD}"
-version: "v1.0.0"
-project: "{Project Name}"
-related_docs: "None"
-prototype: "None"
 generate_progress:
   batch_1: pending
   batch_2: pending
@@ -222,3 +214,9 @@ Tracking platform: {Platform name, e.g., Sensors Analytics}
 |----|----------------------|----------------|---------------------|
 | A-1 | {Assumption text} | Chapter {N} | To Confirm |
 | A-2 | {Assumption text} | Chapter {N} | To Confirm |
+
+<!-- 
+FINAL CLEANUP POLICY:
+When all batches complete and validation passes, this entire front matter block
+MUST be removed. Business metadata lives only in the ## Metadata section above.
+-->

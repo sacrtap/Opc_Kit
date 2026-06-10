@@ -172,10 +172,28 @@ if (hasDataTable && mermaidBlocks.length > 0) {
   check('Flowchart state values aligned with data table', true, 'warning');
 }
 
-// ========== 15. Front Matter Quotes (YAML 1.2) ==========
+// ========== 15. Front Matter Cleanup Detection ==========
 const frontMatterBlock = content.split('---')[1];
-const hasQuotedTitle = !frontMatterBlock || /title:\s*"/.test(frontMatterBlock);
-check('Front matter "title" quoted per YAML 1.2 spec', hasQuotedTitle, 'warning');
+if (frontMatterBlock) {
+  // Check if it contains business fields (should not exist in final PRD)
+  const hasBusinessFields = /title:\s*"|status:\s*"|created:\s*"|updated:\s*"|version:\s*"|project:\s*"|related_docs:\s*"|prototype:\s*"/.test(frontMatterBlock);
+  
+  // Also check completion status
+  const isCompleted = frontMatterBlock.includes('batch_5:') && 
+                      (frontMatterBlock.match(/batch_5:\s*completed/g) || []).length > 0;
+  
+  if (isCompleted && hasBusinessFields) {
+    check('Final PRD should not contain front matter (should be cleaned)', false, 'warning',
+          'Found front matter in completed PRD — run final cleanup step');
+  } else if (hasBusinessFields) {
+    check('No business metadata in front matter (only checkpoints allowed)', false, 'warning',
+          'Front matter should only contain generate_progress, not title/status/etc.');
+  } else {
+    check('Generation checkpoint detected (temporary state)', true, 'info');
+  }
+} else {
+  check('No front matter present (correct for final PRD)', true, 'info');
+}
 
 // ========== 16. Target Platform Column in Chapter 6 ==========
 const chapter6Match = content.match(/## 6\.\s+(Detailed Feature List|详细功能清单)[\s\S]*?\n\|[\s\S]*?\n/);
@@ -185,6 +203,16 @@ check('Chapter 6 Feature List has Target Platform column', hasTargetPlatform, 'w
 // ========== 17. Platform Ecosystem Validation ==========
 const platformOk = !content.includes('[ASSUMPTION]') || content.includes('Platform') || content.includes('平台');
 check('Platform ecosystem inference considered', platformOk, 'warning');
+
+// ========== 18. Metadata Table Completeness ==========
+const hasMetadataTable = content.includes('## Metadata') &&
+                        content.includes('| Field        | Value        |') &&
+                        content.includes('| Author       |') &&
+                        content.includes('| Status       |') &&
+                        content.includes('| Created      |') &&
+                        content.includes('| Version      |') &&
+                        content.includes('| Project      |');
+check('Metadata table complete (8 fields)', hasMetadataTable, 'critical');
 
 // ========== Review Record Note ==========
 if (!content.includes('## Review Record') && !content.includes('## 评审记录')) {
