@@ -58,7 +58,9 @@ AI 从用户输入自动推断目标平台（iOS/Android/Web/小程序/后台管
 
 ### 📦 分步写入 + 进度可视化
 PRD 采用 5 批次增量写入（1-3章→4-5章→6-7章→8-10章→11-13章），每批完成后推送结构化进度通知。
-会话中断后通过 Checkpoint 机制自动从断点继续，不重复生成已完成内容。
+会话中断后通过**临时** Checkpoint 机制自动从断点继续（完成后移除 front matter），不重复生成已完成内容。
+
+> **说明**: 生成过程中，Checkpoint 元数据（generate_progress）存储在 YAML front matter 中，PRD 生成完成后自动移除。最终 PRD 不包含 front matter；业务元数据仅存在于 `## Metadata` 章节。
 
 ### 🎨 原型工作流约束
 需求先行、原型后到工作流。检测 PRD 状态为 Confirmed/In Development 后才允许原型设计，

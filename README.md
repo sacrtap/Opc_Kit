@@ -59,7 +59,9 @@ confidence-level strategy. High confidence: direct use. Medium: use + flag. Low:
 
 ### 📦 Incremental Write with Progress Tracking
 PRD generation follows 5-batch incremental write (Ch1-3 → Ch4-5 → Ch6-7 → Ch8-10 → Ch11-13).
-Real-time progress notifications after each batch. Session-interrupt recovery via checkpoint tracking.
+Real-time progress notifications after each batch. Session-interrupt recovery via **temporary** checkpoint tracking (front matter removed after completion).
+
+> **Note**: Checkpoint metadata (generate_progress) is stored in YAML front matter during generation and automatically removed when PRD generation completes. Final PRDs contain no front matter; business metadata lives only in the `## Metadata` section.
 
 ### 🎨 Prototype Workflow Constraint
 Requirements-first, prototype-after workflow. Validates PRD status before prototype design,

@@ -5,6 +5,23 @@ All notable changes to the create-prd skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.2] - 2026-06-10
+
+### Changes
+- **Final Cleanup Policy**: PRD YAML front matter is now temporary generation state, not part of final document
+- **validate-prd.js**: Check #15 updated to detect cleanup status; added check #18 for Metadata table completeness
+- **Backward Compatibility**: Old PRDs with front matter still pass validation (warning only)
+
+### Migration Guide
+- **Existing PRDs**: No action required, but recommended to cleanup front matter manually
+- **New PRDs**: Front matter automatically removed after generation completes
+- **Checkpoint Recovery**: Still works during generation; checkpoint preserved until all batches complete
+
+### Technical Details
+- Front matter during generation: Contains `generate_progress` for checkpoint tracking
+- Front matter after completion: Removed entirely
+- Business metadata: Lives only in `## Metadata` section (8 fields)
+
 ## [2.2.1] - 2026-06-10
 
 ### Release Documentation
