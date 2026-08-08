@@ -74,7 +74,7 @@ Party Mode 的存在，是因为这些失败不是由于缺乏智慧——而是
 
 **你会这样说：**
 ```
-party mode — 我们想做一个 AI 驱动的习惯追踪 App。
+/party-mode — 我们想做一个 AI 驱动的习惯追踪 App。
 目标市场：25-40 岁想建立更好习惯的职场人。
 假设：用户愿意为 AI 个性化习惯教练付 $8/月。
 竞品：Streaks、Habitica、Fabulous。我们认为 AI 个性化是差异化点。
@@ -103,7 +103,7 @@ party mode — 我们想做一个 AI 驱动的习惯追踪 App。
 
 **你会这样说：**
 ```
-party mode — 评审这个功能设计：我们要给文档编辑器加实时协作。
+/party-mode — 评审这个功能设计：我们要给文档编辑器加实时协作。
 用户可以看到彼此的光标、同时编辑、留行内评论。
 技术栈：React 前端，Node.js 后端，目前用 WebSocket 做通知。
 规模：峰值约 5000 并发用户，文档最大 500KB。
@@ -130,7 +130,7 @@ party mode — 评审这个功能设计：我们要给文档编辑器加实时�
 
 **你会这样说：**
 ```
-party mode — 我们需要决定：从单体迁移到微服务，还是留在单体并优化？
+/party-mode — 我们需要决定：从单体迁移到微服务，还是留在单体并优化？
 现状：Django 单体，3 年历史，15 万行代码，12 人工程团队。
 痛点：部署要 45 分钟，团队在主分支上互相阻塞，无法单独扩展服务。
 规模：5 万 DAU，月增长 20%。
@@ -164,7 +164,7 @@ party mode — 我们需要决定：从单体迁移到微服务，还是留在�
 
 **你会这样说：**
 ```
-party mode — 我们需要确定 H2 路线图优先级。
+/party-mode — 我们需要确定 H2 路线图优先级。
 产品：B2B SaaS 项目管理工具，200 个付费客户，$80K MRR。
 候选项：
 1. 移动端 App（客户最高频需求，30% 用户从手机访问）
@@ -195,7 +195,7 @@ party mode — 我们需要确定 H2 路线图优先级。
 
 **你会这样说：**
 ```
-party mode — 我们在辩论一个 AI 写作工具的市场策略。
+/party-mode — 我们在辩论一个 AI 写作工具的市场策略。
 产品：AI 驱动的长文内容生成（博客、报告、白皮书）。
 当前模式：Freemium，5 万免费用户，1000 付费 $20/月，$20K MRR。
 问题：免费到付费转化率 2%，增长放缓，CAC $150。
@@ -233,8 +233,8 @@ D) 开源核心，卖托管版（类似 GitLab 模式）
 - `anti-consensus-club` — Wildcard、Level、Killjoy、Splinter（挑战假设）
 
 ```
-Use code-review-crew to review this code: [粘贴代码]
-anti-consensus-club discuss: 我们要砍掉免费层
+/party-mode code-review-crew — 评审这段代码：[粘贴代码]
+/party-mode anti-consensus-club — 我们要砍掉免费层
 ```
 
 ### 三级讨论深度
@@ -295,7 +295,7 @@ npx skills add sacrtap/Opc_Kit --skill party-mode
 用自然语言描述你的话题：
 
 ```
-party mode — [你的话题和背景]
+/party-mode — [你的话题和背景]
 ```
 
 技能处理其余一切：评估复杂度、选择专家、开始讨论。
@@ -304,29 +304,29 @@ party mode — [你的话题和背景]
 
 **快速决策：**
 ```
-party mode — 新项目用 PostgreSQL 还是 MongoDB？8 人团队，预计 10 万 DAU。
+/party-mode — 新项目用 PostgreSQL 还是 MongoDB？8 人团队，预计 10 万 DAU。
 ```
 
 **功能评审：**
 ```
-party mode — 评审这个需求：B2B SaaS 批量 CSV 导出。
+/party-mode — 评审这个需求：B2B SaaS 批量 CSV 导出。
 企业客户需要它来做财务报告。现状：只能逐个导出。
 预期影响：支持工单减少 30%。开发时间：2 周。
 ```
 
 **战略决策：**
 ```
-party mode — 我们要砍掉免费层。10 万免费用户，1000 付费，$50K MRR。
+/party-mode — 我们要砍掉免费层。10 万免费用户，1000 付费，$50K MRR。
 ```
 
 **架构：**
 ```
-party mode — 微服务还是单体？5 人团队，MVP 阶段。
+/party-mode — 微服务还是单体？5 人团队，MVP 阶段。
 ```
 
 **危机处理：**
 ```
-party mode — 数据泄露：5000 用户的邮箱和密码哈希被泄露。
+/party-mode — 数据泄露：5000 用户的邮箱和密码哈希被泄露。
 PR 说要透明，法务说要低调处理，工程说要先修漏洞。怎么办？
 ```
 
@@ -379,7 +379,7 @@ Party Mode 与 `create-prd` 技能配合使用时最强大：
 3. **开发** → 将 PRD 交给工程团队，充满信心
 
 ```
-party mode — 我们要不要做实时协作功能？[背景...]
+/party-mode — 我们要不要做实时协作功能？[背景...]
 [讨论发生，决策达成]
 /create-prd 基于 party-mode 的讨论，写一份实时协作功能的 PRD
 ```

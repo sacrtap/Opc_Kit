@@ -56,13 +56,13 @@ npx skills add sacrtap/Opc_Kit --list
 
 **Use party-mode alone:**
 ```
-party mode — Should we use microservices or monolith? We're a 5-person team at MVP stage.
+/party-mode — Should we use microservices or monolith? We're a 5-person team at MVP stage.
 ```
 
 **Complete workflow: debate first, then document**
 ```
 # Step 1: Stress-test the idea from multiple perspectives
-party mode — Should we build a real-time collaboration feature for our document editor?
+/party-mode — Should we build a real-time collaboration feature for our document editor?
 Tech stack: React + Node.js. Scale: 5K concurrent users. Timeline: 8 weeks.
 
 # Step 2: Turn the decision into a structured PRD
@@ -126,7 +126,7 @@ Stop making critical decisions with a single perspective. Bring 17 product and e
 
 **Example:**
 ```
-party mode — We're building an AI habit tracking app. Target: professionals 25-40.
+/party-mode — We're building an AI habit tracking app. Target: professionals 25-40.
 Hypothesis: $8/month for AI coaching. Budget: $200K, 4-person team, 6-month runway.
 
 You'll hear:

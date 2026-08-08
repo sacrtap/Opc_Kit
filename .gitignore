@@ -3,6 +3,9 @@
 .opencode/
 create-prd-workspace/
 
+# Python
+__pycache__/
+
 # macOS
 .DS_Store
 # Local-only skills (not published to GitHub)

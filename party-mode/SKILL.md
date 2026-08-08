@@ -7,10 +7,10 @@ metadata:
   version: "1.0.0"
   category: decision-making
 examples:
-  - "party mode — Should we use microservices or monolith?"
-  - "party mode — Review this requirement: batch export CSV"
-  - "party mode — We're considering switching from freemium to free trial"
-  - "Use code-review-crew to review this code"
+  - "/party-mode — Should we use microservices or monolith?"
+  - "/party-mode — Review this requirement: batch export CSV"
+  - "/party-mode — We're considering switching from freemium to free trial"
+  - "/party-mode code-review-crew — review this code"
 ---
 
 # Party Mode

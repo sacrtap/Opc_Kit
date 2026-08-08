@@ -74,7 +74,7 @@ Each role has distinct expertise, thinking patterns, and communication style. Th
 
 **What you'd say:**
 ```
-party mode — We're thinking about building an AI-powered habit tracking app.
+/party-mode — We're thinking about building an AI-powered habit tracking app.
 Target market: professionals 25-40 who want to build better routines.
 Hypothesis: People will pay $8/month for AI-personalized habit coaching.
 Competition: Streaks, Habitica, Fabulous. We think AI personalization is the differentiator.
@@ -103,7 +103,7 @@ The skill auto-selects the most relevant experts. You'll hear:
 
 **What you'd say:**
 ```
-party mode — Review this feature design: We're adding real-time collaboration to our document editor.
+/party-mode — Review this feature design: We're adding real-time collaboration to our document editor.
 Users can see each other's cursors, edit simultaneously, and leave inline comments.
 Tech stack: React frontend, Node.js backend, currently using WebSockets for notifications.
 Scale: ~5K concurrent users at peak, documents up to 500KB.
@@ -130,7 +130,7 @@ Timeline: 8 weeks to ship.
 
 **What you'd say:**
 ```
-party mode — We need to decide: migrate from monolith to microservices, or stay monolith and optimize?
+/party-mode — We need to decide: migrate from monolith to microservices, or stay monolith and optimize?
 Current state: Django monolith, 3 years old, 150K lines of code, 12-person engineering team.
 Pain points: Deploy takes 45 minutes, teams block each other on the main branch, scaling individual services is impossible.
 Scale: 50K DAU, growing 20% month-over-month.
@@ -164,7 +164,7 @@ Key arguments you'll hear:
 
 **What you'd say:**
 ```
-party mode — We need to prioritize our H2 roadmap.
+/party-mode — We need to prioritize our H2 roadmap.
 Product: B2B SaaS for project management, 200 paying customers, $80K MRR.
 Candidates:
 1. Mobile app (top customer request, 30% of users access from phone)
@@ -195,7 +195,7 @@ Team: 8 engineers, 2 designers, 1 PM. 6-month window.
 
 **What you'd say:**
 ```
-party mode — We're debating our go-to-market strategy for an AI writing tool.
+/party-mode — We're debating our go-to-market strategy for an AI writing tool.
 Product: AI-powered long-form content generation (blog posts, reports, whitepapers).
 Current model: Freemium, 50K free users, 1K paid at $20/month, $20K MRR.
 Problem: Free-to-paid conversion is 2%, growth is slowing, CAC is $150.
@@ -233,8 +233,8 @@ You can also use **preset rooms**:
 - `anti-consensus-club` — Wildcard, Level, Killjoy, Splinter (for challenging assumptions)
 
 ```
-Use code-review-crew to review this code: [paste code]
-anti-consensus-club discuss: We want to kill the free tier
+/party-mode code-review-crew — review this code: [paste code]
+/party-mode anti-consensus-club — We want to kill the free tier
 ```
 
 ### Three Tiers of Discussion Depth
@@ -295,7 +295,7 @@ npx skills add sacrtap/Opc_Kit --skill party-mode
 Just describe your topic in natural language:
 
 ```
-party mode — [Your topic and context]
+/party-mode — [Your topic and context]
 ```
 
 The skill handles the rest: assesses complexity, selects experts, starts the discussion.
@@ -304,29 +304,29 @@ The skill handles the rest: assesses complexity, selects experts, starts the dis
 
 **Quick decision:**
 ```
-party mode — Should we use PostgreSQL or MongoDB? Team of 8, 100K DAU expected.
+/party-mode — Should we use PostgreSQL or MongoDB? Team of 8, 100K DAU expected.
 ```
 
 **Feature review:**
 ```
-party mode — Review this requirement: batch CSV export for B2B SaaS.
+/party-mode — Review this requirement: batch CSV export for B2B SaaS.
 Enterprise customers need it for finance reporting. Current state: one-at-a-time only.
 Expected impact: 30% reduction in support tickets. Dev time: 2 weeks.
 ```
 
 **Strategic decision:**
 ```
-party mode — We want to kill the free tier. 100K free users, 1K paid, $50K MRR.
+/party-mode — We want to kill the free tier. 100K free users, 1K paid, $50K MRR.
 ```
 
 **Architecture:**
 ```
-party mode — Microservices or monolith? 5-person team, MVP stage.
+/party-mode — Microservices or monolith? 5-person team, MVP stage.
 ```
 
 **Crisis:**
 ```
-party mode — Data breach: 5000 users' emails and password hashes leaked.
+/party-mode — Data breach: 5000 users' emails and password hashes leaked.
 PR says transparent, legal says quiet, engineering says fix first. What do we do?
 ```
 
@@ -379,7 +379,7 @@ Party Mode is most powerful when paired with the `create-prd` skill:
 3. **Build** → Hand the PRD to your engineering team with confidence
 
 ```
-party mode — Should we build a real-time collaboration feature? [context...]
+/party-mode — Should we build a real-time collaboration feature? [context...]
 [Discussion happens, decision is reached]
 /create-prd Based on the party-mode discussion, write a PRD for real-time collaboration
 ```
