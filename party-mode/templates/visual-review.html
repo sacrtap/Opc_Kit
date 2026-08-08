@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{TOPIC}}</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap');
+  :root {
+    --bg: #0a0a0f; --surface: #12121a; --surface-2: #1a1a28;
+    --border: #2a2a3a; --text: #e8e8f0; --text-dim: #8888a0;
+    --accent-1: #6c5ce7; --accent-2: #00cec9; --accent-3: #fd79a8;
+    --accent-4: #fdcb6e; --accent-5: #55efc4; --accent-6: #74b9ff; --accent-7: #ff7675;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: 'Noto Sans SC', sans-serif; line-height: 1.7; overflow-x: hidden; }
+
+  /* Hero */
+  .hero { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; padding: 2rem; overflow: hidden; }
+  .hero::before { content: ''; position: absolute; width: 150%; height: 150%;
+    background: radial-gradient(ellipse at 20% 50%, rgba(108,92,231,0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(0,206,201,0.1) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 80%, rgba(253,121,168,0.08) 0%, transparent 50%);
+    animation: heroFloat 20s ease-in-out infinite; }
+  @keyframes heroFloat { 0%,100%{transform:translate(0,0)} 33%{transform:translate(-2%,1%)} 66%{transform:translate(1%,-1%)} }
+  .hero-content { position: relative; z-index: 1; text-align: center; max-width: 900px; }
+  .hero-badge { display: inline-block; padding: 0.4rem 1.2rem; border: 1px solid var(--border); border-radius: 100px; font-size: 0.8rem; color: var(--text-dim); letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 2rem; backdrop-filter: blur(10px); background: rgba(255,255,255,0.03); }
+  .hero h1 { font-size: clamp(2.5rem,6vw,4.5rem); font-weight: 900; line-height: 1.15; margin-bottom: 1.5rem;
+    background: linear-gradient(135deg, #fff 0%, var(--accent-1) 50%, var(--accent-2) 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .hero-subtitle { font-size: 1.2rem; color: var(--text-dim); max-width: 600px; margin: 0 auto 3rem; font-weight: 300; }
+  .hero-meta { display: flex; gap: 2rem; justify-content: center; flex-wrap: wrap; }
+  .hero-meta-item { display: flex; flex-direction: column; align-items: center; gap: 0.3rem; }
+  .hero-meta-value { font-size: 2rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; color: var(--accent-2); }
+  .hero-meta-label { font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.1em; }
+
+  /* SVG decorations */
+  .svg-deco { position: absolute; pointer-events: none; opacity: 0.1; }
+
+  /* Sections */
+  .section { padding: 4rem 2rem; max-width: 1200px; margin: 0 auto; }
+  .section-title { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.2em; color: var(--text-dim); margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border); }
+
+  /* Cast grid */
+  .cast-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1.5rem; }
+  .cast-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 1.5rem; text-align: center; transition: transform 0.3s, border-color 0.3s; position: relative; overflow: hidden; }
+  .cast-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--card-accent); opacity: 0.8; }
+  .cast-card:hover { transform: translateY(-4px); border-color: var(--card-accent); }
+  .cast-icon { font-size: 2.5rem; margin-bottom: 0.8rem; display: block; }
+  .cast-name { font-weight: 700; font-size: 1rem; margin-bottom: 0.3rem; }
+  .cast-title { font-size: 0.75rem; color: var(--text-dim); }
+
+  /* Timeline */
+  .timeline { position: relative; padding-left: 3rem; }
+  .timeline::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2px;
+    background: linear-gradient(to bottom, var(--accent-1), var(--accent-2), var(--accent-3), var(--accent-4), var(--accent-5), var(--accent-6)); }
+  .tl-item { position: relative; margin-bottom: 3rem; padding: 1.5rem 2rem; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; transition: border-color 0.3s; }
+  .tl-item:hover { border-color: var(--item-color, var(--accent-2)); }
+  .tl-item::before { content: ''; position: absolute; left: -3rem; top: 1.8rem; width: 12px; height: 12px; border-radius: 50%; background: var(--item-color, var(--accent-2)); border: 3px solid var(--bg); margin-left: -5px; }
+  .tl-item::after { content: ''; position: absolute; left: -1.5rem; top: 2.2rem; width: 1.5rem; height: 1px; background: var(--item-color, var(--accent-2)); opacity: 0.4; }
+  .tl-header { display: flex; align-items: center; gap: 0.8rem; margin-bottom: 0.8rem; }
+  .tl-number { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; font-weight: 600; color: var(--item-color, var(--accent-2)); background: rgba(255,255,255,0.05); padding: 0.2rem 0.6rem; border-radius: 4px; }
+  .tl-title { font-weight: 700; font-size: 1.1rem; }
+  .tl-body { color: var(--text-dim); font-size: 0.9rem; line-height: 1.8; }
+  .tl-body strong { color: var(--text); }
+  .tag { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.7rem; font-weight: 600; font-family: 'JetBrains Mono', monospace; margin-right: 0.3rem; }
+  .tag-tech { background: rgba(108,92,231,0.2); color: #a29bfe; }
+  .tag-biz { background: rgba(253,203,110,0.2); color: #fdcb6e; }
+  .tag-ux { background: rgba(253,121,168,0.2); color: #fd79a8; }
+  .tag-risk { background: rgba(255,118,117,0.2); color: #ff7675; }
+  .tag-strategy { background: rgba(116,185,255,0.2); color: #74b9ff; }
+
+  /* Decisions grid */
+  .decisions-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem; }
+  .decision-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; position: relative; overflow: hidden; }
+  .decision-card::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, var(--accent-2), var(--accent-1)); }
+  .decision-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.15em; color: var(--accent-2); margin-bottom: 0.5rem; font-weight: 600; }
+  .decision-value { font-size: 1.05rem; font-weight: 700; margin-bottom: 0.8rem; line-height: 1.4; }
+  .decision-detail { font-size: 0.85rem; color: var(--text-dim); line-height: 1.6; }
+
+  /* Highlights */
+  .highlight-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 2rem; margin-bottom: 2rem; position: relative; }
+  .highlight-card::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; border-radius: 16px 0 0 16px; }
+  .highlight-card.impact::before { background: var(--accent-4); }
+  .highlight-card.insight::before { background: var(--accent-1); }
+  .highlight-card.synthesis::before { background: var(--accent-5); }
+  .highlight-type { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 0.8rem; font-weight: 600; }
+  .highlight-card.impact .highlight-type { color: var(--accent-4); }
+  .highlight-card.insight .highlight-type { color: var(--accent-1); }
+  .highlight-card.synthesis .highlight-type { color: var(--accent-5); }
+  .highlight-quote { font-size: 1.1rem; font-weight: 500; line-height: 1.6; margin-bottom: 1rem; font-style: italic; }
+  .highlight-author { font-size: 0.85rem; color: var(--text-dim); }
+
+  /* Risks */
+  .risk-bar { display: flex; align-items: center; gap: 1rem; padding: 1rem 0; border-bottom: 1px solid var(--border); }
+  .risk-level { width: 8px; height: 40px; border-radius: 4px; flex-shrink: 0; }
+  .risk-level.critical { background: #ff7675; } .risk-level.high { background: #fdcb6e; } .risk-level.medium { background: #74b9ff; }
+  .risk-content { flex: 1; }
+  .risk-name { font-weight: 600; font-size: 0.95rem; margin-bottom: 0.2rem; }
+  .risk-mitigation { font-size: 0.8rem; color: var(--text-dim); }
+  .risk-meta { text-align: right; flex-shrink: 0; }
+  .risk-likelihood { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--text-dim); }
+
+  /* Footer */
+  .footer { padding: 4rem 2rem; text-align: center; border-top: 1px solid var(--border); margin-top: 4rem; }
+  .footer-text { color: var(--text-dim); font-size: 0.85rem; }
+  .footer-confidence { display: inline-flex; align-items: center; gap: 0.8rem; margin-top: 1.5rem; padding: 0.8rem 1.5rem; background: var(--surface); border: 1px solid var(--border); border-radius: 100px; }
+  .confidence-bar { width: 120px; height: 6px; background: var(--surface-2); border-radius: 3px; overflow: hidden; }
+  .confidence-fill { height: 100%; background: linear-gradient(90deg, var(--accent-2), var(--accent-5)); border-radius: 3px; animation: pulse 3s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.7} }
+  .confidence-label { font-size: 0.8rem; color: var(--text-dim); font-family: 'JetBrains Mono', monospace; }
+
+  /* Fade-in on scroll */
+  .fade-in { opacity: 0; transform: translateY(20px); transition: opacity 0.6s, transform 0.6s; }
+  .fade-in.visible { opacity: 1; transform: translateY(0); }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .hero-meta { gap: 1rem; }
+    .cast-grid { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
+    .timeline { padding-left: 2rem; }
+    .tl-item::after { display: none; }
+    .decisions-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ HERO ============ -->
+<section class="hero">
+  <div class="hero-content">
+    <div class="hero-badge">Party Mode Session — {{TIER_LABEL}}</div>
+    <h1>{{TITLE_HTML}}</h1>
+    <p class="hero-subtitle">{{SUBTITLE}}</p>
+    <div class="hero-meta">
+      <div class="hero-meta-item"><span class="hero-meta-value">{{ROUNDS}}</span><span class="hero-meta-label">Rounds</span></div>
+      <div class="hero-meta-item"><span class="hero-meta-value">{{DECISIONS_COUNT}}</span><span class="hero-meta-label">Decisions</span></div>
+      <div class="hero-meta-item"><span class="hero-meta-value">{{PARTICIPANTS_COUNT}}</span><span class="hero-meta-label">Participants</span></div>
+      <div class="hero-meta-item"><span class="hero-meta-value">{{DEADLOCKS}}</span><span class="hero-meta-label">Deadlocks</span></div>
+    </div>
+  </div>
+  <svg class="svg-deco" style="top:10%;left:5%;width:200px;height:200px" viewBox="0 0 200 200">
+    <circle cx="100" cy="100" r="80" fill="none" stroke="#6c5ce7" stroke-width="0.5" stroke-dasharray="4 4"><animateTransform attributeName="transform" type="rotate" from="0 100 100" to="360 100 100" dur="60s" repeatCount="infinite"/></circle>
+    <circle cx="100" cy="100" r="60" fill="none" stroke="#00cec9" stroke-width="0.5" stroke-dasharray="2 6"><animateTransform attributeName="transform" type="rotate" from="360 100 100" to="0 100 100" dur="45s" repeatCount="infinite"/></circle>
+  </svg>
+  <svg class="svg-deco" style="bottom:15%;right:8%;width:150px;height:150px" viewBox="0 0 150 150">
+    <polygon points="75,10 140,50 140,110 75,140 10,110 10,50" fill="none" stroke="#fd79a8" stroke-width="0.5"><animateTransform attributeName="transform" type="rotate" from="0 75 75" to="360 75 75" dur="90s" repeatCount="infinite"/></polygon>
+  </svg>
+</section>
+
+<!-- ============ CAST ============ -->
+<!--
+  Fill {{CAST_CARDS}} with one block per participant:
+  <div class="cast-card" style="--card-accent: #HEXCOLOR;">
+    <span class="cast-icon">EMOJI</span>
+    <div class="cast-name">NAME</div>
+    <div class="cast-title">TITLE</div>
+  </div>
+-->
+<section class="section fade-in">
+  <div class="section-title">The Room</div>
+  <div class="cast-grid">
+    {{CAST_CARDS}}
+  </div>
+</section>
+
+<!-- ============ TIMELINE ============ -->
+<!--
+  Fill {{TIMELINE_ITEMS}} with one block per decision/topic:
+  <div class="tl-item" style="--item-color: #HEXCOLOR;">
+    <div class="tl-header">
+      <span class="tl-number">01</span>
+      <span class="tl-title">TITLE</span>
+    </div>
+    <div class="tl-body">
+      <span class="tag tag-tech">TAG</span> ...
+      <br><br>
+      DESCRIPTION with <strong>bold highlights</strong>.
+    </div>
+  </div>
+-->
+<section class="section fade-in">
+  <div class="section-title">Decision Timeline</div>
+  <div class="timeline">
+    {{TIMELINE_ITEMS}}
+  </div>
+</section>
+
+<!-- ============ DECISIONS GRID ============ -->
+<!--
+  Fill {{DECISION_CARDS}} with one block per key decision:
+  <div class="decision-card">
+    <div class="decision-label">LABEL</div>
+    <div class="decision-value">VALUE</div>
+    <div class="decision-detail">DETAIL</div>
+  </div>
+-->
+<section class="section fade-in">
+  <div class="section-title">Architecture at a Glance</div>
+  <div class="decisions-grid">
+    {{DECISION_CARDS}}
+  </div>
+</section>
+
+<!-- ============ HIGHLIGHTS ============ -->
+<!--
+  Fill {{HIGHLIGHT_CARDS}} with one block per highlight:
+  <div class="highlight-card TYPE">  (TYPE: impact | insight | synthesis)
+    <div class="highlight-type">LABEL</div>
+    <div class="highlight-quote">"QUOTE"</div>
+    <div class="highlight-author">— ICON NAME (TITLE) · Round N</div>
+  </div>
+-->
+<section class="section fade-in">
+  <div class="section-title">Session Highlights</div>
+  {{HIGHLIGHT_CARDS}}
+</section>
+
+<!-- ============ RISKS ============ -->
+<!--
+  Fill {{RISK_BARS}} with one block per risk:
+  <div class="risk-bar">
+    <div class="risk-level LEVEL"></div>  (LEVEL: critical | high | medium)
+    <div class="risk-content">
+      <div class="risk-name">RISK NAME</div>
+      <div class="risk-mitigation">→ MITIGATION</div>
+    </div>
+    <div class="risk-meta"><div class="risk-likelihood">LIKELIHOOD</div></div>
+  </div>
+-->
+<section class="section fade-in">
+  <div class="section-title">Risk Register</div>
+  {{RISK_BARS}}
+</section>
+
+<!-- ============ FOOTER ============ -->
+<section class="footer">
+  <div class="footer-text">Session completed · {{DATE}} · {{ROUNDS}} rounds · {{DECISIONS_COUNT}} decisions · {{DEADLOCKS}} deadlocks</div>
+  <div class="footer-confidence">
+    <span class="confidence-label">Room Confidence</span>
+    <div class="confidence-bar"><div class="confidence-fill" style="width:{{CONFIDENCE_PCT}}%"></div></div>
+    <span class="confidence-label">{{CONFIDENCE_SCORE}}</span>
+  </div>
+</section>
+
+<script>
+  const obs = new IntersectionObserver(es => es.forEach(e => e.isIntersecting && e.target.classList.add('visible')), {threshold:0.1});
+  document.querySelectorAll('.fade-in').forEach(el => obs.observe(el));
+</script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+{
+  "skill_name": "party-mode",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "party mode — we're two people with a notion template and a weekend. Is there a real market for a habit app that charges $5/month from day one, and what's the fastest way to find out if we're delusional?",
+      "expected_output": "Dynamically composed room for a 0→1 validation topic: should pick personas whose domains cover customer reality, market, pricing-willingness, and fast validation (e.g. Ren, Cai, Tao) — not the full code-review crew. Banter, distinct voices, clash preserved.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "party mode — we've got 50k users and competitors copying our every move. Where does this defensible, and what does winning look like in five years if we're right?",
+      "expected_output": "Dynamically composed room for a 1→100 moat/strategy topic: should pick personas covering defensibility, long-term strategy, network effects, vision (e.g. Wei, Noa, Cai) — not the same room as eval 1.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "party mode — review the commercial viability of this plan: we sell an AI writing tool to university students at $3/month, and our only differentiation is a slightly better prompt library.",
+      "expected_output": "Dynamically composed room for commercial-viability: should pick personas covering business-model, pricing, competitive challenge, and customer reality (e.g. Cai, Splinter, Ren, Wei).",
+      "files": []
+    }
+  ]
+}

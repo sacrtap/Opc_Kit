@@ -1,9 +1,37 @@
 # Changelog
 
-All notable changes to the create-prd skill will be documented in this file.
+All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [2.5.1] - 2026-08-08
+
+### Added
+- **party-mode skill (v1.0.0)**: Multi-persona decision discussion skill with 17 professional personas
+  - 17 expert roles covering engineering, product, and strategy domains
+  - Dynamic role selection based on topic (4-6 experts auto-selected)
+  - Three discussion tiers: Quick Take (3-5 rounds), Standard (8-12), Deep Dive (15-25)
+  - Four operating modes: subagent, session, auto, agent-team
+  - Evidence-driven discussion with web research integration
+  - Session memory for cross-session context retention
+  - Preset party groups: `code-review-crew`, `anti-consensus-club`
+  - Visual HTML review generation
+  - Custom party creation support
+
+### Documentation
+- **party-mode-guide.md**: Comprehensive English usage guide with 5 core scenarios
+  - New product design (0→1 validation)
+  - Key feature design
+  - Technical architecture challenges
+  - Product roadmap & strategy
+  - Commercialization & business model
+- **party-mode-guide-CN.md**: Chinese usage guide (mirrors English version)
+- **create-prd-guide.md**: English usage guide for create-prd skill
+- **create-prd-guide-CN.md**: Chinese usage guide for create-prd skill
+- **README.md / README-CN.md**: Updated "Basic Usage" section with complete workflow example
+  - Single skill usage examples (create-prd alone, party-mode alone)
+  - Complete workflow example: debate first, then document
 
 ## [2.2.2] - 2026-06-10
 
@@ -92,6 +120,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Release Date | Key Improvements |
 |---------|--------------|------------------|
+| 2.5.1   | 2026-08-08 | Added party-mode skill, comprehensive usage guides (EN/CN) |
+| 2.2.2   | 2026-06-10 | Front matter cleanup policy, validation improvements |
 | 2.2.1   | 2026-06-10 | Documented v2.2.0 benchmark results, release notes, CI validation |
 | 2.2.0   | 2026-06-09 | Cross-engine Mermaid, Progress notifications, Checkpoint recovery |
 | 2.1.0   | 2026-06-04 | Initial release with coaching/fast modes |

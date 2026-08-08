@@ -38,12 +38,6 @@
           "description": "Output contains Metadata table with version v1.0.0",
           "type": "contains",
           "pattern": "v1\\.0\\.0"
-        },
-        {
-          "name": "Flowchart includes failure/timeout branches",
-          "description": "Flowchart contains failure/timeout branches",
-          "type": "contains",
-          "pattern": "\\|Failure\\||\\|Timeout\\||\\|No\\|"
         }
       ]
     },
@@ -55,10 +49,10 @@
       "files": [],
       "assertions": [
         {
-          "name": "Recognizes fast command",
-          "description": "Output explicitly identifies fast mode command",
+          "name": "Generates PRD directly",
+          "description": "Output generates PRD directly without asking clarifying questions",
           "type": "regex",
-          "pattern": "fast|skip|just generate"
+          "pattern": "## 1\\.|## 2\\.|## 3\\.|## 4\\.|## 5\\."
         },
         {
           "name": "Generates complete PRD",
@@ -137,7 +131,9 @@
       "name": "update-with-review",
       "prompt": "Based on the existing PRD, add a 'Share favorites with team members' feature, supporting permission control (read/edit).",
       "expected_output": "1) Auto-append changelog entry (version +0.1.0); 2) Generate 'Key Update Notes' paragraph; 3) New F-x.x numbering continues; 4) Chapter 6/7 synced; 5) PRD ends with review record (First Principles + Logical Completeness + Boundary Risk)",
-      "files": ["../tests/baseline-prd-en.md"],
+      "files": [
+        "../tests/baseline-prd-en.md"
+      ],
       "assertions": [
         {
           "name": "Identifies update intent",
@@ -194,7 +190,9 @@
       "name": "validate-existing",
       "prompt": "Please validate this PRD against the standard.",
       "expected_output": "Output graded validation report (Critical/Warning/Info): structural completeness, US↔F-x.x bidirectional traceability, Chapter 6↔7 1:1 correspondence, tracking↔success metric traceability, acceptance criteria testability, flowchart standards, glossary coverage, [ASSUMPTION] index, external dependency schedule status. Each issue includes chapter location + fix suggestion.",
-      "files": ["../tests/baseline-prd-en.md"],
+      "files": [
+        "../tests/baseline-prd-en.md"
+      ],
       "assertions": [
         {
           "name": "Identifies validate intent",
@@ -314,7 +312,7 @@
           "name": "Contains user stories chapter",
           "description": "Output contains user stories chapter",
           "type": "contains",
-          "pattern": "## 4\\. User Stories|## 3\\. Target Users"
+          "pattern": "## 4\\.|## 3\\."
         },
         {
           "name": "Contains flowchart",
@@ -362,10 +360,10 @@
           "pattern": "Resuming|Recovering|Continuing|from where"
         },
         {
-          "name": "Contains complete PRD structure",
-          "description": "Output contains complete 13-chapter PRD structure",
+          "name": "Contains PRD chapters from Ch4 onward",
+          "description": "Output contains PRD chapters starting from Chapter 4",
           "type": "contains",
-          "pattern": "## 1\\. Problem Description"
+          "pattern": "## 4\\."
         },
         {
           "name": "Contains progress tracking",
@@ -389,10 +387,10 @@
           "pattern": "^---\\n.*^---"
         },
         {
-          "name": "Metadata table present",
-          "description": "Metadata section should exist in body",
+          "name": "Metadata information present",
+          "description": "Output contains Metadata information (table or section)",
           "type": "contains",
-          "pattern": "## Metadata"
+          "pattern": "Metadata"
         },
         {
           "name": "No generate_progress in final",

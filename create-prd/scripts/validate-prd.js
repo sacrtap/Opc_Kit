@@ -56,7 +56,7 @@ check('"Key Update Notes" paragraph exists (update intent)', hasUpdateNote, 'war
 // ========== 4. US → F-x.x Traceability ==========
 const usMatches = content.match(/US-\d+\.\d+/g) || [];
 const usList = [...new Set(usMatches)];
-const ch7Section = content.match(/## 7\.\s+(Feature Details|各详细功能说明)[\s\S]*?(?=## 8\.)/);
+const ch7Section = content.match(/## 7\.\s+(Feature Details|各详细功能说明)[\s\S]*?(?=## 8\.|$)/);
 const fInCh7 = ch7Section ? [...new Set((ch7Section[0].match(/### (F-\d+\.\d+)/g) || []).map(f => f.replace('### ', '')))] : [];
 const ch6Section = content.match(/## 6\.\s+(Detailed Feature List|详细功能清单)[\s\S]*?(?=## 7\.)/);
 const fInCh6 = ch6Section ? [...new Set(ch6Section[0].match(/F-\d+\.\d+/g) || [])] : [];
@@ -213,6 +213,140 @@ const hasMetadataTable = content.includes('## Metadata') &&
                         content.includes('| Version') &&
                         content.includes('| Project');
 check('Metadata table complete (8 fields)', hasMetadataTable, 'critical');
+// ========== 19. US Semantic Structure Check (三要素) ==========
+// Verify each user story contains Actor (As a), Action (I want), Benefit (so that)
+const usSectionMatch = content.match(/## 4\.\s+User Stories[\s\S]*?(?=## 5\.)/i);
+let usStructurePass = true;
+let usTotalCount = 0;
+let usMalformedCount = 0;
+const usMalformedDetails = [];
+if (usSectionMatch) {
+  const usLines = usSectionMatch[0].split('\n');
+  for (const line of usLines) {
+    const usRow = line.match(/\|\s*(US-\d+\.\d+)\s*\|\s*(As a|作为一个)[\s\S]*?(?:so that|以便|从而)[\s\S]*?\|/i);
+    const usRowNoSoThat = line.match(/\|\s*(US-\d+\.\d+)\s*\|\s*(As a|作为一个)[\s\S]*?\|/i);
+    if (usRowNoSoThat) {
+      usTotalCount++;
+      if (!usRow) {
+        if (!line.match(/As a|作为一个/i) || !line.match(/I want|我想要|我要/i)) {
+          usMalformedCount++;
+          usMalformedDetails.push(usRowNoSoThat[1]);
+        } else if (!line.match(/so that|以便|从而/i)) {
+          usMalformedCount++;
+          usMalformedDetails.push(usRowNoSoThat[1] + ' (missing benefit/so that clause)');
+        }
+      }
+    }
+  }
+  usStructurePass = usMalformedCount === 0;
+}
+check('US stories have Actor-Action-Benefit (As a...I want...so that)', usStructurePass, 'warning',
+  usMalformedCount > 0 ? `${usMalformedCount}/${usTotalCount} malformed: ${usMalformedDetails.join(', ')}` : '');
+
+// ========== 20. Acceptance Criteria Testability (Fuzzy Word Check) ==========
+const fuzzyWords = [
+  'works normally', 'user-friendly', 'runs stably', 'friendly', 'displays normally',
+  'smooth operation', 'user satisfied', 'aesthetic', 'intuitive', 'properly', 'correctly',
+  'appropriate', '正常', '友好', '稳定运行', '正常显示', '流畅', '用户体验良好',
+  '用户满意', '美观', '直观', '正常使用', '正常工作'
+];
+const acLines = [];
+for (const line of lines) {
+  if (line.match(/^\s*- \[ \]/)) {
+    acLines.push(line.trim());
+  }
+}
+let fuzzyMatches = [];
+for (const ac of acLines) {
+  for (const fw of fuzzyWords) {
+    if (ac.toLowerCase().includes(fw.toLowerCase())) {
+      fuzzyMatches.push({ text: ac.slice(0, 60), word: fw });
+      break;
+    }
+  }
+}
+check('Acceptance criteria avoid fuzzy/untestable wording', fuzzyMatches.length === 0, 'warning',
+  fuzzyMatches.length > 0 ? `${fuzzyMatches.length} fuzzy terms found: ${fuzzyMatches.map(m => '"' + m.word + '" in "' + m.text + '..."').join('; ')}` : '');
+
+// ========== 21. US-FR Semantic Correlation (Keyword Overlap) ==========
+function extractKeywords(text) {
+  if (!text) return new Set();
+  const words = text
+    .toLowerCase()
+    .replace(/[^a-z0-9\u4e00-\u9fff\s-]/g, '')
+    .split(/\s+/)
+    .filter(w => w.length > 2 && !['the', 'and', 'for', 'that', 'this', 'with', 'from', 'have', 'been', 'will', 'does', 'what', 'when', 'where', 'which', 'their', 'about', 'would', 'should', 'could', 'into', 'over', 'also', 'its', 'than', 'then', 'after', 'before', 'just', 'more', 'some', 'each', 'other', 'only', 'very', 'such', 'well', 'even', 'still', 'back', 'here', 'there', 'down', 'been'].includes(w));
+  return new Set(words);
+}
+
+const usTextMap = {};
+if (usSectionMatch) {
+  const usLines = usSectionMatch[0].split('\n');
+  for (const line of usLines) {
+    const match = line.match(/\|\s*(US-\d+\.\d+)\s*\|\s*([^|]+?)\s*\|/);
+    if (match) {
+      usTextMap[match[1]] = match[2].trim();
+    }
+  }
+}
+
+const fDescMap = {};
+if (ch7Section) {
+  const fMatches = ch7Section[0].matchAll(/###\s*(F-\d+\.\d+)[^\n]*\n[\s\S]*?\*\*Feature Description\*\*\s*:\s*([^\n]+)/gi);
+  for (const m of fMatches) {
+    fDescMap[m[1]] = m[2].trim();
+  }
+}
+
+let usFrCorrelationIssues = [];
+for (const [fId, fDesc] of Object.entries(fDescMap)) {
+  const fNum = fId.match(/F-(\d+)\.(\d+)/);
+  if (!fNum) continue;
+  const correspondingUs = `US-${fNum[1]}.${fNum[2]}`;
+  const usText = usTextMap[correspondingUs];
+  if (!usText) {
+    const sameGroup = Object.entries(usTextMap).filter(([k]) => k.startsWith(`US-${fNum[1]}.`));
+    if (sameGroup.length > 0) {
+      const allText = sameGroup.map(([, v]) => v).join(' ');
+      const usKeywords = extractKeywords(allText);
+      const fKeywords = extractKeywords(fDesc);
+      const overlap = new Set([...usKeywords].filter(x => fKeywords.has(x)));
+      if (overlap.size === 0 && usKeywords.size > 0 && fKeywords.size > 0) {
+        usFrCorrelationIssues.push(`${fId} vs US-${fNum[1]}.x: no keyword overlap (desc: "${fDesc.slice(0, 50)}...")`);
+      }
+    }
+  } else {
+    const usKeywords = extractKeywords(usText);
+    const fKeywords = extractKeywords(fDesc);
+    const overlap = new Set([...usKeywords].filter(x => fKeywords.has(x)));
+    if (overlap.size === 0 && usKeywords.size > 0 && fKeywords.size > 0) {
+      usFrCorrelationIssues.push(`${fId} vs ${correspondingUs}: no keyword overlap`);
+    }
+  }
+}
+
+check('Feature descriptions semantically align with linked User Stories',
+  usFrCorrelationIssues.length === 0, 'warning',
+  usFrCorrelationIssues.length > 0 ? usFrCorrelationIssues.join('; ') : '');
+
+// ========== 22. F-x.x Acceptance Criteria Quantity ==========
+const acCountByF = {};
+if (ch7Section) {
+  const fBlocks = ch7Section[0].split(/###\s*F-/).slice(1);
+  for (const block of fBlocks) {
+    const fIdMatch = block.match(/^(\d+\.\d+)/);
+    if (fIdMatch) {
+      const fId = 'F-' + fIdMatch[1];
+      const acs = block.match(/- \[ \]/g) || [];
+      acCountByF[fId] = acs.length;
+    }
+  }
+}
+const lowAcCount = Object.entries(acCountByF).filter(([, c]) => c < 2).map(([id, c]) => `${id}(${c})`);
+check('Each F-x.x has ≥2 acceptance criteria', lowAcCount.length === 0, 'warning',
+  lowAcCount.length > 0 ? `Low AC count: ${lowAcCount.join(', ')}` : '');
+
+
 
 // ========== Review Record Note ==========
 if (!content.includes('## Review Record') && !content.includes('## 评审记录')) {

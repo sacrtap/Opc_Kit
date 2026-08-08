@@ -2,9 +2,12 @@
 .agents/
 .opencode/
 create-prd-workspace/
-.omo/
+
 # macOS
 .DS_Store
 # Local-only skills (not published to GitHub)
 docs/
 create-prd-cn/
+banks/
+answer.txt
+response.md
