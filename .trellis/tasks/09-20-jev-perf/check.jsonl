@@ -1,0 +1,1 @@
+{"file": ".trellis/spec/guides/index.md", "reason": "Reviewer must verify each finding against the actual code; this repo's AI reviews carry ~35% false positives."}

@@ -9,12 +9,25 @@
  *   - button "Expand section" [ref=e7]
  *   - generic [active] [ref=e1]:
  *   - status [ref=e4]: idle
+ *   - checkbox "Accept terms" [ref=e9]: checked
  *   - text: "Status:"
  */
 
 const REF_PATTERN = /\[ref=([^\]]+)\]/g;
 
-/** Parse ARIA-snapshot text into `{ ref, role, name }` nodes. */
+/**
+ * Control-state words an ARIA snapshot may suffix after a colon. When the bare
+ * value after `:` is one of these, it is captured as `state` rather than as the
+ * node name, so the model can see whether a control is already in the wanted
+ * state and avoid re-toggling it. Any other value keeps today's behaviour
+ * (it becomes the name).
+ */
+const STATE_WORDS = new Set([
+  'checked', 'unchecked', 'selected', 'expanded', 'collapsed',
+  'disabled', 'pressed', 'invalid', 'required', 'readonly',
+]);
+
+/** Parse ARIA-snapshot text into `{ ref, role, name, state? }` nodes. */
 export function parseAriaSnapshot(text) {
   const nodes = [];
 
@@ -31,7 +44,10 @@ export function parseAriaSnapshot(text) {
     const roleMatch = header.match(/^[A-Za-z][\w-]*/);
     if (!roleMatch) continue;
 
-    nodes.push({ ref, role: roleMatch[0], name: extractName(header, value) });
+    const node = { ref, role: roleMatch[0], name: extractName(header, value) };
+    const state = extractState(value);
+    if (state) node.state = state;
+    nodes.push(node);
   }
 
   return nodes;
@@ -46,6 +62,19 @@ function splitHeaderValue(text) {
     else if (char === ':' && !inQuotes) return [text.slice(0, i), text.slice(i + 1)];
   }
   return [text, null];
+}
+
+/**
+ * A bare value after `:` that is one of the known state words is the control's
+ * state, not a name. A quoted value is always a name (`text: "Status:"`), and
+ * an unknown bare value keeps today's behaviour (it becomes the name), so
+ * `status [ref=e4]: idle` still parses exactly as before.
+ */
+function extractState(value) {
+  if (value === null) return null;
+  const trimmed = value.trim();
+  if (trimmed.startsWith('"')) return null;
+  return STATE_WORDS.has(trimmed) ? trimmed : null;
 }
 
 function extractName(header, value) {

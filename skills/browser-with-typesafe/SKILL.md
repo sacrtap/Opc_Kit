@@ -201,8 +201,21 @@ rather than asserted:
 
 ```js
 const m = session.metrics();
-// { runs, decisions, executedActions, apiMs, inputTokens, outputTokens, elapsedMs, handoffs }
+// { runs, decisions, executedActions, apiMs, inputTokens, outputTokens, elapsedMs, handoffs,
+//   decisionLatencyMs: { count, min, p50, max, total } }
 ```
+
+`decisionLatencyMs` is the model's own per-decision latency, so "the model is fast, the integration
+is not" is a claim you can check rather than assert.
+
+Every request also carries a second, independent question: whether the goal looks satisfied on the
+page. When Jev chooses `DONE` while that question reads below 0.5, the history entry is flagged
+`progressDisagreement`. It is a caution flag only — the status stays `needs_verification` either way,
+because gating on it could only produce false failures. When you see the flag, look at the page
+before reporting success.
+
+The prompt Jev receives is bounded: the last 10 history entries, projected to the fields the model
+needs, so its size does not grow with the number of steps already taken.
 
 When the user asks whether the skill was worth it, quote these numbers: decision tokens billed at
 Jev's rate, alongside the host turns that were avoided. Do not estimate the host side — a host

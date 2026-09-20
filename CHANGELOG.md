@@ -61,6 +61,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added a workflow running the browser-with-typesafe test suite on Node 22 and 24
   (69 unit, contract, installer, doctor, and architecture tests)
 
+## [2.6.2] - 2026-09-20
+
+### Fixed
+- **Unbounded request payload.** The prompt sent to Jev carried the entire decision history on every
+  request, so it grew with the number of steps taken: 10,314 input tokens by step 80 for an identical
+  decision. History is now capped at the last 10 entries and projected to the fields the model needs.
+  Measured: **1,929 tokens at step 80 (was 10,314, 5.3x less)** and flat after step 10.
+- **Control state was invisible to the model.** The ARIA parser discarded a control's state suffix, so
+  `checkbox "Accept terms": checked` reached the model without the `checked`. Nodes now carry `state`,
+  it is rendered in the snapshot, and it is included in the staleness fingerprint — a decision taken
+  before a control's state moved is now discarded instead of executed.
+
+### Added
+- **A second, independent question per request.** A `noul` progress question is asked in the same
+  request as the action choice, exploiting the documented property that questions in one request are
+  evaluated in parallel. When the model chooses DONE while progress reads below 0.5, the history entry
+  is flagged `progressDisagreement`. It is additive only: the status is unchanged and nothing gates on
+  it, because a false failure is the only possible outcome of gating.
+- **Per-decision latency accounting**: `metrics.decisionLatencyMs` (`count`/`min`/`p50`/`max`/`total`).
+- **A 15-action fixture** and a `--task 3-action|15-action` selector in the A/B harness, which now
+  records wall time, time per mechanical action, host turns, token classes, billed cost, and the
+  skill's own decision latency per arm.
+
+### Changed — the published result is not favourable
+Measured on the 15-action flow, three samples per arm, correctness from the page's own report:
+
+| | Direct | With the skill |
+| --- | ---: | ---: |
+| Billed host cost | **$0.025122** | **$0.039907** |
+| Time per mechanical action | **6.45 s** | **10.90 s** |
+| Correct | 3/3 | 3/3 |
+
+**The skill cost 58.9% more and took 69% longer per action at equal accuracy.** Jev is not the
+bottleneck (55 decisions, p50 373 ms). Arm A needed only ~1 host turn per action, so the premise the
+skill is built on did not apply to this flow. The docs now say so, scope the value to flows whose next
+step is not knowable up front, and state that the break-even flow length is **not** measured.
+
 ## [2.6.1] - 2026-09-20
 
 ### Fixed
@@ -194,6 +231,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Release Date | Key Improvements |
 |---------|--------------|------------------|
+| 2.6.2   | 2026-09-20 | Bounded the Jev payload; 15-action A/B published (skill still loses) |
 | 2.6.1   | 2026-09-20 | Corrected an unsupported cost claim; added measured A/B harness |
 | 2.6.0   | 2026-09-20 | Added browser-with-typesafe skill, omp marketplace catalog, `skills/` layout |
 | 2.5.1   | 2026-08-08 | Added party-mode skill, comprehensive usage guides (EN/CN) |

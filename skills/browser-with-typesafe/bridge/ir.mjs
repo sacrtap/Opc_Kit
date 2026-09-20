@@ -218,7 +218,9 @@ export function originOf(url) {
 
 /**
  * Build and validate an IR snapshot.
- * Guarantees: every role is canonical, every non-null ref is unique.
+ * Guarantees: every role is canonical, every non-null ref is unique, and every
+ * node carries `state` as a string or null — anything else is rejected rather
+ * than silently coerced.
  */
 export function createIR({ url, nodes }) {
   if (typeof url !== 'string' || !url) throw new Error('IR requires a url');
@@ -232,11 +234,20 @@ export function createIR({ url, nodes }) {
     if (!role) throw new Error('IR node requires a role');
     const name = typeof node.name === 'string' ? node.name : '';
     const ref = node.ref == null || node.ref === '' ? null : String(node.ref);
+    const state =
+      node.state == null
+        ? null
+        : typeof node.state === 'string'
+          ? node.state
+          : null;
+    if (node.state != null && state === null) {
+      throw new Error(`IR node state must be a string or null: ${String(node.state)}`);
+    }
     if (ref !== null) {
       if (seen.has(ref)) throw new Error(`Duplicate IR ref: ${ref}`);
       seen.add(ref);
     }
-    out.push({ ref, role, name });
+    out.push({ ref, role, name, state });
   }
 
   return { version: IR_VERSION, url, origin: originOf(url), nodes: out };
@@ -248,13 +259,17 @@ export function createIR({ url, nodes }) {
  *
  * Every name is escaped onto a single line: page text is untrusted data and
  * must never be able to forge an extra `[ref=...]` entry or end the snapshot.
+ *
+ * A control's `state` is rendered in parentheses so the model can see whether a
+ * checkbox is already checked and therefore must not be toggled again.
  */
 export function serializeForJev(ir) {
   const lines = [`Browser tab: URL: "${ir.url}".`];
   for (const node of ir.nodes) {
     const ref = node.ref === null ? '' : `[ref=${node.ref}] `;
     const name = node.name ? ` "${escapeName(node.name)}"` : '';
-    lines.push(`${ref}${node.role}${name}`);
+    const state = node.state ? ` (${node.state})` : '';
+    lines.push(`${ref}${node.role}${name}${state}`);
   }
   return lines.join('\n');
 }
@@ -276,9 +291,13 @@ export function snapshotLength(ir) {
 /**
  * Change-detection key that deliberately excludes `ref`: a page whose content is
  * unchanged reports the same fingerprint even when the adapter mints fresh refs.
+ *
+ * `state` IS included: a decision taken before a control's state moved must be
+ * discarded, never executed — a stale decision against a control whose state
+ * has changed is the exact failure this guard exists to prevent.
  */
 export function fingerprint(ir) {
-  const body = ir.nodes.map((node) => `${node.role}\u0000${node.name}`).join('\n');
+  const body = ir.nodes.map((node) => `${node.role}\u0000${node.name}\u0000${node.state ?? ''}`).join('\n');
   return `${ir.url}\n${body}`;
 }
 

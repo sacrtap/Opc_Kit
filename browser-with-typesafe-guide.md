@@ -408,75 +408,80 @@ The host must verify independently. Never report success from action history alo
 
 ---
 
-## Cost: A Measured A/B
+## What it costs: measured on a 15-action flow
 
-The premise is that a mechanical flow stops costing one host-model turn per click. That deserves a
-measurement, not an assertion, so the same 3-action task (expand → scroll → collapse) was run on the
-shared fixture, three samples per arm:
+The premise of this skill is that a mechanical flow stops costing one host-model turn per click. We
+measured it on a 15-action flow, three samples per arm, both arms driven by the same host model with
+the same goal, and correctness read from the page's own report rather than either agent's claim:
 
-- **Arm A** — the host agent drives the browser itself; the skill is not discoverable from its working directory
+- **Arm A** — the host agent drives the browser itself; the skill is not discoverable from its cwd
 - **Arm B** — the host agent uses this skill
-
-Both arms were measured with the host runtime's own token accounting, and correctness came from the
-page's self-report rather than either agent's claim.
 
 | | Arm A (no skill) | Arm B (with skill) |
 | --- | ---: | ---: |
-| Host turns | 7.7 | 10.3 |
-| Uncached input tokens | 42,507 | 41,015 |
-| Cache-read tokens | 201,259 | 354,347 |
-| Output tokens | 1,360 | 3,674 |
-| **Billed host cost** | **$0.015592** | **$0.018820** |
+| Host turns | 14.3 | 29.0 |
+| Uncached input tokens | 47,206 | 65,029 |
+| Cache-read tokens | 481,237 | 1,339,520 |
+| Output tokens | 6,727 | 10,301 |
+| **Billed host cost** | **$0.025122** | **$0.039907** |
+| Wall time | 96.7 s | 163.5 s |
+| **Time per mechanical action** | **6.45 s** | **10.90 s** |
 | Task completed correctly | 3/3 | 3/3 |
 
-Individual runs, so you can judge the spread rather than trust a mean:
+**On this flow the skill cost 58.9% more and took 69% longer per action, at equal accuracy.**
 
-| Run | Turns | Uncached | Cache-read | Output | Cost |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| A1 | 9 | 63,628 | 225,792 | 1,714 | $0.022500 |
-| A2 | 8 | 32,211 | 221,568 | 1,452 | $0.012735 |
-| A3 | 6 | 31,683 | 156,416 | 915 | $0.011541 |
-| B1 | 11 | 41,011 | 397,440 | 3,542 | $0.018938 |
-| B2 | 8 | 41,404 | 277,760 | 3,862 | $0.018722 |
-| B3 | 12 | 40,629 | 387,840 | 3,619 | $0.018799 |
+Per-run spread, so you can judge the variance rather than trust a mean:
 
-**On a short, scriptable flow this skill costs more in every sample** — about 21% on the means — and it
-is not less accurate: both arms completed 3/3. The result is published instead of a flattering number.
+| Run | Turns | Uncached | Cache-read | Output | Cost | Wall |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| A1 | 12 | 38,279 | 421,504 | 11,468 | $0.027774 | 107.2 s |
+| A2 | 22 | 42,888 | 769,536 | 5,514 | $0.024100 | 100.5 s |
+| A3 | 9 | 60,451 | 252,672 | 3,200 | $0.023491 | 82.4 s |
+| B1 | 27 | 51,026 | 1,204,224 | 9,354 | $0.033758 | 137.7 s |
+| B2 | 22 | 86,577 | 997,248 | 10,446 | $0.044492 | 173.5 s |
+| B3 | 38 | 57,483 | 1,817,088 | 11,104 | $0.041472 | 179.3 s |
 
-Note the shape of the two distributions: arm B is stable ($0.0187–$0.0189, ±0.4%) while arm A swings by
-2× ($0.0115–$0.0225). The skill trades a better best case for a tighter worst case.
+Three samples per arm on one fixture: treat the percentages as indicative, not precise.
 
-Three samples per arm on one 3-action fixture, so treat the percentage as indicative, not precise.
+### Jev is not the bottleneck
 
+Across the three arm-B runs the skill made **55 decisions**. Jev's own latency was **p50 373 ms**
+(spread 363–385 ms across runs), worst case 1,890 ms. The model answers in sub-second time; the cost
+is everything around it.
 
-Why the overhead wins at this size: the host can already batch three mechanical actions into a couple
-of `eval` calls, so it never needed one turn per click; arm B pays to read the skill and write the
-wiring code, and its longer context inflates cache reads.
+### Why the premise did not hold here
 
-### Where it does pay off
+Arm A needed only **14.3 host turns for 15 actions** — about one turn per action, not one turn per
+click. A host that batches a few mechanical actions into one call never paid the per-click cost this
+skill removes. Arm B then paid on top: reading this document, writing the wiring code, and carrying a
+context **2.8× larger** in cache reads (1,339,520 vs 481,237).
 
-- **Long flows, or flows whose next step is not knowable up front** — a host can only batch actions it
-  already knows, and otherwise re-reads the page (571–1,711 tokens per observation here)
-- **Expensive host models** — decision work moves to Jev, billed at **input only: $0.042 per million
-  tokens, output free** (measured decision cost for this flow: 4,751 input / 211 output ≈ $0.0002)
-- **Safety and auditability**, which the A/B does not price: origin allowlist re-checked every step,
-  no text-entry action by construction, policy-bounded controls, mandatory host verification
+### What the request-payload fix did achieve
 
-The break-even flow length is **not** measured. treat the payoff as a hypothesis to check on your own
-flows; the instrumentation below makes that cheap.
+The skill used to send its whole decision history on every request, so the payload grew with the
+number of steps taken. It is now capped and projected:
 
-### Measure your own, and reproduce the A/B
+| Step | History entries sent | Input tokens |
+| ---: | ---: | ---: |
+| 1 | 1 | 1,730 |
+| 10 | 10 | 1,919 |
+| 40 | 10 | 1,929 |
+| 80 | 10 | 1,929 |
 
-```js
-const outcome = await session.run(task);
-outcome.sessionMetrics.inputTokens;   // 4751
-outcome.sessionMetrics.outputTokens;  // 211
-```
+Before the fix, step 80 sent **10,314** input tokens for the same decision — **5.3× more**, growing
+without bound. That was a real defect and it is fixed, but it is not enough to outweigh the
+integration cost on a flow this size.
 
-```sh
-node tests/e2e/experiment-server.mjs 8791 &
-./tests/e2e/cost-experiment.sh 3
-```
+### What is not measured
+
+- **The break-even flow length.** Nothing here shows a length at which the skill wins; we did not
+  find one.
+- Any flow whose next step genuinely depends on freshly observed state — the case the skill is
+  designed for and this fixture does not exercise, because all 15 actions are known up front.
+- Flows needing text entry: out of scope by construction.
+
+If you are choosing between driving a browser directly and using this skill for a scripted flow, the
+measurement says drive it directly.
 
 ## Verification Matrix
 

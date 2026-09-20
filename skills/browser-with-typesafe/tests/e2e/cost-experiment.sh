@@ -5,29 +5,102 @@
 #          the skill is discoverable neither project- nor user-scoped).
 # Arm B — the host agent uses this skill (run from the repository root).
 #
-# Both arms run the same 3-action task and are measured with the host runtime's own
-# token accounting. Correctness is read from the page's self-report, not from either
-# agent's claim.
+# Both arms run the same task and are measured with the host runtime's own
+# token accounting. Correctness is read from the page's self-report (`ok`
+# field), not from either agent's claim.
+#
+# Task selector (default: 3-action, which preserves the published A/B):
+#   ./tests/e2e/cost-experiment.sh 3                       # 3-action flow
+#   ./tests/e2e/cost-experiment.sh 3 --task 15-action      # 15-action flow
+#   ./tests/e2e/cost-experiment.sh --samples 3 --task 15-action
+#   ./tests/e2e/cost-experiment.sh 3 8791 15-action        # legacy positional form
+#
+# The 15-action goal text is read from tests/e2e/task.mjs (`GOAL_15`) so the two
+# arms cannot drift apart: both prompts are that one string, differing only in
+# whether the agent is told to use the skill.
+#
+# Per run the harness records: wall-clock time, host turns, uncached input /
+# cache-read / output tokens, billed cost, correctness from the fixture's
+# report, and — for arm B (the skill arm) — the skill's own
+# decisionLatencyMs summary. Arm A makes no Jev calls; for arm A the honest
+# comparable quantity is wall time per mechanical action, so the report
+# computes time-per-action for both arms.
 #
 #   node tests/e2e/experiment-server.mjs 8791 &
 #   ./tests/e2e/cost-experiment.sh 3
-#
-# Usage: cost-experiment.sh [samples] [port]
+#   ./tests/e2e/cost-experiment.sh 3 --task 15-action
 
 set -u
-SAMPLES="${1:-3}"
-PORT="${2:-8791}"
+
+SAMPLES=3
+PORT=8791
+TASK_SELECTOR="3-action"
+
+# Flags win over the legacy positional form: [samples] [port] [selector].
+pos=0
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --samples) SAMPLES="${2:?--samples needs a value}"; shift 2 ;;
+    --port) PORT="${2:?--port needs a value}"; shift 2 ;;
+    --task) TASK_SELECTOR="${2:?--task needs a value}"; shift 2 ;;
+    -h|--help) sed -n '2,30p' "$0"; exit 0 ;;
+    -*) echo "unknown option: $1" >&2; exit 2 ;;
+    *)
+      pos=$((pos + 1))
+      case "$pos" in
+        1) SAMPLES="$1" ;;
+        2) PORT="$1" ;;
+        3) TASK_SELECTOR="$1" ;;
+        *) echo "unexpected argument: $1" >&2; exit 2 ;;
+      esac
+      shift
+      ;;
+  esac
+done
+
 BASE="http://127.0.0.1:${PORT}"
 SKILL_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
 OUT="$(mktemp -d)"
 SCRATCH="$(mktemp -d)"
+
+if ! command -v node >/dev/null 2>&1; then
+  echo "node is required to read the task goal from tests/e2e/task.mjs" >&2
+  exit 1
+fi
 
 if ! curl -sS -o /dev/null "${BASE}/reports"; then
   echo "experiment server is not reachable at ${BASE}; start experiment-server.mjs first" >&2
   exit 1
 fi
 
-total() { # <jsonl> -> "turns uncached cacheRead output cost"
+# Task selector: expected mechanical-action count and the shared goal text.
+case "$TASK_SELECTOR" in
+  3-action)
+    EXPECTED=3
+    GOAL_SUFFIX="open the page, then click the button named 'Expand section', then scroll down 2 pages inside the panel labelled 'Evaluation report', then click the button named 'Collapse section'. Finally reply with exactly the status text shown on the page and nothing else."
+    ;;
+  15-action)
+    EXPECTED=15
+    # One source of truth for the A/B prompt: the exported goal in task.mjs.
+    GOAL_SUFFIX="$(cd "$SKILL_DIR" && node -e "import('./tests/e2e/task.mjs').then((m) => process.stdout.write(m.GOAL_15))" 2>/dev/null)" || true
+    if [ -z "$GOAL_SUFFIX" ]; then
+      echo "could not read GOAL_15 from tests/e2e/task.mjs" >&2
+      exit 1
+    fi
+    ;;
+  *)
+    echo "unknown task selector: ${TASK_SELECTOR} (expected 3-action or 15-action)" >&2
+    exit 2
+    ;;
+esac
+
+# Appended identically to BOTH prompts. Only arm B has per-decision timing to
+# report; the point is that the arms differ in nothing except the skill mention,
+# so whatever the skill measures reaches the transcript instead of being lost.
+METRICS_NOTE=" When you are done, print any per-step timing summary your tooling measured as JSON on its own line."
+
+# total <jsonl> -> "turns uncached cacheRead output cost"
+total() {
   python3 - "$1" <<'PY'
 import json, sys
 t = {'turns': 0, 'uncached': 0, 'cacheRead': 0, 'output': 0, 'cost': 0.0}
@@ -46,55 +119,178 @@ print(f"{t['turns']} {t['uncached']} {t['cacheRead']} {t['output']} {t['cost']:.
 PY
 }
 
+# decision_latency <jsonl> -> "count min p50 max total", or "none" (arm B only)
+#
+# Scans the transcript text rather than parsed events: the skill reports
+# decisionLatencyMs from its own process, so it can arrive either as a nested
+# event field or inside a stringified tool result. Both are the same JSON object
+# to a reader; a parsed-event walk would only see the first kind. Absence is
+# reported as "none" so a missing measurement is never rendered as 0ms.
+decision_latency() {
+  python3 - "$1" <<'PY'
+import json, sys
+raw = open(sys.argv[1], encoding='utf-8', errors='ignore').read()
+# The summary can arrive as a nested event field OR inside a stringified tool
+# result, where its quotes and newlines are escaped. Unescaping the string form
+# lets one scan read both shapes.
+text = raw.replace('\\n', '\n').replace('\\"', '"')
+key = '"decisionLatencyMs"'
+decoder = json.JSONDecoder()
+found, start = None, 0
+while True:
+    i = text.find(key, start)
+    if i < 0: break
+    start = i + len(key)
+    j = text.find('{', start)
+    if j < 0: break
+    try: value, _ = decoder.raw_decode(text[j:])
+    except Exception: continue
+    # Keep the last complete summary in the transcript.
+    if isinstance(value, dict) and 'p50' in value: found = value
+if not found:
+    print("none")
+else:
+    print(f"{found.get('count',0)} {found.get('min',0)} {found.get('p50',0)} {found.get('max',0)} {found.get('total',0)}")
+PY
+}
+
+echo "task: ${TASK_SELECTOR} (expected ${EXPECTED} actions, ${SAMPLES} samples per arm)"
+echo
+
 for n in $(seq 1 "$SAMPLES"); do
   for arm in A B; do
     run="${arm}${n}"
-    url="${BASE}/?report=${BASE}/report&run=${run}"
+    url="${BASE}/?report=${BASE}/report&run=${run}&expected=${EXPECTED}"
+    # Drop any report left under this run id by an earlier invocation, so this
+    # run's correctness can only come from this run.
+    curl -sS -o /dev/null -X POST "${BASE}/reset?run=${run}" || true
     if [ "$arm" = A ]; then
       cwd="$SCRATCH"
-      prompt="Using the eval tool with the browser prelude: open '${url}', then click the button named 'Expand section', then scroll down 2 pages inside the panel labelled 'Evaluation report', then click the button named 'Collapse section'. Finally reply with exactly the status text shown on the page and nothing else."
+      prefix="Using the eval tool with the browser prelude: "
     else
       cwd="$SKILL_DIR"
-      prompt="Use the browser-with-typesafe skill to do exactly this: open '${url}', then expand the section, scroll down 2 pages inside the panel labelled 'Evaluation report', then collapse it again. Finally reply with exactly the status text shown on the page and nothing else."
+      prefix="Use the browser-with-typesafe skill to do exactly this: "
     fi
+    # The URL carries this run's id, which is how the fixture's report is
+    # attributed to this run. It is identical in both prompts, so the arms still
+    # differ in nothing but whether the agent is told to use the skill.
+    prompt="${prefix}The page to work on is ${url} (open that exact URL, query string included). Goal: ${GOAL_SUFFIX}${METRICS_NOTE}"
+    t0=$(python3 -c "import time; print(time.time())")
     ( cd "$cwd" && omp -p "$prompt" --mode=json --auto-approve --max-time 240 > "${OUT}/${run}.jsonl" 2>/dev/null )
+    t1=$(python3 -c "import time; print(time.time())")
+    wall=$(python3 -c "print(f'{$t1 - $t0:.1f}')")
+    echo "$wall" > "${OUT}/${run}.wall"
     read -r turns unc cached out cost < <(total "${OUT}/${run}.jsonl")
-    printf '%s: turns=%s uncached=%s cacheRead=%s output=%s cost=$%s\n' "$run" "$turns" "$unc" "$cached" "$out" "$cost"
+    if [ "$arm" = B ]; then
+      jev="$(decision_latency "${OUT}/${run}.jsonl")"
+      echo "$jev" > "${OUT}/${run}.jevlat"
+    else
+      jev="none"
+      echo "$jev" > "${OUT}/${run}.jevlat"
+    fi
+    printf '%s: wall=%ss turns=%s uncached=%s cacheRead=%s output=%s cost=$%s jev_lat=[%s]\n' \
+      "$run" "$wall" "$turns" "$unc" "$cached" "$out" "$cost" "$jev"
   done
 done
 
 echo
-python3 - "$OUT" "$SAMPLES" "$BASE" <<'PY'
+python3 - "$OUT" "$SAMPLES" "$BASE" "$EXPECTED" <<'PY'
 import json, pathlib, sys, urllib.request
-out, samples, base = pathlib.Path(sys.argv[1]), int(sys.argv[2]), sys.argv[3]
+out, samples, base, expected = pathlib.Path(sys.argv[1]), int(sys.argv[2]), sys.argv[3], int(sys.argv[4])
 reports = json.load(urllib.request.urlopen(f'{base}/reports'))
+
+def get_run(arm, n):
+    """Return (token-totals, ok, wall_seconds) for one run."""
+    f = out / f'{arm}{n}.wall'
+    wall = float(f.read_text().strip()) if f.exists() else 0.0
+    f = out / f'{arm}{n}.jsonl'
+    if not f.exists(): return None
+    t = {'turns':0,'uncached':0,'cacheRead':0,'output':0,'cost':0.0}
+    for line in f.read_text(errors='ignore').splitlines():
+        try: ev = json.loads(line)
+        except Exception: continue
+        if ev.get('type')!='message_end' or ev['message'].get('role')!='assistant': continue
+        u = ev['message'].get('usage') or {}
+        if not u.get('totalTokens'): continue
+        t['turns']+=1; t['uncached']+=u.get('input',0); t['cacheRead']+=u.get('cacheRead',0)
+        t['output']+=u.get('output',0)
+        c=u.get('cost')
+        if isinstance(c,dict): t['cost']+=sum(v for v in c.values() if isinstance(v,(int,float)))
+    ok = any(r.get('run')==f'{arm}{n}' and r.get('expected')==expected and r.get('ok') is True for r in reports)
+    return (t, ok, wall)
+
+def latency(arm, n):
+    """Return [count, min, p50, max, total] for one run, or None if not observed."""
+    f = out / f'{arm}{n}.jevlat'
+    if not f.exists(): return None
+    parts = f.read_text().strip().split()
+    if len(parts) != 5: return None
+    try: return [float(p) for p in parts]
+    except ValueError: return None
+
 def rows(arm):
     vals = []
     for n in range(1, samples + 1):
-        f = out / f'{arm}{n}.jsonl'
-        if not f.exists(): continue
-        t = {'turns':0,'uncached':0,'cacheRead':0,'output':0,'cost':0.0}
-        for line in f.read_text(errors='ignore').splitlines():
-            try: ev = json.loads(line)
-            except Exception: continue
-            if ev.get('type')!='message_end' or ev['message'].get('role')!='assistant': continue
-            u = ev['message'].get('usage') or {}
-            if not u.get('totalTokens'): continue
-            t['turns']+=1; t['uncached']+=u.get('input',0); t['cacheRead']+=u.get('cacheRead',0)
-            t['output']+=u.get('output',0)
-            c=u.get('cost')
-            if isinstance(c,dict): t['cost']+=sum(v for v in c.values() if isinstance(v,(int,float)))
-        ok = any(r['run']==f'{arm}{n}' and r['status']=='collapsed' and r['scrolls']>=1
-                 and r['expandVisible'] and not r['collapseVisible'] and not r['panelVisible'] for r in reports)
-        vals.append((t, ok))
+        r = get_run(arm, n)
+        if r: vals.append(r)
     return vals
-print('arm   turns   uncached   cacheRead   output        cost   correct')
+
+def spread(vals, field):
+    """Return (min, max) of a field across runs."""
+    xs = [v[0][field] for v in vals]
+    return (min(xs), max(xs)) if xs else (0, 0)
+
+def wall_spread(vals):
+    xs = [v[2] for v in vals]
+    return (min(xs), max(xs)) if xs else (0.0, 0.0)
+
+print('arm   turns   uncached   cacheRead   output        cost   correct   wall_s   per_action_s')
 for arm in ('A','B'):
     vals = rows(arm)
     if not vals: continue
     k = len(vals)
     mean = lambda f: sum(v[0][f] for v in vals)/k
+    mean_wall = sum(v[2] for v in vals)/k
+    t_per = mean_wall / expected if expected else 0
     print(f"{arm}    {mean('turns'):5.1f}   {mean('uncached'):8.0f}   {mean('cacheRead'):9.0f}   "
-          f"{mean('output'):6.0f}   ${mean('cost'):.6f}   {sum(1 for v in vals if v[1])}/{k}")
+          f"{mean('output'):6.0f}   ${mean('cost'):.6f}   {sum(1 for v in vals if v[1])}/{k}   "
+          f"{mean_wall:5.1f}   {t_per:.2f}")
+
+print()
+print('per-run spread:')
+for arm in ('A','B'):
+    vals = rows(arm)
+    if not vals: continue
+    tw = wall_spread(vals)
+    tu = spread(vals, 'uncached')
+    to = spread(vals, 'output')
+    tc = spread(vals, 'cost')
+    print(f"  {arm}: wall {tw[0]:.1f}–{tw[1]:.1f}s | per_action {tw[0]/expected:.2f}–{tw[1]/expected:.2f}s | "
+          f"uncached {tu[0]}–{tu[1]} | output {to[0]}–{to[1]} | cost ${tc[0]:.6f}–${tc[1]:.6f}")
+
+# Arm B only: the skill's own per-decision latency. Absent means the skill never
+# reported it in that transcript, which is stated rather than rendered as zero.
+lat = [l for l in (latency('B', n) for n in range(1, samples + 1)) if l]
+print()
+if lat:
+    k = len(lat)
+    p50 = [l[2] for l in lat]
+    mx = [l[3] for l in lat]
+    print(f"arm B decisionLatencyMs: decisions={int(sum(l[0] for l in lat))} "
+          f"p50 mean {sum(p50)/k:.0f}ms (spread {min(p50):.0f}–{max(p50):.0f}ms) "
+          f"max mean {sum(mx)/k:.0f}ms (spread {min(mx):.0f}–{max(mx):.0f}ms) over {k}/{samples} runs")
+else:
+    print('arm B decisionLatencyMs: not observed in any arm-B transcript')
+
+failed = []
+for arm in ('A','B'):
+    for n in range(1, samples + 1):
+        r = get_run(arm, n)
+        if r and not r[1]: failed.append(f'{arm}{n}')
+print()
+if failed:
+    print('self-report not ok (excluded from the accuracy claim, not retried): ' + ', '.join(failed))
+else:
+    print('self-report: ok for every run')
 PY
 echo "(raw runs in ${OUT}; scratch arm-A dir ${SCRATCH} retained for inspection)"

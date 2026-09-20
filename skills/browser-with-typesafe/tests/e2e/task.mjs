@@ -25,20 +25,74 @@ export const TASK = {
   },
 };
 
+/**
+ * The 15-action compliance-review task. Uses only click, scroll, and
+ * Escape — the operations this skill supports. Many controls share a
+ * label prefix across sections ("Accept terms …", "Option …", "Expand
+ * section …") so target selection accuracy is what the flow measures.
+ *
+ * Controls are named explicitly rather than left to `policy.click: true`
+ * discovery. A labelled checkbox renders as BOTH `checkbox "Accept terms A1"`
+ * and a sibling `text: Accept terms A1`, so discovery's one-unique-name rule
+ * drops every labelled control on the page; naming the controls resolves each
+ * one against the clickable roles, where the name is unique. This mirrors
+ * TASK above, which is the shape the verified end-to-end run uses.
+ */
+export const TASK_15 = {
+  goal:
+    'Expand section A and check Accept terms A1 and Accept terms A2; expand section B, select Option B1, and expand section C; scroll down inside the Compliance report; check Accept terms C1; expand section D and check Accept terms D1; scroll down inside the Compliance report; expand section E, select Option E1, press Escape to dismiss the warning, then click Confirm submission. Stop when the review status reads confirmed.',
+  controls: [
+    { op: 'click', name: 'Expand section A' },
+    { op: 'click', name: 'Accept terms A1' },
+    { op: 'click', name: 'Accept terms A2' },
+    { op: 'click', name: 'Expand section B' },
+    { op: 'click', name: 'Option B1' },
+    { op: 'click', name: 'Expand section C' },
+    { op: 'click', name: 'Accept terms C1' },
+    { op: 'click', name: 'Expand section D' },
+    { op: 'click', name: 'Accept terms D1' },
+    { op: 'click', name: 'Expand section E' },
+    { op: 'click', name: 'Option E1' },
+    { op: 'press', key: 'Escape' },
+    { op: 'click', name: 'Confirm submission' },
+  ],
+  policy: {
+    scrollDirections: ['down'],
+    scrollAmount: 2,
+    scrollTargetName: 'Compliance report',
+    denyNames: [/delete/i],
+    requireHostNames: [/publish/i, /send/i],
+  },
+};
+
 /** Bounds applied to every end-to-end run. */
 export const BOUNDS = { maxSteps: 12, maxMs: 45000, minConfidence: 0.55 };
 
-/** Run TASK against an adapter, returning the outcome and session metrics. */
-export async function runTask(adapter, { origin, config, overrides = {} }) {
+/** Bounds for the 15-action run: more steps and a higher wall-clock budget. */
+export const BOUNDS_15 = { maxSteps: 20, maxMs: 45000, minConfidence: 0.55 };
+
+/**
+ * The 15-action goal text for the A/B experiment. Both arms receive the
+ * identical goal; the arm-specific prefix ("Use the browser-with-typesafe
+ * skill to do exactly this:" vs "Using the eval tool with the browser
+ * prelude:") is prepended by cost-experiment.sh, so the two prompts differ
+ * ONLY in whether they mention the skill.
+ */
+export const GOAL_15 =
+  "open the page, then complete the compliance review: expand section A and check Accept terms A1 and Accept terms A2; expand section B, select Option B1, and expand section C; scroll down inside the Compliance report; check Accept terms C1; expand section D and check Accept terms D1; scroll down inside the Compliance report; expand section E, select Option E1, press Escape to dismiss the warning, then click Confirm submission. Finally reply with exactly the review status text shown on the page and nothing else.";
+
+/** Run TASK (or the supplied task) against an adapter, returning the outcome and session metrics. */
+export async function runTask(adapter, { origin, config, overrides = {}, task = TASK, bounds = BOUNDS }) {
   const session = createSession(adapter, {
     ...config,
     allowedOrigins: [origin],
-    ...BOUNDS,
+    ...bounds,
     ...overrides,
   });
-  const outcome = await session.run(TASK);
+  const outcome = await session.run(task);
   return { outcome, metrics: session.metrics() };
 }
+
 
 /**
  * Independent verification, performed by the host rather than by Jev:

@@ -3,7 +3,7 @@
 > **Professional AI Agent Skill Toolkit** — From multi-persona decision debates to structured PRD output, a complete product workflow solution compatible with all AI coding agents
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version: v2.6.1](https://img.shields.io/badge/Version-2.6.1-blue.svg)]()
+[![Version: v2.6.2](https://img.shields.io/badge/Version-2.6.2-blue.svg)]()
 [![Status: Active](https://img.shields.io/badge/Status-Active-green.svg)]()
 [![skills.sh](https://skills.sh/b/sacrtap/Opc_Kit)](https://skills.sh/sacrtap/Opc_Kit)
 [![PRD Validation](https://github.com/sacrtap/Opc_Kit/actions/workflows/prd-validation.yml/badge.svg)](https://github.com/sacrtap/Opc_Kit/actions/workflows/prd-validation.yml)
@@ -17,7 +17,7 @@ Most AI tools give you a single perspective. Opc_Kit gives you a **complete prod
 - **From Debate to Document** — Use **party-mode** to simulate expert roundtables, then **create-prd** to turn decisions into structured, production-ready PRDs. Two skills, one seamless workflow.
 - **Eliminate Blind Spots** — 17 professional personas covering engineering, product, and strategy challenge your assumptions before you write a single requirement.
 - **Professional-Grade Quality** — Bidirectional traceability, first-principles validation, and 7-dimension scoring ensure every output meets senior PM standards.
-- **Measured, Not Marketed** — **browser-with-typesafe** moves each browser decision to Jev (input-only, $0.042/Mtok). We ran the A/B against doing it directly: on a short 3-action flow it costs **~21% more**, and it pays off on long or unpredictable flows. The numbers ship with the repo.
+- **Measured, Not Marketed** — **browser-with-typesafe** moves each browser decision to Jev (input-only, $0.042/Mtok). We ran the A/B against doing it directly on a 15-action flow: it cost **58.9% more and 69% longer per action**, at equal accuracy. The numbers, the per-run spread, and the reproduction command ship with the repo — including where the premise does not hold.
 - **Zero Learning Curve** — Natural language triggers with automatic intent detection. No commands to memorize.
 - **Universal Compatibility** — One skill set works across all AI coding agents with automatic tool adaptation. No vendor lock-in.
 
@@ -207,22 +207,25 @@ costing one model turn per click.
 Both live runs produced the **same** action sequence, and both proved the scroll actually moved
 the panel — not just that a click was issued.
 
-**What it costs, measured** — same 3-action flow, three samples per arm, correctness read from the
-page's own report rather than either agent's claim:
+**What it costs, measured on a 15-action flow** — three samples per arm, same host model, same goal,
+correctness read from the page's own report rather than either agent's claim:
 
 | | Driving the browser directly | With the skill |
 | --- | ---: | ---: |
-| Host turns | 7.7 | 10.3 |
-| Billed host cost | **$0.015592** | **$0.018820** |
+| Host turns | 14.3 | 29.0 |
+| Billed host cost | **$0.025122** | **$0.039907** |
+| Time per mechanical action | **6.45 s** | **10.90 s** |
 | Task completed correctly | 3/3 | 3/3 |
 
-On a short, scriptable flow the skill cost **more in every one of 6 measured runs** (~21% on the
-means) and was not more accurate — the host can already batch three actions into a couple of calls.
-Arm B was the steadier spender ($0.0187–$0.0189 vs $0.0115–$0.0225). It pays off on **long flows, flows whose next
-step is not knowable up front, and expensive host models**, where the decision work moves to Jev at
-`$0.042`/Mtok input with output free. The break-even length is not measured; treat it as a hypothesis
-to check on your own flows. Full method, per-step tokens, and the reproduction command:
-[guide](browser-with-typesafe-guide.md).
+The skill cost **58.9% more and took 69% longer per action**, at equal accuracy. **Jev is not the
+bottleneck** — 55 decisions at a p50 of **373 ms**. The premise the skill is built on, one host turn
+per click, did not hold here: arm A needed only ~1 turn per action.
+
+We also fixed a real defect found on the way. The request payload used to grow with every step taken
+(**10,314** input tokens by step 80 for an identical decision); it is now capped and projected, at
+**1,929** by step 80 and flat after step 10.
+
+Full method, per-run spread, and the reproduction command: [guide](browser-with-typesafe-guide.md).
 
 ---
 

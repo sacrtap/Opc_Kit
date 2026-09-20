@@ -2,15 +2,18 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import {
+  HISTORY_LIMIT,
   availableActions,
   checkState,
   createSession,
   decide,
   discoverActions,
   loadConfig,
+  projectHistory,
   providerGuide,
   resolveProviderConfig,
   run,
+  summarizeLatencies,
   validateControl,
   waitForState,
 } from '../bridge/core.mjs';
@@ -554,4 +557,237 @@ test('waitForState polls snapshots without spending decision calls', async () =>
   });
   assert.equal(timedOut.status, 'timeout');
   assert.ok(timedOut.state);
+});
+
+test('projectHistory caps the payload and drops our own bookkeeping', () => {
+  const history = Array.from({ length: 14 }, (_, index) => ({
+    provider: 'typesafe',
+    choice: 'a0',
+    confidence: 0.9,
+    progress: 0.8,
+    model: 'jev-1.13.0',
+    apiMs: 120 + index,
+    usage: { inputTokens: 300, outputTokens: 20 },
+    action: `Click step ${index}`,
+    executed: true,
+    reason: 'wait',
+  }));
+
+  const projected = projectHistory(history);
+  assert.equal(projected.length, HISTORY_LIMIT, 'the cap is what bounds request growth');
+  assert.equal(projected[0].action, 'Click step 4', 'the most recent entries are the ones kept');
+  assert.deepEqual(Object.keys(projected.at(-1)), ['action', 'executed', 'reason']);
+
+  const serialized = JSON.stringify(projected);
+  for (const key of ['provider', 'model', 'usage', 'confidence', 'apiMs', 'choice', 'progress']) {
+    assert.ok(!serialized.includes(key), `the payload must not carry ${key}`);
+  }
+});
+
+test('a long run sends at most HISTORY_LIMIT entries and still records every step', async () => {
+  const steps = Array.from({ length: 40 }, (_, index) =>
+    ir('https://example.com/steps', [
+      { ref: 'e1', role: 'button', name: 'Advance' },
+      { ref: 'e2', role: 'text', name: `Step ${index}` },
+    ]),
+  );
+  // Every iteration reads the state twice: once to prove the decision is not stale
+  // and once after the action. Repeating each state makes the first read match while
+  // the second still moves the page, which is what keeps the loop running for 12 steps.
+  const restore = stubDecide('a0');
+  try {
+    const outcome = await run(makeAdapter(steps.flatMap((state) => [state, state])), {
+      ...BASE,
+      goal: 'Advance twelve times.',
+      controls: [{ op: 'click', name: 'Advance' }],
+      maxSteps: 12,
+    });
+
+    assert.equal(outcome.status, 'step_limit');
+    assert.equal(outcome.history.length, 12, 'the internal history keeps every step');
+    assert.equal(outcome.history.filter((item) => item.executed).length, 12);
+    assert.equal(typeof outcome.history[0].apiMs, 'number', 'internal bookkeeping stays on the record');
+
+    assert.equal(restore.seen.length, 12);
+    for (const request of restore.seen) {
+      assert.ok(
+        request.body.state.history.length <= HISTORY_LIMIT,
+        `payload history must stay capped, saw ${request.body.state.history.length}`,
+      );
+    }
+    const last = restore.seen.at(-1).body.state.history;
+    assert.equal(last.length, HISTORY_LIMIT);
+    assert.deepEqual(Object.keys(last[0]), ['action', 'executed']);
+  } finally {
+    restore();
+  }
+});
+
+test('one request carries both the action choice and the independent progress question', async () => {
+  const restore = stubDecide('a0');
+  try {
+    await decide({
+      configPath: CONFIG_FILE,
+      provider: 'typesafe',
+      goal: 'g',
+      state: 's',
+      actions: [{ description: 'Click A' }],
+    });
+
+    const [{ body }] = restore.seen;
+    assert.deepEqual(Object.keys(body.questions).sort(), ['next', 'progress']);
+    assert.equal(
+      body.questions.progress.type,
+      'noul',
+      'a noul question keeps progress out of the action probability set',
+    );
+    assert.ok(body.questions.progress.instructions.length > 0);
+    assert.deepEqual(Object.keys(body.questions.progress.criteria).sort(), ['false', 'true']);
+    assert.deepEqual(Object.keys(body.questions.next.criteria), ['a0', 'DONE', 'BLOCKED', 'WAIT']);
+  } finally {
+    restore();
+  }
+});
+
+test('a missing or malformed progress answer degrades to null instead of failing the request', async () => {
+  const original = globalThis.fetch;
+  const respond = (progress) => async (url, init) => {
+    const keys = Object.keys(JSON.parse(init.body).questions.next.criteria);
+    return {
+      ok: true,
+      status: 200,
+      async json() {
+        return {
+          model: 'jev-1.13.0',
+          answers: {
+            next: {
+              type: 'choice',
+              choice: 'DONE',
+              confidence: 0.9,
+              probabilities: Object.fromEntries(keys.map((key) => [key, 1 / keys.length])),
+            },
+            ...(progress === undefined ? {} : { progress }),
+          },
+        };
+      },
+    };
+  };
+  const call = () =>
+    decide({
+      configPath: CONFIG_FILE,
+      provider: 'typesafe',
+      goal: 'g',
+      state: 's',
+      actions: [{ description: 'Click A' }],
+    });
+
+  try {
+    globalThis.fetch = respond(undefined);
+    assert.equal((await call()).progress, null, 'the second answer is optional');
+
+    for (const malformed of ['yes', 7, -0.2, { value: 0.9 }, null]) {
+      globalThis.fetch = respond(malformed);
+      const decision = await call();
+      assert.equal(decision.choice, 'DONE', 'a bad second answer must not fail the request');
+      assert.equal(decision.progress, null);
+    }
+
+    globalThis.fetch = respond(0.7);
+    assert.equal((await call()).progress, 0.7, 'a well-formed noul answer is read as a bare number');
+  } finally {
+    globalThis.fetch = original;
+  }
+});
+
+test('DONE with a low progress answer still needs verification and flags the disagreement', async () => {
+  const original = globalThis.fetch;
+  const respond = (progress) => async (url, init) => {
+    const keys = Object.keys(JSON.parse(init.body).questions.next.criteria);
+    return {
+      ok: true,
+      status: 200,
+      async json() {
+        return {
+          model: 'jev-1.13.0',
+          answers: {
+            next: {
+              type: 'choice',
+              choice: 'DONE',
+              confidence: 0.9,
+              probabilities: Object.fromEntries(keys.map((key) => [key, 1 / keys.length])),
+            },
+            progress,
+          },
+        };
+      },
+    };
+  };
+  const task = {
+    ...BASE,
+    goal: 'Enable alerts.',
+    controls: [{ op: 'click', name: 'Enable alerts' }],
+  };
+
+  try {
+    globalThis.fetch = respond(0.1);
+    const disagreed = await run(makeAdapter([settingsPage('e1')]), task);
+    assert.equal(disagreed.status, 'needs_verification');
+    assert.equal(disagreed.handoff, null, 'the signal adds caution, it does not change the handoff');
+    assert.equal(disagreed.history.at(-1).progressDisagreement, true);
+
+    globalThis.fetch = respond(0.5);
+    const agreed = await run(makeAdapter([settingsPage('e1')]), task);
+    assert.equal(agreed.status, 'needs_verification');
+    assert.equal(agreed.history.at(-1).progressDisagreement, undefined, '0.5 is not a disagreement');
+  } finally {
+    globalThis.fetch = original;
+  }
+});
+
+test('summarizeLatencies is a nearest-rank summary that never reports NaN or undefined', () => {
+  const entries = (values) => values.map((apiMs, index) => ({ action: `Click ${index}`, apiMs }));
+
+  assert.deepEqual(summarizeLatencies([]), { count: 0, min: 0, p50: 0, max: 0, total: 0 });
+  assert.deepEqual(summarizeLatencies(entries([900, 300, 600])), {
+    count: 3,
+    min: 300,
+    p50: 600,
+    max: 900,
+    total: 1800,
+  });
+  assert.deepEqual(summarizeLatencies(entries([400, 100, 300, 200])), {
+    count: 4,
+    min: 100,
+    p50: 200,
+    max: 400,
+    total: 1000,
+  });
+  // a request that was never timed is excluded, never counted as a zero latency
+  assert.deepEqual(
+    summarizeLatencies([{ apiMs: 500 }, { apiMs: undefined }, {}, { apiMs: Number.NaN }]),
+    { count: 1, min: 500, p50: 500, max: 500, total: 500 },
+  );
+});
+
+test('a session reports decision latency in the same metrics object as decisions', async () => {
+  const restore = stubDecide('DONE');
+  try {
+    const session = createSession(makeAdapter([settingsPage('e1')]), {
+      ...BASE,
+      goal: 'Nothing to do.',
+      controls: [{ op: 'press', key: 'Escape' }],
+    });
+    assert.deepEqual(session.metrics().decisionLatencyMs, { count: 0, min: 0, p50: 0, max: 0, total: 0 });
+
+    const outcome = await session.run({});
+    const [apiMs] = outcome.history.map((item) => item.apiMs);
+    const summary = outcome.sessionMetrics.decisionLatencyMs;
+    assert.equal(summary.count, 1);
+    assert.equal(summary.p50, apiMs);
+    assert.equal(summary.total, apiMs);
+    assert.ok(summary.min <= summary.p50 && summary.p50 <= summary.max);
+    assert.equal(session.metrics().decisions, 1, 'latency rides along with the existing metrics');
+  } finally {
+    restore();
+  }
 });

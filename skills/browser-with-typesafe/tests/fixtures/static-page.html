@@ -7,12 +7,19 @@
       body { font: 14px/1.5 system-ui, sans-serif; margin: 24px; max-width: 720px; }
       #panel { border: 1px solid #ccc; height: 180px; overflow-y: auto; margin: 12px 0; padding: 8px; }
       #panel[hidden] { display: none; }
+      #reportPanel { border: 1px solid #ccc; height: 160px; overflow-y: auto; margin: 12px 0; padding: 8px; }
       li { padding: 6px 0; }
       output { font-weight: 600; }
+      .section { border: 1px solid #ddd; margin: 8px 0; padding: 8px; }
+      .section-content[hidden] { display: none; }
+      #warning[hidden] { display: none; }
+      #confirm:disabled { opacity: 0.5; }
     </style>
   </head>
   <body>
     <h1>Report workspace</h1>
+
+    <!-- ── 3-action flow (unchanged) ─────────────────────────────── -->
 
     <p>Status: <output id="status">idle</output></p>
     <p>Scrolls: <output id="scrolls">0</output></p>
@@ -26,7 +33,60 @@
 
     <button id="collapse" type="button" hidden>Collapse section</button>
 
+    <!-- ── 15-action flow (five sections, click + scroll + Escape only) -->
+
+    <h2>Compliance review</h2>
+    <p>Review status: <output id="fifteenStatus">pending</output></p>
+    <p>Actions: <output id="actionCount">0</output></p>
+
+    <section id="reportPanel" aria-label="Compliance report">
+      <h3>Compliance report</h3>
+      <ol id="reportRows"></ol>
+    </section>
+
+    <div class="section" id="sectionA">
+      <button id="expandA" type="button">Expand section A</button>
+      <div class="section-content" id="contentA" hidden>
+        <p><label><input type="checkbox" id="cbA1" /> Accept terms A1</label></p>
+        <p><label><input type="checkbox" id="cbA2" /> Accept terms A2</label></p>
+      </div>
+    </div>
+
+    <div class="section" id="sectionB">
+      <button id="expandB" type="button">Expand section B</button>
+      <div class="section-content" id="contentB" hidden>
+        <p><label><input type="radio" name="groupB" id="rbB1" /> Option B1</label></p>
+        <p><label><input type="radio" name="groupB" id="rbB2" /> Option B2</label></p>
+        <button id="expandC" type="button">Expand section C</button>
+      </div>
+    </div>
+
+    <div class="section" id="sectionC">
+      <div class="section-content" id="contentC" hidden>
+        <p><label><input type="checkbox" id="cbC1" /> Accept terms C1</label></p>
+      </div>
+    </div>
+
+    <div class="section" id="sectionD">
+      <button id="expandD" type="button">Expand section D</button>
+      <div class="section-content" id="contentD" hidden>
+        <p><label><input type="checkbox" id="cbD1" /> Accept terms D1</label></p>
+      </div>
+    </div>
+
+    <div class="section" id="sectionE">
+      <button id="expandE" type="button">Expand section E</button>
+      <div class="section-content" id="contentE" hidden>
+        <p><label><input type="radio" name="groupE" id="rbE1" /> Option E1</label></p>
+        <p><label><input type="radio" name="groupE" id="rbE2" /> Option E2</label></p>
+        <p id="warning">A confirmation warning is active. Dismiss it (press Escape) before confirming.</p>
+        <button id="confirm" type="button" disabled>Confirm submission</button>
+      </div>
+    </div>
+
     <script>
+      // ── 3-action flow (unchanged) ──────────────────────────────
+
       const status = document.getElementById('status');
       const scrolls = document.getElementById('scrolls');
       const panel = document.getElementById('panel');
@@ -40,10 +100,9 @@
         rows.append(li);
       }
 
-      // Scrolls are counted on the scroll container so the run can be verified
-      // from the accessibility snapshot alone.
       panel.addEventListener('scroll', () => {
         scrolls.textContent = String(Number(scrolls.textContent) + 1);
+        bumpAction();
       });
 
       expand.addEventListener('click', () => {
@@ -51,6 +110,7 @@
         expand.hidden = true;
         collapse.hidden = false;
         status.textContent = 'expanded';
+        bumpAction();
         report();
       });
 
@@ -59,15 +119,176 @@
         collapse.hidden = true;
         expand.hidden = false;
         status.textContent = 'collapsed';
+        bumpAction();
         report();
       });
 
-      // Opt-in: with `?report=<url>&run=<id>` the page reports its own final state,
-      // so an experiment can verify a run without trusting the agent's self-report.
-      // The end-to-end tests pass no parameters and stay unaffected.
+      // ── 15-action flow ────────────────────────────────────────
+      //
+      // 15 distinct mechanical actions using only click, scroll, and
+      // Escape. Many controls share a label prefix ("Accept terms …",
+      // "Option …", "Expand section …") across sections so that target
+      // selection accuracy is what the flow measures.
+      //
+      // 1.  click  Expand section A
+      // 2.  click  Accept terms A1
+      // 3.  click  Accept terms A2
+      // 4.  click  Expand section B
+      // 5.  click  Option B1
+      // 6.  click  Expand section C
+      // 7.  scroll Compliance report (down)
+      // 8.  click  Accept terms C1
+      // 9.  click  Expand section D
+      // 10. click  Accept terms D1
+      // 11. scroll Compliance report (down)
+      // 12. click  Expand section E
+      // 13. click  Option E1
+      // 14. press  Escape
+      // 15. click  Confirm submission
+
+      const fifteenStatus = document.getElementById('fifteenStatus');
+      const actionCount = document.getElementById('actionCount');
+      const reportPanel = document.getElementById('reportPanel');
+      const reportRows = document.getElementById('reportRows');
+
+      for (let i = 1; i <= 60; i += 1) {
+        const li = document.createElement('li');
+        li.textContent = `Compliance item ${i}`;
+        reportRows.append(li);
+      }
+
+      let actions = 0;
+      function bumpAction() {
+        actions += 1;
+        actionCount.textContent = String(actions);
+      }
+
+      // Scrolls of the 15-action report panel. The self-report publishes this as
+      // `scrolls` for the 15-action run, so the verdict proves the scrolls
+      // landed on the intended container instead of anywhere on the page. The
+      // 3-action run keeps reporting its own panel counter, which leaves the
+      // published 3-action payload byte-identical.
+      let reportScrolls = 0;
+      reportPanel.addEventListener('scroll', () => {
+        reportScrolls += 1;
+        bumpAction();
+        report();
+      });
+
+      // Toggle helpers that keep the count honest: each expand is one
+      // distinct click, never auto-toggled by another section.
+      function toggleExpand(button, contentId) {
+        const content = document.getElementById(contentId);
+        button.addEventListener('click', () => {
+          const willShow = content.hidden;
+          content.hidden = !content.hidden;
+          button.setAttribute('aria-expanded', String(willShow));
+          bumpAction();
+          report();
+        });
+      }
+
+      toggleExpand(document.getElementById('expandA'), 'contentA');
+      toggleExpand(document.getElementById('expandB'), 'contentB');
+      toggleExpand(document.getElementById('expandC'), 'contentC');
+      toggleExpand(document.getElementById('expandD'), 'contentD');
+      toggleExpand(document.getElementById('expandE'), 'contentE');
+
+      // Checkboxes and radios: bump on every change (toggle on or off
+      // both count as a mechanical action the model chose).
+      for (const cb of [
+        document.getElementById('cbA1'),
+        document.getElementById('cbA2'),
+        document.getElementById('cbC1'),
+        document.getElementById('cbD1'),
+      ]) {
+        cb.addEventListener('click', () => {
+          bumpAction();
+          report();
+        });
+      }
+
+      for (const rb of [
+        document.getElementById('rbB1'),
+        document.getElementById('rbB2'),
+        document.getElementById('rbE1'),
+        document.getElementById('rbE2'),
+      ]) {
+        rb.addEventListener('click', () => {
+          bumpAction();
+          report();
+        });
+      }
+
+      // Section E: a warning blocks Confirm until Escape is pressed.
+      const warning = document.getElementById('warning');
+      const confirmBtn = document.getElementById('confirm');
+      warning.hidden = false; // visible when section E is expanded
+
+      document.addEventListener('keydown', (event) => {
+        if (event.key !== 'Escape') return;
+        // The warning is only active — and Escape only counts as a
+        // mechanical action — when section E is expanded and the warning
+        // is actually visible, not merely unhidden inside a collapsed
+        // section.
+        if (warning.hidden || document.getElementById('contentE').hidden) return;
+        warning.hidden = true;
+        confirmBtn.disabled = false;
+        bumpAction();
+        report();
+      });
+
+      confirmBtn.addEventListener('click', () => {
+        if (confirmBtn.disabled) return;
+        fifteenStatus.textContent = 'confirmed';
+        bumpAction();
+        report();
+      });
+
+      // ── Self-report hook (opt-in) ──────────────────────────────
+      //
+      // With ?report=<url>&run=<id>&expected=<3|15> the page reports its
+      // own final state, so an experiment can verify a run without
+      // trusting the agent's self-report. The payload is
+      // { run, status, actions, expected, ok, scrolls, expandVisible,
+      //   collapseVisible, panelVisible } where `ok` is the fixture's own
+      // verdict — (action count >= expected) AND the expected end state
+      // is fully satisfied — and `scrolls` counts the scroll actions on
+      // the panel the selected flow scrolls. End-to-end tests pass no
+      // parameters and are unaffected.
+
       const params = new URLSearchParams(location.search);
       const reportUrl = params.get('report');
       const runId = params.get('run');
+      const expected = Number(params.get('expected') ?? '3');
+
+      function expectedStateOk() {
+        if (expected === 15) {
+          return (
+            fifteenStatus.textContent === 'confirmed' &&
+            document.getElementById('cbA1').checked &&
+            document.getElementById('cbA2').checked &&
+            document.getElementById('rbB1').checked &&
+            document.getElementById('cbC1').checked &&
+            document.getElementById('cbD1').checked &&
+            document.getElementById('rbE1').checked &&
+            warning.hidden &&
+            !confirmBtn.disabled &&
+            // Both scrolls must have reached the report panel: the expected end
+            // state includes them, so a click-only run is not "complete".
+            reportScrolls >= 2
+          );
+        }
+        // expected === 3: the original 3-action end state
+        return (
+          status.textContent === 'collapsed' &&
+          Number(scrolls.textContent) >= 1 &&
+          !expand.hidden &&
+          collapse.hidden &&
+          panel.hidden
+        );
+      }
+
       function report() {
         if (!reportUrl) return;
         fetch(reportUrl, {
@@ -75,8 +296,11 @@
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({
             run: runId,
-            status: status.textContent,
-            scrolls: Number(scrolls.textContent),
+            status: expected === 15 ? fifteenStatus.textContent : status.textContent,
+            actions: actions,
+            expected: expected,
+            ok: actions >= expected && expectedStateOk(),
+            scrolls: expected === 15 ? reportScrolls : Number(scrolls.textContent),
             expandVisible: !expand.hidden,
             collapseVisible: !collapse.hidden,
             panelVisible: !panel.hidden,

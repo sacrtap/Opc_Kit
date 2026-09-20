@@ -14,7 +14,9 @@ const read = (...parts) => readFileSync(join(BRIDGE, ...parts), 'utf8');
  * and with it every claim in the docs — silently stops being true.
  */
 test('the core and the IR reference no host browser API', () => {
-  const forbidden = /cua_repl|getAXState|ariaSnapshot|mcp__|tab\.|page\.|browser\.open/;
+  // `tab.` / `page.` mean host-API member access (`tab.click(...)`), not the word
+  // "page" followed by a full stop in model-facing prose. Require an identifier.
+  const forbidden = /cua_repl|getAXState|ariaSnapshot|mcp__|tab\.\w|page\.\w|browser\.open/;
 
   for (const file of ['core.mjs', 'ir.mjs', 'aria-snapshot.mjs']) {
     const source = read(file);
