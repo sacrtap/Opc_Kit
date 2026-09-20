@@ -51,6 +51,7 @@
         expand.hidden = true;
         collapse.hidden = false;
         status.textContent = 'expanded';
+        report();
       });
 
       collapse.addEventListener('click', () => {
@@ -58,7 +59,30 @@
         collapse.hidden = true;
         expand.hidden = false;
         status.textContent = 'collapsed';
+        report();
       });
+
+      // Opt-in: with `?report=<url>&run=<id>` the page reports its own final state,
+      // so an experiment can verify a run without trusting the agent's self-report.
+      // The end-to-end tests pass no parameters and stay unaffected.
+      const params = new URLSearchParams(location.search);
+      const reportUrl = params.get('report');
+      const runId = params.get('run');
+      function report() {
+        if (!reportUrl) return;
+        fetch(reportUrl, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            run: runId,
+            status: status.textContent,
+            scrolls: Number(scrolls.textContent),
+            expandVisible: !expand.hidden,
+            collapseVisible: !collapse.hidden,
+            panelVisible: !panel.hidden,
+          }),
+        }).catch(() => {});
+      }
     </script>
   </body>
 </html>

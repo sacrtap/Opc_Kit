@@ -209,6 +209,11 @@ Jev's rate, alongside the host turns that were avoided. Do not estimate the host
 turn's token cost depends on that agent's own prompt and history, so any figure you did not measure
 is a guess.
 
+Do not claim a saving you have not measured. On a short, scriptable flow, driving the browser
+directly is usually **cheaper** than invoking this skill: the host can batch several mechanical
+actions into one call, while this skill costs a host turn to read and wire up. The measured A/B in
+the README covers exactly this case — quote it, and scope the claim to long or unpredictable flows.
+
 ## Handing the task to another session
 
 When the user asks for a new session or another host to continue, pass:

@@ -61,6 +61,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added a workflow running the browser-with-typesafe test suite on Node 22 and 24
   (69 unit, contract, installer, doctor, and architecture tests)
 
+## [2.6.1] - 2026-09-20
+
+### Fixed
+- **Corrected an unsupported cost claim.** The 2.6.0 notes implied the skill cuts host turns from
+  4 to 1 and costs "about $0.0002". Neither survived measurement: the host can already batch several
+  mechanical actions into one call, and the skill's own integration cost is real.
+
+### Added
+- **Measured A/B harness** (`tests/e2e/experiment-server.mjs`, `tests/e2e/cost-experiment.sh`,
+  plus an opt-in self-report in the fixture): runs the same task with and without the skill, three
+  samples per arm, measuring both arms with the host runtime's token accounting and taking
+  correctness from the page's own report rather than either agent's claim.
+- Documented result: on a 3-action flow the skill cost **more in every sample** (~21% on the means;
+  $0.018820 vs $0.015592) at equal accuracy (3/3 both arms). Arm B was markedly more consistent
+  ($0.0187–$0.0189 vs $0.0115–$0.0225).
+- Documentation now scopes the value claim to long or unpredictable flows and to expensive host
+  models, and states plainly that the break-even flow length is **not** measured.
+
 ## [2.5.1] - 2026-08-08
 
 ### Added
@@ -176,6 +194,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Release Date | Key Improvements |
 |---------|--------------|------------------|
+| 2.6.1   | 2026-09-20 | Corrected an unsupported cost claim; added measured A/B harness |
 | 2.6.0   | 2026-09-20 | Added browser-with-typesafe skill, omp marketplace catalog, `skills/` layout |
 | 2.5.1   | 2026-08-08 | Added party-mode skill, comprehensive usage guides (EN/CN) |
 | 2.2.2   | 2026-06-10 | Front matter cleanup policy, validation improvements |

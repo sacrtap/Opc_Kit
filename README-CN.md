@@ -3,7 +3,7 @@
 > **专业的 AI Agent 技能工具集** — 从多角色决策辩论到结构化 PRD 输出，外加验证交付物的浏览器运行时，兼容所有 AI 编程代理的完整产品工作流解决方案
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version: v2.6.0](https://img.shields.io/badge/Version-2.6.0-blue.svg)]()
+[![Version: v2.6.1](https://img.shields.io/badge/Version-2.6.1-blue.svg)]()
 [![Status: Active](https://img.shields.io/badge/Status-Active-green.svg)]()
 [![skills.sh](https://skills.sh/b/sacrtap/Opc_Kit)](https://skills.sh/sacrtap/Opc_Kit)
 [![PRD Validation](https://github.com/sacrtap/Opc_Kit/actions/workflows/prd-validation.yml/badge.svg)](https://github.com/sacrtap/Opc_Kit/actions/workflows/prd-validation.yml)
@@ -17,7 +17,7 @@
 - **从辩论到文档** — 用 **party-mode** 模拟专家圆桌讨论，再用 **create-prd** 将决策转化为结构化、可交付的 PRD。两个技能，一套完整工作流。
 - **消除决策盲区** — 17 位专业角色覆盖工程、产品、战略三大维度，在写下需求之前先挑战你的假设。
 - **专业级质量保证** — 双向追溯、第一性原理验证、7 维评分体系，每份输出都经得起资深 PM 审查。
-- **不再按点击付费** — **browser-with-typesafe** 让一整段机械流程跑在**一个**宿主模型轮次里，而不是每次点击一轮。3 个动作的流程实测：**Jev 输入 4,760 tokens ≈ $0.0002**，宿主轮次从 4 降到 1。
+- **实测，而非宣传** — **browser-with-typesafe** 把每个浏览器决策移到 Jev（只对输入计费，$0.042/Mtok）。我们做了与直接点的 A/B 对比：短流程（3 个动作）上它**贵约 21%**，价值体现在长流程与无法预判的流程上。数字随仓库一起公布。
 - **零学习成本** — 自然语言触发，自动意图识别。无需记忆命令。
 - **全平台兼容** — 一套技能适配所有 AI 编程代理，无厂商锁定，自动适配工具链。
 
@@ -197,24 +197,19 @@ omp plugin install browser-with-typesafe@opc-kit
 
 两次真机运行产出了**完全相同**的动作序列，并且都证明了滚动**确实**滚动了面板，而不只是发出了点击。
 
-**成本实测** —— 同一段 3 个动作的流程，对接真实 TypeSafe API：
+**成本实测** —— 同一段 3 个动作流程，每臂 3 个样本，正确性取自**页面自报**而非 agent 自述：
 
-| | 不用本技能 | 用本技能 |
-| --- | --- | --- |
-| 完成流程所需的宿主轮次 | 4 —— 每个动作一轮，外加验证 | **1** |
-| 宿主需读取的页面状态 | 每个动作 571–1,711 tokens，每轮重读 | 只在验证时读一次 |
-| 计费的决策 tokens | 按宿主模型价格 | **输入 4,760 / 输出 211** |
-| 决策成本 | — | **≈ $0.0002** |
+| | 直接驱动浏览器 | 使用本技能 |
+| --- | ---: | ---: |
+| 宿主轮次 | 7.7 | 10.3 |
+| 宿主计费成本 | **$0.015592** | **$0.018820** |
+| 任务正确完成 | 3/3 | 3/3 |
 
-Jev **只对输入计费**（`$0.042` / 百万 token），**输出免费**。N 个动作的流程，宿主轮次从 N+1
-降到 1，流程越长差距越大。逐步骤明细与复现方式见[指南](browser-with-typesafe-guide-CN.md)。
-
-**示例：**
-```
-/browser — 展开评估报告，向下滚动，再折叠；完成后验证状态显示 collapsed。
-```
-
-📚 [查看完整指南](browser-with-typesafe-guide-CN.md)了解配置、安全模型、适配器契约与示例。
+在短且可脚本化的流程上，本技能在**6 次实测中每一次都更贵**（均值口径约 21%），且并不更准确 ——
+宿主本来就能把 3 个动作合并进一两次调用。B 臂花费更稳定（$0.0187–$0.0189，对比 $0.0115–$0.0225）。
+它的价值在**长流程、下一步无法预判的流程、以及宿主模型较贵时**：决策工作转移到 Jev，`$0.042`/百万
+输入 token，输出免费。**盈亏平衡的流程长度尚未测量**，请当作待验证假设。完整方法、逐步骤 tokens 与
+复现命令见[指南](browser-with-typesafe-guide-CN.md)。
 
 ---
 

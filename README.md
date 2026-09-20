@@ -3,7 +3,7 @@
 > **Professional AI Agent Skill Toolkit** — From multi-persona decision debates to structured PRD output, a complete product workflow solution compatible with all AI coding agents
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version: v2.6.0](https://img.shields.io/badge/Version-2.6.0-blue.svg)]()
+[![Version: v2.6.1](https://img.shields.io/badge/Version-2.6.1-blue.svg)]()
 [![Status: Active](https://img.shields.io/badge/Status-Active-green.svg)]()
 [![skills.sh](https://skills.sh/b/sacrtap/Opc_Kit)](https://skills.sh/sacrtap/Opc_Kit)
 [![PRD Validation](https://github.com/sacrtap/Opc_Kit/actions/workflows/prd-validation.yml/badge.svg)](https://github.com/sacrtap/Opc_Kit/actions/workflows/prd-validation.yml)
@@ -17,7 +17,7 @@ Most AI tools give you a single perspective. Opc_Kit gives you a **complete prod
 - **From Debate to Document** — Use **party-mode** to simulate expert roundtables, then **create-prd** to turn decisions into structured, production-ready PRDs. Two skills, one seamless workflow.
 - **Eliminate Blind Spots** — 17 professional personas covering engineering, product, and strategy challenge your assumptions before you write a single requirement.
 - **Professional-Grade Quality** — Bidirectional traceability, first-principles validation, and 7-dimension scoring ensure every output meets senior PM standards.
-- **Stop Paying Per Click** — **browser-with-typesafe** runs a whole mechanical flow inside **one** host-model turn instead of one turn per click. Measured on a 3-action flow: **4,760 Jev input tokens ≈ $0.0002**, and host turns down from 4 to 1.
+- **Measured, Not Marketed** — **browser-with-typesafe** moves each browser decision to Jev (input-only, $0.042/Mtok). We ran the A/B against doing it directly: on a short 3-action flow it costs **~21% more**, and it pays off on long or unpredictable flows. The numbers ship with the repo.
 - **Zero Learning Curve** — Natural language triggers with automatic intent detection. No commands to memorize.
 - **Universal Compatibility** — One skill set works across all AI coding agents with automatic tool adaptation. No vendor lock-in.
 
@@ -207,26 +207,22 @@ costing one model turn per click.
 Both live runs produced the **same** action sequence, and both proved the scroll actually moved
 the panel — not just that a click was issued.
 
-**What it costs, measured** — the same 3-action flow against the live TypeSafe API:
+**What it costs, measured** — same 3-action flow, three samples per arm, correctness read from the
+page's own report rather than either agent's claim:
 
-| | Without the skill | With the skill |
-| --- | --- | --- |
-| Host-model turns for the flow | 4 — one per action, plus verification | **1** |
-| Page state the host must read | 571–1,711 tokens per action, re-read every turn | once, at verification |
-| Decision tokens billed | at the host model's price | **4,760 input / 211 output** |
-| Decision cost | — | **≈ $0.0002** |
+| | Driving the browser directly | With the skill |
+| --- | ---: | ---: |
+| Host turns | 7.7 | 10.3 |
+| Billed host cost | **$0.015592** | **$0.018820** |
+| Task completed correctly | 3/3 | 3/3 |
 
-Jev bills **input only** at `$0.042` per million tokens and charges nothing for output. An N-action
-flow goes from N+1 host turns to 1, so the gap widens as the flow gets longer. See the
-[guide](browser-with-typesafe-guide.md) for the per-step breakdown and how to reproduce it.
-
-**Example:**
-```
-/browser — Expand the evaluation report, scroll down through it, collapse it,
-and verify the status reads collapsed when done.
-```
-
-📚 [Read the full guide](browser-with-typesafe-guide.md) for setup, safety model, adapter contract, and examples.
+On a short, scriptable flow the skill cost **more in every one of 6 measured runs** (~21% on the
+means) and was not more accurate — the host can already batch three actions into a couple of calls.
+Arm B was the steadier spender ($0.0187–$0.0189 vs $0.0115–$0.0225). It pays off on **long flows, flows whose next
+step is not knowable up front, and expensive host models**, where the decision work moves to Jev at
+`$0.042`/Mtok input with output free. The break-even length is not measured; treat it as a hypothesis
+to check on your own flows. Full method, per-step tokens, and the reproduction command:
+[guide](browser-with-typesafe-guide.md).
 
 ---
 

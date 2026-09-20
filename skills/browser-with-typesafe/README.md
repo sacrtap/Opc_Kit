@@ -64,46 +64,81 @@ only when the configuration is actually usable. Existing configuration is always
 preserved. See `references/configuration.md` for choosing between the TypeSafe
 official endpoint and OpenRouter Decisions.
 
-## What it costs, measured
+## What it costs: a measured A/B
 
-The point of this skill is not only that it works, but that a mechanical flow stops costing one
-host-model turn per click. Here is the same 3-action flow (expand → scroll → collapse) on the test
-fixture, run against the live TypeSafe API:
+The premise of this skill is that a mechanical flow stops costing one host-model turn per click.
+That deserves a measurement rather than an assertion, so the same 3-action task (expand → scroll →
+collapse) was run on the shared fixture, three samples per arm:
 
-| | Without this skill | With this skill |
-| --- | --- | --- |
-| Host-model turns to complete the flow | 4 — one per action, plus verification | **1** |
-| Page state the host model must read | 571–1,711 tokens per action, re-read every turn | read once, when verifying |
-| Decision tokens billed | at the host model's price | **4,760 input, 211 output** |
-| Decision cost | — | **≈ $0.0002** |
+- **Arm A** — the host agent drives the browser itself; the skill is not discoverable from its working directory
+- **Arm B** — the host agent uses this skill
 
-Jev bills **input only** at `$0.042` per million tokens and charges nothing for output, so the
-3-action flow above costs about two hundred-thousandths of a dollar in decision tokens. The gap
-scales with the flow: an N-action flow goes from N+1 host turns to 1.
+Both arms were measured with the host runtime's own token accounting, and correctness was read from
+the page's self-report, not from either agent's claim.
 
-Per-decision detail from that run:
-
-| Step | Input tokens | Output tokens |
+| | Arm A (no skill) | Arm B (with skill) |
 | --- | ---: | ---: |
-| Click Expand section | 571 | 49 |
-| Scroll down 2 pages within Evaluation report | 1,607 | 57 |
-| Click Collapse section | 1,711 | 57 |
-| DONE | 871 | 48 |
-| **Total** | **4,760** | **211** |
+| Host turns | 7.7 | 10.3 |
+| Uncached input tokens | 42,507 | 41,015 |
+| Cache-read tokens | 201,259 | 354,347 |
+| Output tokens | 1,360 | 3,674 |
+| **Billed host cost** | **$0.015592** | **$0.018820** |
+| Task completed correctly | 3/3 | 3/3 |
 
-Reproduce it — the engine records the provider's own token accounting:
+Individual runs, so you can judge the spread rather than trust a mean:
+
+| Run | Turns | Uncached | Cache-read | Output | Cost |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| A1 | 9 | 63,628 | 225,792 | 1,714 | $0.022500 |
+| A2 | 8 | 32,211 | 221,568 | 1,452 | $0.012735 |
+| A3 | 6 | 31,683 | 156,416 | 915 | $0.011541 |
+| B1 | 11 | 41,011 | 397,440 | 3,542 | $0.018938 |
+| B2 | 8 | 41,404 | 277,760 | 3,862 | $0.018722 |
+| B3 | 12 | 40,629 | 387,840 | 3,619 | $0.018799 |
+
+**On a short, scriptable flow this skill costs more in every sample** — about 21% on the means — and it
+is not less accurate: both arms completed 3/3. The result is published instead of a flattering number.
+
+Note the shape of the two distributions: arm B is stable ($0.0187–$0.0189, ±0.4%) while arm A swings by
+2× ($0.0115–$0.0225). The skill trades a better best case for a tighter worst case.
+
+Three samples per arm on one 3-action fixture, so treat the percentage as indicative, not precise.
+
+
+The overhead wins at this size because the host can already batch three mechanical actions into a
+couple of `eval` calls, so it never needed one turn per click; arm B meanwhile pays to read this
+document and write the wiring code, and its longer context inflates cache reads.
+
+### Where it does pay off
+
+- **Long flows, or flows whose next step is not knowable up front.** A host can only batch actions it
+  already knows. When each step depends on freshly observed state it must read the page again —
+  measured at 571–1,711 tokens per observation here.
+- **Expensive host models.** Decision work moves to Jev, billed at **input only: $0.042 per million
+  tokens, output free**. Measured decision cost for the flow above: **4,751 input / 211 output
+  tokens ≈ $0.0002**, versus host tokens at whatever your agent's model costs.
+- **Safety and auditability**, which the A/B does not price: origin allowlist re-checked every step,
+  no text-entry action by construction, policy-bounded controls, and a mandatory host verification
+  that never lets `needs_verification` count as a pass.
+
+The break-even flow length is **not** measured; the numbers above are for three actions. Treat the
+payoff as a hypothesis to check on your own flows — the instrumentation makes that cheap.
+
+### Measure your own
 
 ```js
 const outcome = await session.run(task);
-outcome.sessionMetrics.inputTokens;   // 4760 for the run above
+outcome.sessionMetrics.inputTokens;   // 4751 for the run above
 outcome.sessionMetrics.outputTokens;  // 211
 outcome.history[0].usage;             // { inputTokens: 571, outputTokens: 49 }
 ```
 
-We deliberately do **not** print a "before" total. A host turn's token cost depends on the agent's
-own system prompt, tool schemas, and conversation length, so any single number would be invented.
-The two levers above are what is actually measured: turns avoided, and decision tokens billed at
-Jev's published rate instead of the host model's.
+Reproduce the A/B:
+
+```sh
+node tests/e2e/experiment-server.mjs 8791 &
+./tests/e2e/cost-experiment.sh 3
+```
 
 ## Verification matrix
 
