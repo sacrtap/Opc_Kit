@@ -7,15 +7,17 @@ import {
   createSession,
   decide,
   discoverActions,
-  parseDotenv,
+  loadConfig,
+  providerGuide,
+  resolveProviderConfig,
   run,
   validateControl,
   waitForState,
 } from '../bridge/core.mjs';
 import { ir, makeAdapter, stubDecide } from './helpers.mjs';
 
-const ENV_FILE = fileURLToPath(new URL('./fixtures/credentials.env', import.meta.url));
-const BASE = { envFile: ENV_FILE, provider: 'typesafe', allowedOrigins: ['https://example.com'] };
+const CONFIG_FILE = fileURLToPath(new URL('./fixtures/config.json', import.meta.url));
+const BASE = { configPath: CONFIG_FILE, provider: 'typesafe', allowedOrigins: ['https://example.com'] };
 
 const settingsPage = (ref) =>
   ir('https://example.com/settings', [
@@ -23,12 +25,62 @@ const settingsPage = (ref) =>
     { ref: `${ref}-dup`, role: 'button', name: 'Save' },
   ]);
 
-test('parseDotenv handles comments, quotes, and export prefixes', () => {
-  const env = parseDotenv('# c\nexport A=1\nB="two words"\nC=\'\'\n\nD=4 # not a comment strip\n');
-  assert.equal(env.A, '1');
-  assert.equal(env.B, 'two words');
-  assert.equal(env.C, '');
-  assert.equal(env.D, '4 # not a comment strip');
+test('loadConfig returns the settings and never the key', async () => {
+  const config = await loadConfig(CONFIG_FILE);
+  assert.deepEqual(config, {
+    provider: 'typesafe',
+    model: 'jev-latest',
+    configPath: CONFIG_FILE,
+    hasApiKey: true,
+  });
+  // the secret must not be reachable through the object that gets spread into a session
+  assert.ok(!JSON.stringify(config).includes('test-key-not-a-real-credential'));
+  assert.ok(!Object.values(config).some((value) => typeof value === 'string' && value.includes('test-key')));
+});
+
+test('loadConfig fails with an actionable message instead of a raw filesystem error', async () => {
+  await assert.rejects(
+    () => loadConfig('/nope/missing-config.json'),
+    (error) => {
+      assert.match(error.message, /No configuration at \/nope\/missing-config\.json/);
+      assert.match(error.message, /node install\.mjs/);
+      assert.match(error.message, /references\/configuration\.md/);
+      return true;
+    },
+  );
+});
+
+test('loadConfig rejects an unknown provider immediately, naming the file', async () => {
+  const bad = fileURLToPath(new URL('./fixtures/config-invalid.json', import.meta.url));
+  await assert.rejects(
+    () => loadConfig(bad),
+    /Unsupported provider "typesafe-ai"; expected one of typesafe, openrouter.*config-invalid\.json/,
+  );
+});
+
+test('resolveProviderConfig is the single definition of a valid configuration', () => {
+  assert.deepEqual(resolveProviderConfig('typesafe').model, 'jev-latest');
+  assert.deepEqual(resolveProviderConfig('openrouter').model, '~typesafe/jev-latest');
+  assert.equal(resolveProviderConfig('openrouter', 'jev-1.13.0').endpoint, 'https://openrouter.ai/api/alpha/decisions');
+  assert.throws(() => resolveProviderConfig('nope'), /Unsupported provider "nope"/);
+  assert.throws(
+    () => resolveProviderConfig('typesafe', 'gpt-4'),
+    /Invalid model "gpt-4" for provider typesafe; expected e.g. jev-latest/,
+  );
+});
+
+test('providerGuide exposes where each provider key comes from', () => {
+  const guide = providerGuide();
+  assert.deepEqual(
+    guide.map((entry) => entry.id),
+    ['typesafe', 'openrouter'],
+  );
+  for (const entry of guide) {
+    assert.match(entry.keysUrl, /^https:\/\//);
+    assert.ok(entry.label);
+    assert.ok(entry.model);
+  }
+  assert.equal(guide.find((entry) => entry.id === 'typesafe').keysUrl, 'https://console.typesafe.ai/keys');
 });
 
 test('validateControl accepts the mechanical vocabulary and rejects everything else', () => {
@@ -334,7 +386,7 @@ test('decide refuses a credential leak and a malformed provider response', async
       };
     };
     const decision = await decide({
-      envFile: ENV_FILE,
+      configPath: CONFIG_FILE,
       provider: 'typesafe',
       goal: 'g',
       state: 's',
@@ -368,7 +420,7 @@ test('decide refuses a credential leak and a malformed provider response', async
     await assert.rejects(
       () =>
         decide({
-          envFile: ENV_FILE,
+          configPath: CONFIG_FILE,
           provider: 'typesafe',
           goal: 'g',
           state: 's',
@@ -381,18 +433,26 @@ test('decide refuses a credential leak and a malformed provider response', async
   }
 });
 
-test('decide rejects an unsupported provider and a missing credential', async () => {
+test('decide rejects an unsupported provider, a bad model, and a missing config path', async () => {
   await assert.rejects(
-    () => decide({ envFile: ENV_FILE, provider: 'nope', goal: 'g', state: 's', actions: [] }),
-    /Unsupported Jev provider/,
+    () => decide({ configPath: CONFIG_FILE, provider: 'nope', goal: 'g', state: 's', actions: [] }),
+    /Unsupported provider "nope"; expected one of typesafe, openrouter/,
   );
   await assert.rejects(
-    () => decide({ envFile: ENV_FILE, provider: 'typesafe', goal: 'g', state: 's', actions: [], model: 'gpt-4' }),
-    /Invalid Jev model/,
+    () => decide({ configPath: CONFIG_FILE, provider: 'typesafe', goal: 'g', state: 's', actions: [], model: 'gpt-4' }),
+    /Invalid model "gpt-4" for provider typesafe/,
   );
   await assert.rejects(
-    () => decide({ envFile: undefined, provider: 'typesafe', goal: 'g', state: 's', actions: [] }),
-    /TYPESAFE_API_KEY is missing/,
+    () => decide({ provider: 'typesafe', goal: 'g', state: 's', actions: [] }),
+    /No configuration path was supplied/,
+  );
+});
+
+test('decide reports an empty apiKey with the file and the place to get a key', async () => {
+  const empty = fileURLToPath(new URL('./fixtures/config-empty-key.json', import.meta.url));
+  await assert.rejects(
+    () => decide({ configPath: empty, provider: 'typesafe', goal: 'g', state: 's', actions: [] }),
+    /"apiKey" is empty in .*config-empty-key\.json.*console\.typesafe\.ai\/keys.*doctor\.mjs/s,
   );
 });
 

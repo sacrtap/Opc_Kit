@@ -1,0 +1,5 @@
+{
+  "provider": "typesafe-ai",
+  "model": "jev-latest",
+  "apiKey": "test-key-not-a-real-credential"
+}

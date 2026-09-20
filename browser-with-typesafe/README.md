@@ -43,16 +43,26 @@ capabilities and fails loudly when nothing matches.
 ## Install
 
 ```sh
-node install.mjs                                   # link into ~/.agents/skills
+node install.mjs                                   # link into ~/.agents/skills + write config template
+node install.mjs --provider openrouter             # choose the provider (typesafe | openrouter)
 node install.mjs --target agents-project           # or ./.agents/skills
 node install.mjs --target claude-user              # ~/.claude/skills
 node install.mjs --target /abs/path --copy         # copy instead of link
-node install.mjs --config typesafe jev-latest /abs/path/credentials.env
 node install.mjs --uninstall
 ```
 
-Existing configuration is always preserved, and credentials stay in your own
-dotenv file. See `references/provider-configuration.md`.
+The installer writes `~/.config/browser-with-typesafe/config.json` with an empty
+`apiKey` and **never receives, prompts for, or stores a key** — you fill that
+field in yourself, then verify:
+
+```sh
+node scripts/doctor.mjs   # config · permissions · provider/model · key · endpoint
+```
+
+`doctor` prints one line per check, never prints the credential, and exits `0`
+only when the configuration is actually usable. Existing configuration is always
+preserved. See `references/configuration.md` for choosing between the TypeSafe
+official endpoint and OpenRouter Decisions.
 
 ## Verification matrix
 
@@ -66,6 +76,7 @@ scrolled**, which a click-only run could not satisfy.
 | omp (`browser` prelude) | **Real end-to-end** — Jev decision loop against headless omp Chromium; host verified fresh state | **Pass** — 5/5 checks, exit clean, 3 executed actions / 4 decisions, ~1.9 s wall, ~1.7 s Jev API |
 | Playwright 1.59 (headless Chrome) | **Real end-to-end** — same task; process exits non-zero on failure | **Pass** — 5/5 checks, exit 0, 3 executed actions / 4 decisions, ~2.3 s wall, ~2.0 s Jev API |
 | Codex (`cua_repl`) | **Contract tests only** — mock tab handle plus a full decision-loop regression (`tests/codex-adapter.test.mjs`) | **Not covered on a real host** — no Codex Computer Use runtime in this environment |
+| Configuration + doctor | **Real** — `node scripts/doctor.mjs` against the live credential, plus a fresh-user install into an empty `HOME` | **Pass** — `READY`, exit 0, endpoint HTTP 200; an empty key reports `NOT READY (apiKey)` and a wrong key `NOT READY (endpoint)` with HTTP 401, both exit 1 |
 
 Both live runs produced the same sequence — `Click Expand section` →
 `Scroll down 2 pages within Evaluation report` → `Click Collapse section` →
@@ -81,8 +92,9 @@ Both live runs produced the same sequence — `Click Expand section` →
 ### Automated tests
 
 ```sh
-npm test                     # 53 unit + contract tests
+npm test                     # 66 unit, contract, installer, and doctor tests
 npm run test:e2e:playwright  # real end-to-end, exits 0 on success
+npm run doctor               # configuration check, exits 0 only when usable
 ```
 
 The omp run is executed inside omp's Eval runtime (it needs the host's `browser`
@@ -101,14 +113,15 @@ prelude); `tests/e2e/omp.e2e.mjs` documents the call shape.
 ## Layout
 
 ```
-SKILL.md                     host-agnostic instructions
+SKILL.md                     host-agnostic instructions (Step 0 configures, Steps 1-4 run)
 bridge/core.mjs              decision engine (zero dependencies)
 bridge/ir.mjs                shared accessibility IR and safety bounds
 bridge/aria-snapshot.mjs     shared ARIA-snapshot parser
 bridge/index.mjs             detectAdapter() / adapterFor() / re-exports
 bridge/adapters/{omp,codex,playwright}.mjs
 references/adapter-contract.md
-references/provider-configuration.md
+references/configuration.md  provider choice, key setup, troubleshooting
+scripts/doctor.mjs           configuration check; prints no credential
 install.mjs
 tests/                       unit, contract, and end-to-end runs
 ```

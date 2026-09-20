@@ -4,45 +4,51 @@
  *
  * Exposes this skill to the skill directories the common agent hosts scan, so a
  * single checkout serves omp, Codex, Claude Code, Cursor, and any other host
- * that reads the shared agents layout.
+ * that reads the shared agents layout, and writes a configuration template.
  *
- * Design rules kept deliberately strict:
+ * Deliberate design rules:
  *   - installation never touches existing configuration
- *   - credentials never move into the skill directory or into config.json
+ *   - this tool **never receives, prompts for, or stores an API key**
  *   - an existing target is never overwritten silently
  *
- * Usage: node install.mjs [--target <id>] [--copy] [--config <provider> <model> <envFile>]
- *                         [--no-config] [--uninstall] [--help]
+ * Usage: node install.mjs [--target <id|absolute path>] [--copy] [--uninstall]
+ *                         [--provider typesafe|openrouter] [--model <id>]
+ *                         [--no-config] [--help]
  */
 
-import { cp, lstat, mkdir, readlink, rm, stat, symlink, writeFile } from 'node:fs/promises';
+import { cp, lstat, mkdir, readlink, rm, symlink, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { dirname, isAbsolute, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createInterface } from 'node:readline/promises';
+import { PROVIDER_IDS, loadConfig, providerGuide, resolveProviderConfig } from './bridge/core.mjs';
 
 const NAME = 'browser-with-typesafe';
 const SKILL_ROOT = dirname(fileURLToPath(import.meta.url));
-const CONFIG_DIR = join(homedir(), '.config', NAME);
-const CONFIG_PATH = join(CONFIG_DIR, 'config.json');
 
-const PROVIDERS = {
-  typesafe: { model: 'jev-latest', pattern: /^jev-[a-z0-9.-]{1,80}$/ },
-  openrouter: { model: '~typesafe/jev-latest', pattern: /^(?:~?typesafe\/)?jev-[a-z0-9.-]{1,80}$/ },
-};
+/** Configuration file location for a given home directory. */
+export function configPaths(home = homedir()) {
+  const dir = join(home, '.config', NAME);
+  return { dir, file: join(dir, 'config.json') };
+}
 
 /**
- * Install targets keyed by id.
- *
- * `agents-user` is the shared layout the reference skill installs into and the
- * one omp's `agents` provider scans, so it covers omp, Codex, and other
+ * Install targets. `agents-user` is the shared layout the reference skill uses
+ * and the one omp's `agents` provider scans, so it covers omp, Codex, and other
  * agents-compatible hosts at once.
  */
 const TARGETS = {
-  'agents-user': () => join(homedir(), '.agents', 'skills'),
-  'agents-project': () => join(process.cwd(), '.agents', 'skills'),
-  'claude-user': () => join(homedir(), '.claude', 'skills'),
+  'agents-user': (home) => join(home, '.agents', 'skills'),
+  'agents-project': (_home, cwd) => join(cwd, '.agents', 'skills'),
+  'claude-user': (home) => join(home, '.claude', 'skills'),
 };
+
+export function targetRootFor(id, { home = homedir(), cwd = process.cwd() } = {}) {
+  if (TARGETS[id]) return TARGETS[id](home, cwd);
+  if (isAbsolute(id)) return id;
+  throw new Error(
+    `Unknown target "${id}". Choose ${Object.keys(TARGETS).join(', ')} or an absolute path.`,
+  );
+}
 
 async function exists(path) {
   try {
@@ -52,40 +58,6 @@ async function exists(path) {
     if (error.code === 'ENOENT') return false;
     throw error;
   }
-}
-
-function resolveTargetRoot(id) {
-  if (TARGETS[id]) return TARGETS[id]();
-  if (isAbsolute(id)) return id;
-  throw new Error(`Unknown target "${id}". Choose ${Object.keys(TARGETS).join(', ')} or an absolute path.`);
-}
-
-function validateConfig(config) {
-  const provider = PROVIDERS[config.provider];
-  if (!provider) throw new Error(`Unsupported provider "${config.provider}". Choose typesafe or openrouter.`);
-  if (typeof config.model !== 'string' || !provider.pattern.test(config.model)) {
-    throw new Error('Enter a valid Jev model id.');
-  }
-  if (!isAbsolute(config.envFile ?? '')) {
-    throw new Error('envFile must be an absolute path to an existing dotenv file.');
-  }
-  return config;
-}
-
-async function writeConfig(config) {
-  validateConfig(config);
-  if (!(await stat(config.envFile)).isFile()) {
-    throw new Error('envFile must point at a regular file.');
-  }
-  if (await exists(CONFIG_PATH)) return { configPath: CONFIG_PATH, written: false };
-
-  await mkdir(CONFIG_DIR, { recursive: true, mode: 0o700 });
-  await writeFile(
-    CONFIG_PATH,
-    `${JSON.stringify({ provider: config.provider, model: config.model, envFile: config.envFile }, null, 2)}\n`,
-    { mode: 0o600, flag: 'wx' },
-  );
-  return { configPath: CONFIG_PATH, written: true };
 }
 
 /** Expose the skill at `targetRoot/<name>`. Refuses to clobber an unrelated path. */
@@ -100,8 +72,7 @@ export async function install({ targetRoot, mode = 'link' } = {}) {
       throw new Error(`${target} already links to ${current}; remove it first.`);
     }
     if (info.isDirectory()) {
-      const marker = join(target, 'bridge', 'index.mjs');
-      if (await exists(marker)) {
+      if (await exists(join(target, 'bridge', 'index.mjs'))) {
         await rm(target, { recursive: true, force: true });
       } else {
         throw new Error(`${target} exists and is not this skill; remove it first.`);
@@ -132,90 +103,144 @@ export async function uninstall({ targetRoot } = {}) {
   return { target, removed: true };
 }
 
+/**
+ * Write the configuration template.
+ *
+ * The `apiKey` field is written empty on purpose: the key is the user's to add,
+ * in their own editor. That keeps the credential out of this tool, out of shell
+ * history, and out of any transcript of a session that ran the install.
+ */
+export async function writeConfigTemplate({ provider = 'typesafe', model } = {}, { home = homedir() } = {}) {
+  const resolved = resolveProviderConfig(provider, model);
+  const { dir, file } = configPaths(home);
+
+  if (await exists(file)) return { dir, file, written: false, ...resolved };
+
+  await mkdir(dir, { recursive: true, mode: 0o700 });
+  await writeFile(
+    file,
+    `${JSON.stringify({ provider: resolved.provider, model: resolved.model, apiKey: '' }, null, 2)}\n`,
+    { mode: 0o600, flag: 'wx' },
+  );
+  return { dir, file, written: true, ...resolved };
+}
+
 function parseArgs(argv) {
-  const options = { target: 'agents-user', mode: 'link', configure: true };
+  const options = { target: 'agents-user', mode: 'link', configure: true, provider: 'typesafe' };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === '--help') options.help = true;
     else if (arg === '--copy') options.mode = 'copy';
+    else if (arg === '--link') options.mode = 'link';
     else if (arg === '--no-config') options.configure = false;
     else if (arg === '--uninstall') options.uninstall = true;
     else if (arg === '--target') options.target = argv[(i += 1)];
-    else if (arg === '--config') {
-      options.config = { provider: argv[i + 1], model: argv[i + 2], envFile: argv[i + 3] };
-      i += 3;
+    else if (arg === '--provider') options.provider = argv[(i += 1)];
+    else if (arg === '--model') options.model = argv[(i += 1)];
+    else if (arg === '--key' || arg === '--api-key' || arg === '--token') {
+      throw new Error(
+        `${arg} is intentionally not supported: this tool never receives an API key. ` +
+          'It writes the configuration file with an empty "apiKey" for you to fill in yourself.',
+      );
     } else throw new Error(`Unknown option "${arg}". Use --help.`);
   }
   return options;
 }
 
-async function promptForConfig() {
-  const prompts = createInterface({ input: process.stdin, output: process.stdout });
-  try {
-    const provider = (await prompts.question('Jev provider (typesafe / openrouter): ')).trim();
-    const model =
-      (await prompts.question(`Model [${PROVIDERS[provider]?.model ?? ''}]: `)).trim() ||
-      PROVIDERS[provider]?.model;
-    const envFile = (
-      await prompts.question('Absolute path to your dotenv file holding the key (not the key itself): ')
-    ).trim();
-    return { provider, model, envFile };
-  } finally {
-    prompts.close();
-  }
+function printHelp() {
+  const providers = providerGuide()
+    .map((guide) => `  ${guide.id.padEnd(11)} ${guide.label.padEnd(22)} key: ${guide.keysUrl}`)
+    .join('\n');
+
+  console.log(
+    [
+      'Usage: node install.mjs [options]',
+      '',
+      `  --target <id>   ${Object.keys(TARGETS).join(' | ')} | <absolute path>  (default: agents-user)`,
+      '  --copy          copy files instead of symlinking',
+      '  --uninstall     remove the installed skill (configuration is kept)',
+      '  --provider <id> provider to write into the configuration template',
+      '  --model <id>    model id (defaults to the provider default)',
+      '  --no-config     install only; do not write a configuration template',
+      '  --help          show this message',
+      '',
+      `Installs this skill as "<target>/${NAME}" and writes`,
+      `${configPaths().file} with an empty "apiKey" for you to fill in.`,
+      '',
+      'Providers:',
+      providers,
+      '',
+      'An API key is never accepted here: add it to the configuration file yourself,',
+      'then verify with `node scripts/doctor.mjs`.',
+    ].join('\n'),
+  );
 }
 
 async function main() {
   const options = parseArgs(process.argv.slice(2));
   if (options.help) {
+    printHelp();
+    return;
+  }
+
+  const targetRoot = targetRootFor(options.target);
+  const paths = configPaths();
+
+  if (options.uninstall) {
+    const result = await uninstall({ targetRoot });
+    console.log(result.removed ? `Removed ${result.target}.` : `Nothing installed at ${result.target}.`);
+    console.log(`Configuration preserved at ${paths.file}.`);
+    return;
+  }
+
+  const result = await install({ targetRoot, mode: options.mode });
+  console.log(
+    `${result.changed ? 'Installed' : 'Already installed'} ${result.target} (${result.mode}).`,
+  );
+
+  if (!options.configure) {
+    console.log(`Configuration not touched. Expected at ${paths.file}.`);
+    return;
+  }
+
+  const config = await writeConfigTemplate(
+    { provider: options.provider, model: options.model },
+    { home: homedir() },
+  );
+
+  if (config.written) {
     console.log(
       [
-        `Usage: node install.mjs [--target ${Object.keys(TARGETS).join('|')}|<absolute path>] [--copy] [--uninstall]`,
-        '                       [--config <provider> <model> <envFile>] [--no-config]',
         '',
-        `Installs/link this skill as "<target>/skills/${NAME}".`,
-        'Default target: agents-user (~/.agents/skills), the layout omp, Codex, and other',
-        'agents-compatible hosts scan.',
-        'Existing configuration is always preserved; credentials stay in your dotenv file.',
+        `Configuration template written: ${config.file}`,
+        'Next steps:',
+        `  1. Get a ${config.provider} key: ${config.keysUrl}`,
+        '  2. Open that file and set "apiKey" yourself (this tool never receives it).',
+        '  3. Verify: node scripts/doctor.mjs',
+        '',
+        `Accepted providers: ${PROVIDER_IDS.join(', ')}`,
+        'Start a new session in your host so the skill is discovered.',
       ].join('\n'),
     );
     return;
   }
 
-  const targetRoot = resolveTargetRoot(options.target);
-
-  if (options.uninstall) {
-    const result = await uninstall({ targetRoot });
-    console.log(result.removed ? `Removed ${result.target}.` : `Nothing installed at ${result.target}.`);
-    console.log(`Configuration preserved at ${CONFIG_PATH}.`);
-    return;
-  }
-
-  const result = await install({ targetRoot, mode: options.mode });
-  console.log(`${result.changed ? 'Installed' : 'Already installed'} ${result.target} (${result.mode}).`);
-
-  let config;
-  if (options.config) config = options.config;
-  else if (options.configure && !(await exists(CONFIG_PATH))) {
-    if (!process.stdin.isTTY) {
-      console.log(`Configuration pending; write ${CONFIG_PATH} or rerun interactively.`);
-      return;
-    }
-    config = await promptForConfig();
-  }
-
-  if (config) {
-    const written = await writeConfig(config);
+  try {
+    const existing = await loadConfig(config.file);
     console.log(
-      written.written
-        ? `Wrote ${written.configPath}. Keep the API key in your dotenv file.`
-        : `Kept existing ${written.configPath}.`,
+      [
+        '',
+        `Kept existing configuration: ${config.file}`,
+        `Provider: ${existing.provider}    Model: ${existing.model}`,
+        existing.hasApiKey
+          ? 'Verify it with: node scripts/doctor.mjs'
+          : `Set "apiKey" in that file (get one at ${config.keysUrl}), then verify with: node scripts/doctor.mjs`,
+      ].join('\n'),
     );
-  } else if (await exists(CONFIG_PATH)) {
-    console.log(`Using existing ${CONFIG_PATH}.`);
+  } catch (error) {
+    console.log(`\nExisting configuration at ${config.file} could not be used: ${error.message}`);
+    console.log('Fix it, or delete that file and rerun this installer for a fresh template.');
   }
-
-  console.log('Start a new session in your host so the skill is discovered.');
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

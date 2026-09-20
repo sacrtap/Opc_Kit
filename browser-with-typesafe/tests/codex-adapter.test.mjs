@@ -5,8 +5,8 @@ import { createCodexAdapter, parseCodexLine, parseCodexState, parseCodexUrl } fr
 import { run } from '../bridge/core.mjs';
 import { stubDecide } from './helpers.mjs';
 
-const ENV_FILE = fileURLToPath(new URL('./fixtures/credentials.env', import.meta.url));
-const BASE = { envFile: ENV_FILE, provider: 'typesafe', allowedOrigins: ['https://example.com'] };
+const CONFIG_FILE = fileURLToPath(new URL('./fixtures/config.json', import.meta.url));
+const BASE = { configPath: CONFIG_FILE, provider: 'typesafe', allowedOrigins: ['https://example.com'] };
 
 const SAMPLE = [
   'Browser tab: chrome, title "Settings", URL: "https://example.com/settings".',
