@@ -456,6 +456,63 @@ test('decide reports an empty apiKey with the file and the place to get a key', 
   );
 });
 
+test('decide surfaces provider token usage, and a session aggregates it', async () => {
+  const restore = stubDecide('DONE');
+  try {
+    const session = createSession(makeAdapter([settingsPage('e1')]), {
+      ...BASE,
+      goal: 'Nothing to do.',
+      controls: [{ op: 'press', key: 'Escape' }],
+    });
+    const outcome = await session.run({});
+
+    assert.equal(outcome.history[0].usage.inputTokens, 300);
+    assert.equal(outcome.history[0].usage.outputTokens, 20);
+    assert.equal(outcome.sessionMetrics.inputTokens, 300);
+    assert.equal(outcome.sessionMetrics.outputTokens, 20);
+  } finally {
+    restore();
+  }
+});
+
+test('a missing usage block degrades to zero rather than NaN', async () => {
+  const original = globalThis.fetch;
+  globalThis.fetch = async (url, init) => {
+    const body = JSON.parse(init.body);
+    const keys = Object.keys(body.questions.next.criteria);
+    return {
+      ok: true,
+      status: 200,
+      async json() {
+        return {
+          model: 'jev-1.13.0',
+          answers: {
+            next: {
+              type: 'choice',
+              choice: 'DONE',
+              confidence: 0.9,
+              probabilities: Object.fromEntries(keys.map((key) => [key, 1 / keys.length])),
+            },
+          },
+        };
+      },
+    };
+  };
+  try {
+    const session = createSession(makeAdapter([settingsPage('e1')]), {
+      ...BASE,
+      goal: 'g',
+      controls: [{ op: 'press', key: 'Escape' }],
+    });
+    const outcome = await session.run({});
+    assert.equal(outcome.history[0].usage, null);
+    assert.equal(outcome.sessionMetrics.inputTokens, 0);
+    assert.equal(outcome.sessionMetrics.outputTokens, 0);
+  } finally {
+    globalThis.fetch = original;
+  }
+});
+
 test('createSession accumulates history and handoff counts across runs', async () => {
   const restore = stubDecide('DONE');
   try {

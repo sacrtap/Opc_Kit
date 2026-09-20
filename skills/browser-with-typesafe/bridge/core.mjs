@@ -420,7 +420,25 @@ export async function decide({
     confidence: answer.confidence,
     model: result.model,
     apiMs: Math.round(performance.now() - startedAt),
+    usage: normalizeUsage(result.usage),
     action: answer.choice.startsWith('a') ? actions[Number(answer.choice.slice(1))] : null,
+  };
+}
+
+/**
+ * Normalize provider token accounting into one shape.
+ *
+ * This is what makes the skill's central claim measurable: without it, "cheaper
+ * than one host turn per click" is an assertion rather than a number.
+ */
+function normalizeUsage(usage) {
+  if (!usage || typeof usage !== 'object') return null;
+  const input = usage.input_tokens ?? usage.inputTokens ?? usage.prompt_tokens;
+  const output = usage.output_tokens ?? usage.outputTokens ?? usage.completion_tokens;
+  if (!Number.isFinite(input) && !Number.isFinite(output)) return null;
+  return {
+    inputTokens: Number.isFinite(input) ? input : 0,
+    outputTokens: Number.isFinite(output) ? output : 0,
   };
 }
 
@@ -622,6 +640,7 @@ export async function run(
       confidence: decision.confidence,
       model: decision.model,
       apiMs: decision.apiMs,
+      usage: decision.usage ?? null,
       action: decision.action?.description ?? decision.choice,
     };
 
@@ -700,6 +719,8 @@ export function createSession(adapter, defaults = {}) {
     decisionRetries: history.filter((item) => item.reason === 'decision_retry').length,
     failedDecisions: history.filter((item) => item.reason === 'decision_error').length,
     apiMs: history.reduce((total, item) => total + (item.apiMs ?? 0), 0),
+    inputTokens: history.reduce((total, item) => total + (item.usage?.inputTokens ?? 0), 0),
+    outputTokens: history.reduce((total, item) => total + (item.usage?.outputTokens ?? 0), 0),
     elapsedMs,
     handoffs: { ...handoffs },
   });

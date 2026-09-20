@@ -92,6 +92,7 @@ async function main() {
       action: item.action,
       confidence: item.confidence,
       executed: item.executed === true,
+      usage: item.usage ?? null,
     }));
     report.checks = verdict.checks;
     report.scrolls = verdict.scrolls;

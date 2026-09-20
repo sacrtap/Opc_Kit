@@ -408,6 +408,39 @@ const fresh = await adapter.getState();  // 独立读取
 
 ---
 
+## 成本实测
+
+价值不只在于"能用"，而在于一段机械流程不再为每一次点击花掉一个宿主模型轮次。以下为同一段
+3 个动作的流程（展开 → 滚动 → 折叠），对接真实 TypeSafe API：
+
+| | 不用本技能 | 用本技能 |
+| --- | --- | --- |
+| 完成该流程所需的宿主模型轮次 | 4 —— 每个动作一轮，外加验证 | **1** |
+| 宿主模型需读取的页面状态 | 每个动作 571–1,711 tokens，每轮重读 | 只在验证时读一次 |
+| 计费的决策 tokens | 按宿主模型价格计费 | **输入 4,760，输出 211** |
+| 决策成本 | — | **≈ $0.0002** |
+
+Jev **只对输入计费**，每百万 token 收 `$0.042`，**输出免费**。N 个动作的流程，宿主轮次从 N+1
+降到 1，因此流程越长差距越大。
+
+| 步骤 | 输入 | 输出 |
+| --- | ---: | ---: |
+| Click Expand section | 571 | 49 |
+| Scroll down 2 pages within Evaluation report | 1,607 | 57 |
+| Click Collapse section | 1,711 | 57 |
+| DONE | 871 | 48 |
+| **合计** | **4,760** | **211** |
+
+```js
+const outcome = await session.run(task);
+outcome.sessionMetrics.inputTokens;   // 4760
+outcome.sessionMetrics.outputTokens;  // 211
+```
+
+我们**不**给出"使用前"的总量：宿主单轮消耗取决于该 agent 自身的系统提示、工具 schema 与会话
+长度，任何单一数字都是编造的。上述两个杠杆才是实测的：省下的轮次，以及按 Jev 官方费率（而非
+宿主模型费率）计费的决策 tokens。
+
 ## 验证矩阵
 
 | 后端 | 验证方法 | 结果 |

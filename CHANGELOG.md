@@ -24,6 +24,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `scripts/doctor.mjs` verifies config, permissions, provider/model, key presence, and real
     endpoint reachability, printing no credential and exiting non-zero unless usable
   - `install.mjs` multi-host installer (link/copy/uninstall) that preserves existing configuration
+  - Provider token accounting is captured per decision and aggregated by `session.metrics()` as
+    `inputTokens` / `outputTokens`, so the skill's cost claim is measured rather than asserted
+    (a 3-action flow measures at 4,760 input / 211 output tokens, about $0.0002 at Jev's
+    input-only rate)
 - **omp plugin marketplace catalog** (`.omp-plugin/marketplace.json`): all three skills published
   as one marketplace, installable with `omp plugin marketplace add sacrtap/Opc_Kit`
 
@@ -45,7 +49,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Documentation
 - **browser-with-typesafe-guide.md**: English usage guide (requirements & setup, safety model,
-  adapter architecture, verification matrix, troubleshooting, examples)
+  adapter architecture, measured cost, verification matrix, troubleshooting, examples)
+- Documented the value in measured cost terms — host turns per flow (4 → 1 for three actions),
+  decision tokens billed, and Jev's input-only pricing — and deliberately avoided printing an
+  unmeasured "before" total
 - **browser-with-typesafe-guide-CN.md**: Chinese usage guide mirroring the English version
 - `skills/browser-with-typesafe/LICENSE` renamed to `LICENSE-THIRD-PARTY` to keep the upstream
   `jev-browser-use` MIT attribution explicit without conflicting with the repository license

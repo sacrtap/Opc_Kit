@@ -17,7 +17,7 @@ Most AI tools give you a single perspective. Opc_Kit gives you a **complete prod
 - **From Debate to Document** — Use **party-mode** to simulate expert roundtables, then **create-prd** to turn decisions into structured, production-ready PRDs. Two skills, one seamless workflow.
 - **Eliminate Blind Spots** — 17 professional personas covering engineering, product, and strategy challenge your assumptions before you write a single requirement.
 - **Professional-Grade Quality** — Bidirectional traceability, first-principles validation, and 7-dimension scoring ensure every output meets senior PM standards.
-- **Verify in the Browser, Not by Hand** — **browser-with-typesafe** keeps repetitive clicking, scrolling, and paging inside one low-cost loop, so your agent spends model turns on judgement instead of on clicking.
+- **Stop Paying Per Click** — **browser-with-typesafe** runs a whole mechanical flow inside **one** host-model turn instead of one turn per click. Measured on a 3-action flow: **4,760 Jev input tokens ≈ $0.0002**, and host turns down from 4 to 1.
 - **Zero Learning Curve** — Natural language triggers with automatic intent detection. No commands to memorize.
 - **Universal Compatibility** — One skill set works across all AI coding agents with automatic tool adaptation. No vendor lock-in.
 
@@ -206,6 +206,19 @@ costing one model turn per click.
 
 Both live runs produced the **same** action sequence, and both proved the scroll actually moved
 the panel — not just that a click was issued.
+
+**What it costs, measured** — the same 3-action flow against the live TypeSafe API:
+
+| | Without the skill | With the skill |
+| --- | --- | --- |
+| Host-model turns for the flow | 4 — one per action, plus verification | **1** |
+| Page state the host must read | 571–1,711 tokens per action, re-read every turn | once, at verification |
+| Decision tokens billed | at the host model's price | **4,760 input / 211 output** |
+| Decision cost | — | **≈ $0.0002** |
+
+Jev bills **input only** at `$0.042` per million tokens and charges nothing for output. An N-action
+flow goes from N+1 host turns to 1, so the gap widens as the flow gets longer. See the
+[guide](browser-with-typesafe-guide.md) for the per-step breakdown and how to reproduce it.
 
 **Example:**
 ```

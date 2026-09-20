@@ -18,6 +18,10 @@ Pick `typesafe` unless you already route your model traffic through OpenRouter.
 The leading `~` in the OpenRouter model requests the latest compatible Jev
 release.
 
+**Cost:** Jev bills **input only** — `$0.042` per million tokens on TypeSafe — and charges nothing
+for output. A 3-action browser flow measures at roughly 4,760 input tokens, about `$0.0002`; see the
+skill README for the per-step breakdown.
+
 ## 2. The configuration file
 
 One file, at `~/.config/browser-with-typesafe/config.json`:

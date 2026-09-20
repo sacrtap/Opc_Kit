@@ -77,6 +77,7 @@ export function stubDecide(pick) {
         return {
           model: 'jev-1.13.0',
           answers: { next: { type: 'choice', choice, confidence: 0.9, probabilities } },
+          usage: { input_tokens: 300, output_tokens: 20 },
         };
       },
     };

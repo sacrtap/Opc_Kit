@@ -64,6 +64,47 @@ only when the configuration is actually usable. Existing configuration is always
 preserved. See `references/configuration.md` for choosing between the TypeSafe
 official endpoint and OpenRouter Decisions.
 
+## What it costs, measured
+
+The point of this skill is not only that it works, but that a mechanical flow stops costing one
+host-model turn per click. Here is the same 3-action flow (expand → scroll → collapse) on the test
+fixture, run against the live TypeSafe API:
+
+| | Without this skill | With this skill |
+| --- | --- | --- |
+| Host-model turns to complete the flow | 4 — one per action, plus verification | **1** |
+| Page state the host model must read | 571–1,711 tokens per action, re-read every turn | read once, when verifying |
+| Decision tokens billed | at the host model's price | **4,760 input, 211 output** |
+| Decision cost | — | **≈ $0.0002** |
+
+Jev bills **input only** at `$0.042` per million tokens and charges nothing for output, so the
+3-action flow above costs about two hundred-thousandths of a dollar in decision tokens. The gap
+scales with the flow: an N-action flow goes from N+1 host turns to 1.
+
+Per-decision detail from that run:
+
+| Step | Input tokens | Output tokens |
+| --- | ---: | ---: |
+| Click Expand section | 571 | 49 |
+| Scroll down 2 pages within Evaluation report | 1,607 | 57 |
+| Click Collapse section | 1,711 | 57 |
+| DONE | 871 | 48 |
+| **Total** | **4,760** | **211** |
+
+Reproduce it — the engine records the provider's own token accounting:
+
+```js
+const outcome = await session.run(task);
+outcome.sessionMetrics.inputTokens;   // 4760 for the run above
+outcome.sessionMetrics.outputTokens;  // 211
+outcome.history[0].usage;             // { inputTokens: 571, outputTokens: 49 }
+```
+
+We deliberately do **not** print a "before" total. A host turn's token cost depends on the agent's
+own system prompt, tool schemas, and conversation length, so any single number would be invented.
+The two levers above are what is actually measured: turns avoided, and decision tokens billed at
+Jev's published rate instead of the host model's.
+
 ## Verification matrix
 
 Checks are identical across backends: the same fixture page

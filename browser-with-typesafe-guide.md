@@ -408,6 +408,39 @@ The host must verify independently. Never report success from action history alo
 
 ---
 
+## What It Costs, Measured
+
+The value is not only that it works — it is that a mechanical flow stops costing one host-model turn
+per click. Same 3-action flow (expand → scroll → collapse), live TypeSafe API:
+
+| | Without this skill | With this skill |
+| --- | --- | --- |
+| Host-model turns to complete the flow | 4 — one per action, plus verification | **1** |
+| Page state the host model must read | 571–1,711 tokens per action, re-read every turn | read once, when verifying |
+| Decision tokens billed | at the host model's price | **4,760 input, 211 output** |
+| Decision cost | — | **≈ $0.0002** |
+
+Jev bills input only at `$0.042` per million tokens and charges nothing for output. An N-action flow
+goes from N+1 host turns to 1, so the gap widens as the flow gets longer.
+
+| Step | Input | Output |
+| --- | ---: | ---: |
+| Click Expand section | 571 | 49 |
+| Scroll down 2 pages within Evaluation report | 1,607 | 57 |
+| Click Collapse section | 1,711 | 57 |
+| DONE | 871 | 48 |
+| **Total** | **4,760** | **211** |
+
+```js
+const outcome = await session.run(task);
+outcome.sessionMetrics.inputTokens;   // 4760
+outcome.sessionMetrics.outputTokens;  // 211
+```
+
+We do not print a "before" total: a host turn's token cost depends on the agent's own system prompt,
+tool schemas, and conversation length, so any single figure would be invented. What is measured is
+the turns avoided and the decision tokens billed at Jev's rate instead of the host model's.
+
 ## Verification Matrix
 
 | Backend | Verification Method | Result |

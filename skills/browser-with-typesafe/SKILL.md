@@ -194,6 +194,21 @@ Report assertions as `Pass`, `Fail`, or `Not covered`. Never lower
 `minConfidence` to force a pass, and never report success from the action
 history alone.
 
+### Report what it cost
+
+`session.metrics()` carries the provider's own token accounting, so the cost of a flow is reported
+rather than asserted:
+
+```js
+const m = session.metrics();
+// { runs, decisions, executedActions, apiMs, inputTokens, outputTokens, elapsedMs, handoffs }
+```
+
+When the user asks whether the skill was worth it, quote these numbers: decision tokens billed at
+Jev's rate, alongside the host turns that were avoided. Do not estimate the host side — a host
+turn's token cost depends on that agent's own prompt and history, so any figure you did not measure
+is a guess.
+
 ## Handing the task to another session
 
 When the user asks for a new session or another host to continue, pass:
