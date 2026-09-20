@@ -1,0 +1,6 @@
+{
+  "name": "create-prd",
+  "description": "Create, update, and validate Product Requirements Documents.",
+  "version": "2.5.1",
+  "skills": ["."]
+}

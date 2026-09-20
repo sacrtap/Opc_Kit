@@ -48,14 +48,14 @@ jobs:
           # Validate English sample
           if [ -f "tests/samples/prd-sample-en.md" ]; then
             echo "=== Validating tests/samples/prd-sample-en.md ==="
-            node create-prd/scripts/validate-prd.js tests/samples/prd-sample-en.md || FAILED=1
+            node skills/create-prd/scripts/validate-prd.js tests/samples/prd-sample-en.md || FAILED=1
             echo ""
           fi
           
           # Validate Chinese sample
           if [ -f "tests/samples/prd-sample-zh.md" ]; then
             echo "=== Validating tests/samples/prd-sample-zh.md ==="
-            node create-prd/scripts/validate-prd.js tests/samples/prd-sample-zh.md || FAILED=1
+            node skills/create-prd/scripts/validate-prd.js tests/samples/prd-sample-zh.md || FAILED=1
             echo ""
           fi
           
@@ -92,12 +92,12 @@ jobs:
       
       - name: Run PRD strict validation
         run: |
-          node create-prd/scripts/validate-prd.js "${{ inputs.prd_path }}"
+          node skills/create-prd/scripts/validate-prd.js "${{ inputs.prd_path }}"
       
       - name: Check for warnings (optional strict mode)
         if: inputs.fail_on_warning == true
         run: |
-          OUTPUT=$(node create-prd/scripts/validate-prd.js "${{ inputs.prd_path }}" 2>&1)
+          OUTPUT=$(node skills/create-prd/scripts/validate-prd.js "${{ inputs.prd_path }}" 2>&1)
           if echo "$OUTPUT" | grep -q "Warning"; then
             echo "::warning::PRD validation completed with warnings"
             echo "$OUTPUT"

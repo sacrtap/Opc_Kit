@@ -26,7 +26,7 @@ if [ -n "$FILES" ]; then
   for FILE in $FILES; do
     if [ -f "$FILE" ]; then
       echo "=== Validating $FILE ==="
-      if ! node create-prd/scripts/validate-prd.js "$FILE"; then
+      if ! node skills/create-prd/scripts/validate-prd.js "$FILE"; then
         echo "❌ Validation failed for $FILE"
         FAILED=1
       fi

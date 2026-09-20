@@ -1,0 +1,44 @@
+name: browser-with-typesafe tests
+
+# Runs the skill's unit, contract, installer, and doctor tests, which are fully
+# self-contained (no browser, no credentials, network calls are stubbed).
+#
+# The end-to-end runs are excluded on purpose: they need a real browser and a live
+# Jev credential, and are executed manually. See the verification matrix in
+# skills/browser-with-typesafe/README.md.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'skills/browser-with-typesafe/**'
+      - '.github/workflows/browser-with-typesafe-tests.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'skills/browser-with-typesafe/**'
+      - '.github/workflows/browser-with-typesafe-tests.yml'
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Node ${{ matrix.node }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ['22', '24']
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      - name: Run test suite
+        working-directory: skills/browser-with-typesafe
+        run: npm test

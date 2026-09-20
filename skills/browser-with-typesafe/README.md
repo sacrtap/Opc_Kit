@@ -92,7 +92,7 @@ Both live runs produced the same sequence — `Click Expand section` →
 ### Automated tests
 
 ```sh
-npm test                     # 66 unit, contract, installer, and doctor tests
+npm test                     # 69 unit, contract, installer, doctor, and architecture tests
 npm run test:e2e:playwright  # real end-to-end, exits 0 on success
 npm run doctor               # configuration check, exits 0 only when usable
 ```
@@ -126,4 +126,7 @@ install.mjs
 tests/                       unit, contract, and end-to-end runs
 ```
 
-Licensed MIT; see `LICENSE`.
+Licensed MIT. This skill's architecture derives from
+[`wy-coliney/jev-browser-use`](https://github.com/wy-coliney/jev-browser-use); that upstream
+attribution is preserved in `LICENSE-THIRD-PARTY`. The repository-wide license is in the
+repository root `LICENSE`.

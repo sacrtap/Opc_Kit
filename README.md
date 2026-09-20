@@ -3,7 +3,7 @@
 > **Professional AI Agent Skill Toolkit** — From multi-persona decision debates to structured PRD output, a complete product workflow solution compatible with all AI coding agents
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version: v2.5.1](https://img.shields.io/badge/Version-2.5.1-blue.svg)]()
+[![Version: v2.6.0](https://img.shields.io/badge/Version-2.6.0-blue.svg)]()
 [![Status: Active](https://img.shields.io/badge/Status-Active-green.svg)]()
 [![skills.sh](https://skills.sh/b/sacrtap/Opc_Kit)](https://skills.sh/sacrtap/Opc_Kit)
 [![PRD Validation](https://github.com/sacrtap/Opc_Kit/actions/workflows/prd-validation.yml/badge.svg)](https://github.com/sacrtap/Opc_Kit/actions/workflows/prd-validation.yml)
@@ -12,13 +12,20 @@
 
 ## Why Opc_Kit?
 
-Most AI tools give you a single perspective. Opc_Kit gives you a **complete product decision loop**.
+Most AI tools give you a single perspective. Opc_Kit gives you a **complete product decision loop** — and the browser runtime to verify what you shipped.
 
 - **From Debate to Document** — Use **party-mode** to simulate expert roundtables, then **create-prd** to turn decisions into structured, production-ready PRDs. Two skills, one seamless workflow.
 - **Eliminate Blind Spots** — 17 professional personas covering engineering, product, and strategy challenge your assumptions before you write a single requirement.
 - **Professional-Grade Quality** — Bidirectional traceability, first-principles validation, and 7-dimension scoring ensure every output meets senior PM standards.
-- **Zero Learning Curve** — Natural language triggers with automatic intent detection. No commands to memorize, no configuration needed.
+- **Verify in the Browser, Not by Hand** — **browser-with-typesafe** keeps repetitive clicking, scrolling, and paging inside one low-cost loop, so your agent spends model turns on judgement instead of on clicking.
+- **Zero Learning Curve** — Natural language triggers with automatic intent detection. No commands to memorize.
 - **Universal Compatibility** — One skill set works across all AI coding agents with automatic tool adaptation. No vendor lock-in.
+
+> ### ⚠️ One skill needs setup before it can run
+>
+> `create-prd` and `party-mode` are prompt-only: they work the moment they are installed.
+>
+> **`browser-with-typesafe` is different.** It drives a real browser through TypeSafe Jev, so it requires **Node.js 22+, a browser handle from your agent, and a Jev API key** (TypeSafe or OpenRouter). Its installer never receives your key — it writes a config template for you to fill in, then `node scripts/doctor.mjs` tells you whether the setup works. See [its guide](browser-with-typesafe-guide.md) before your first run.
 
 ---
 
@@ -26,8 +33,9 @@ Most AI tools give you a single perspective. Opc_Kit gives you a **complete prod
 
 | Skill | Purpose | Version | Quick Install | Guide |
 |-------|---------|---------|---------------|-------|
-| 📝 [create-prd](create-prd/SKILL.md) | PRD creation, update & validation | v2.5.1 | `npx skills add sacrtap/Opc_Kit --skill create-prd` | [Usage Guide](create-prd-guide.md) |
-| 🎭 [party-mode](party-mode/SKILL.md) | Multi-persona product decision discussion | v1.0.0 | `npx skills add sacrtap/Opc_Kit --skill party-mode` | [Usage Guide](party-mode-guide.md) |
+| 📝 [create-prd](skills/create-prd/SKILL.md) | PRD creation, update & validation | v2.5.1 | `npx skills add sacrtap/Opc_Kit --skill create-prd` | [Usage Guide](create-prd-guide.md) |
+| 🎭 [party-mode](skills/party-mode/SKILL.md) | Multi-persona product decision discussion | v1.0.0 | `npx skills add sacrtap/Opc_Kit --skill party-mode` | [Usage Guide](party-mode-guide.md) |
+| 🌐 [browser-with-typesafe](skills/browser-with-typesafe/SKILL.md) | ⚠️ Browser actions via TypeSafe Jev — **needs an API key + a browser handle** | v0.1.0 | `npx skills add sacrtap/Opc_Kit --skill browser-with-typesafe` | [Usage Guide](browser-with-typesafe-guide.md) |
 
 ---
 
@@ -42,9 +50,24 @@ npx skills add sacrtap/Opc_Kit
 # Install specific skill
 npx skills add sacrtap/Opc_Kit --skill create-prd
 npx skills add sacrtap/Opc_Kit --skill party-mode
+npx skills add sacrtap/Opc_Kit --skill browser-with-typesafe
 
 # List available skills
 npx skills add sacrtap/Opc_Kit --list
+```
+
+`browser-with-typesafe` needs configuration before its first run — install it, then follow
+[Requirements & Setup](browser-with-typesafe-guide.md).
+
+### Install from the omp plugin marketplace
+
+All three skills are published as one marketplace:
+
+```bash
+omp plugin marketplace add sacrtap/Opc_Kit
+omp plugin install create-prd@opc-kit
+omp plugin install party-mode@opc-kit
+omp plugin install browser-with-typesafe@opc-kit
 ```
 
 ### Basic Usage
@@ -70,6 +93,16 @@ Tech stack: React + Node.js. Scale: 5K concurrent users. Timeline: 8 weeks.
 ```
 
 Two skills, one seamless workflow: from multi-perspective debate to actionable documentation.
+
+**Verify a flow in the browser (after setup):**
+```
+Use browser-with-typesafe to open the settings page, expand Notification preferences,
+scroll through the list, and collapse it again. Stop when the status reads collapsed,
+then verify the result yourself.
+```
+
+The agent plans and verifies; Jev performs the clicks, scrolls, and paging inside the
+browser session your agent already has.
 
 ---
 
@@ -141,18 +174,70 @@ You'll hear:
 
 ---
 
+### 🌐 browser-with-typesafe — Low-Cost Browser Actions
+
+**Jev clicks. Your agent thinks and verifies.**
+
+Two actors split one browser workflow: **your agent** plans, enters text, judges visuals, and
+verifies the result; **TypeSafe Jev** chooses each next mechanical action — navigate, click,
+toggle, scroll, page — inside the browser session your agent already has. Repetitive flows stop
+costing one model turn per click.
+
+> **⚠️ Requires setup.** Node.js 22+, a browser handle (omp, Codex, or any Playwright/CDP host),
+> and a Jev API key. The installer never receives your key — it writes a config template for you
+> to fill in. Run `node scripts/doctor.mjs` to confirm the setup. See
+> [Requirements & Setup](browser-with-typesafe-guide.md).
+
+**Key Features:**
+- **Three adapters, one engine** — `omp`, `codex`, and `playwright` bind to whichever browser handle your host exposes; `detectAdapter()` picks it from real capabilities, and the decision engine never imports a host API
+- **Unified accessibility IR** — every host's accessibility tree is normalized into one shape, so policy and safety rules are host-independent
+- **No text entry by construction** — there is no typing action at all; you type, then resume the same session
+- **Bounded by policy** — origin allowlist re-checked before every call and action, `denyNames` / `requireHostNames` keep consequential controls with you, and stale decisions are discarded rather than executed
+- **Never self-certifying** — Jev returns `needs_verification`, never a pass; you check fresh state
+- **Zero third-party dependencies** in the core
+
+**Verified end to end:**
+
+| Backend | Result |
+|---|---|
+| omp (`browser` prelude) | ✅ 5/5 host-side checks, 3 actions / 4 decisions, ~1.9 s |
+| Playwright 1.59 (headless Chrome) | ✅ exit 0, 5/5 checks, ~2.3 s |
+| Codex (`cua_repl`) | ⚠️ contract tests only — no Codex Computer Use runtime in the verification environment |
+
+Both live runs produced the **same** action sequence, and both proved the scroll actually moved
+the panel — not just that a click was issued.
+
+**Example:**
+```
+/browser — Expand the evaluation report, scroll down through it, collapse it,
+and verify the status reads collapsed when done.
+```
+
+📚 [Read the full guide](browser-with-typesafe-guide.md) for setup, safety model, adapter contract, and examples.
+
+---
+
 ## Cross-Platform Compatibility
 
-Skills are platform-agnostic by design. They use natural language instructions and generic tool descriptions that any AI coding agent can interpret and execute. No vendor lock-in, no configuration needed.
+Skills are platform-agnostic by design. They use natural language instructions and generic tool descriptions that any AI coding agent can interpret and execute. No vendor lock-in.
+
+The one exception is `browser-with-typesafe`: it talks to an external decision service, so it needs
+its own credential and a browser handle from the host. Everything else is install-and-go.
 
 ### Verified Platforms
+
+`create-prd` and `party-mode` are prompt-only and work anywhere. `browser-with-typesafe` also
+needs its host to expose a browser handle — see the note below the table.
 
 | Platform | Status | Notes |
 |----------|--------|-------|
 | OpenCode | ✅ Full support | Native skill system, subagent support |
+| omp | ✅ Full support | Native skill system, subagent support, `browser` prelude for browser-with-typesafe |
 | Claude Code | ✅ Full support | Native skill system, subagent support |
 | Cursor | ✅ Full support | Built-in tools, inline chat |
-| Codex | ✅ Full support | CLI-based, full tool access |
+| Codex | ✅ Full support | CLI-based, full tool access; browser-with-typesafe uses its Computer Use tab |
+| Workbuddy | ✅ Compatible | Browser-with-typesafe runs through a Playwright/CDP host |
+| Zcode | ✅ Compatible | Browser-with-typesafe runs through a Playwright/CDP host |
 | GitHub Copilot | ✅ Compatible | Workspace mode, chat interface |
 | Windsurf (Codeium) | ✅ Compatible | Cascade flow, chat mode |
 | Aider | ✅ Compatible | Chat-based interaction |
@@ -164,6 +249,12 @@ Skills are platform-agnostic by design. They use natural language instructions a
 | Zed AI | ✅ Compatible | Built-in AI assistant |
 | Void | ✅ Compatible | Open-source alternative |
 | Trae | ✅ Compatible | IDE-integrated assistant |
+
+> **Browser support is narrower, and we say what we verified.** `browser-with-typesafe` has been
+> run end to end on **omp** and on **Playwright 1.59 headless Chrome**; the **Codex** adapter is
+> covered by contract tests and a decision-loop regression against a mock tab handle, but has not
+> been exercised on a real Codex Computer Use runtime. Hosts without a computer-use tab or a
+> Playwright/CDP page cannot run it at all — it does not ship a browser driver of its own.
 
 ### How It Works
 
@@ -191,7 +282,7 @@ We welcome high-quality skill contributions!
 ### Adding New Skills
 
 1. Fork this repository
-2. Create new skill folder (e.g., `my-skill/`)
+2. Create a new skill folder under `skills/` (e.g., `skills/my-skill/`)
 3. Write SKILL.md following our structure guidelines
 4. Submit PR with usage examples
 

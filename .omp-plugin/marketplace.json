@@ -1,0 +1,43 @@
+{
+  "name": "opc-kit",
+  "owner": {
+    "name": "sacrtap",
+    "url": "https://github.com/sacrtap"
+  },
+  "metadata": {
+    "description": "Opc_Kit skills: multi-persona product debates, structured PRDs, and low-cost browser automation with TypeSafe Jev.",
+    "version": "2.6.0"
+  },
+  "plugins": [
+    {
+      "name": "create-prd",
+      "source": "./skills/create-prd",
+      "description": "Create, update, and validate Product Requirements Documents with a 13-chapter template, bidirectional traceability, and 7-dimension quality scoring.",
+      "version": "2.5.1",
+      "category": "productivity",
+      "tags": ["prd", "requirements", "product-management", "documentation"],
+      "license": "MIT",
+      "repository": "https://github.com/sacrtap/Opc_Kit"
+    },
+    {
+      "name": "party-mode",
+      "source": "./skills/party-mode",
+      "description": "Multi-persona product decision discussions: 17 expert roles debate your question instead of listing pros and cons.",
+      "version": "1.0.0",
+      "category": "productivity",
+      "tags": ["brainstorming", "decision-making", "personas"],
+      "license": "MIT",
+      "repository": "https://github.com/sacrtap/Opc_Kit"
+    },
+    {
+      "name": "browser-with-typesafe",
+      "source": "./skills/browser-with-typesafe",
+      "description": "Low-cost browser actions with TypeSafe Jev: the host model plans, types, and verifies while Jev picks each next click, scroll, or navigation. Requires a Jev API key and a browser handle.",
+      "version": "0.1.0",
+      "category": "development",
+      "tags": ["browser", "automation", "verification", "typesafe", "jev"],
+      "license": "MIT",
+      "repository": "https://github.com/sacrtap/Opc_Kit"
+    }
+  ]
+}

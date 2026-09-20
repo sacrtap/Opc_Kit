@@ -1,5 +1,6 @@
 ---
 name: browser-with-typesafe
+version: "0.1.0"
 description: Fast, low-cost browser operations with TypeSafe Jev. The host model plans, enters text, judges visuals, and verifies; Jev chooses each next mechanical action (navigate, click, toggle, scroll, page) inside the host's own browser session. Use it as the default first route for browser verification, dashboards, settings pages, reports, and repetitive UI flows on omp, Codex, Cursor, Claude Code, Workbuddy, Zcode, or any host that exposes a computer-use tab, a Playwright page, or CDP.
 ---
 

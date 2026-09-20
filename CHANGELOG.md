@@ -5,6 +5,55 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.6.0] - 2026-09-20
+
+### Added
+- **browser-with-typesafe skill (v0.1.0)**: host-agnostic browser automation where the host model
+  plans, enters text, judges visuals, and verifies, while TypeSafe Jev chooses each next mechanical
+  action (navigate, click, toggle, scroll, page) inside the browser session the host already has
+  - Three adapters behind one contract — `omp` (`browser` prelude), `codex` (Computer Use tab), and
+    `playwright` (Playwright/CDP page) — selected from real capabilities by `detectAdapter()`
+  - Unified accessibility intermediate representation, so policy and safety rules are host-independent
+  - Host-agnostic decision engine with zero third-party dependencies (`bridge/core.mjs`, `bridge/ir.mjs`)
+  - Safety model: origin allowlist re-checked before every model call and action, stale decisions
+    discarded rather than executed, no text-entry action by construction, `denyNames` /
+    `requireHostNames` reserved for the host, and `needs_verification` never treated as a pass
+  - Single-file configuration (`~/.config/browser-with-typesafe/config.json`, mode 600) with the
+    TypeSafe official endpoint or OpenRouter Decisions; the installer never receives, prompts for,
+    or stores an API key
+  - `scripts/doctor.mjs` verifies config, permissions, provider/model, key presence, and real
+    endpoint reachability, printing no credential and exiting non-zero unless usable
+  - `install.mjs` multi-host installer (link/copy/uninstall) that preserves existing configuration
+- **omp plugin marketplace catalog** (`.omp-plugin/marketplace.json`): all three skills published
+  as one marketplace, installable with `omp plugin marketplace add sacrtap/Opc_Kit`
+
+### Changed
+- **Repository layout**: skills moved from the repository root into `skills/<name>/`
+  (`skills/create-prd`, `skills/party-mode`, `skills/browser-with-typesafe`) to match the documented
+  Agent Skills discovery layout instead of relying on the recursive-search fallback
+  - Updated the corresponding paths in `README.md`, `README-CN.md`,
+    `scripts/pre-commit-prd-validation.sh`, and `.github/workflows/prd-validation.yml`
+  - Re-pointed the local `.agents/skills/*` links
+- `README.md` / `README-CN.md`: added the browser-with-typesafe skill with a prominent
+  **requires setup** notice, an omp marketplace install section, a third skill-highlight section,
+  omp/Workbuddy/Zcode platform rows, and a scoped browser-support statement that names exactly which
+  backends were verified end to end
+- Corrected the "no configuration needed" and universal-browser compatibility claims, which did not
+  hold for a skill that talks to an external decision service
+- Skill version badges: repository release bumped to 2.6.0; `browser-with-typesafe` declares
+  `version: "0.1.0"` in its frontmatter alongside the other two skills
+
+### Documentation
+- **browser-with-typesafe-guide.md**: English usage guide (requirements & setup, safety model,
+  adapter architecture, verification matrix, troubleshooting, examples)
+- **browser-with-typesafe-guide-CN.md**: Chinese usage guide mirroring the English version
+- `skills/browser-with-typesafe/LICENSE` renamed to `LICENSE-THIRD-PARTY` to keep the upstream
+  `jev-browser-use` MIT attribution explicit without conflicting with the repository license
+
+### CI
+- Added a workflow running the browser-with-typesafe test suite on Node 22 and 24
+  (69 unit, contract, installer, doctor, and architecture tests)
+
 ## [2.5.1] - 2026-08-08
 
 ### Added
@@ -120,6 +169,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Release Date | Key Improvements |
 |---------|--------------|------------------|
+| 2.6.0   | 2026-09-20 | Added browser-with-typesafe skill, omp marketplace catalog, `skills/` layout |
 | 2.5.1   | 2026-08-08 | Added party-mode skill, comprehensive usage guides (EN/CN) |
 | 2.2.2   | 2026-06-10 | Front matter cleanup policy, validation improvements |
 | 2.2.1   | 2026-06-10 | Documented v2.2.0 benchmark results, release notes, CI validation |

@@ -1,9 +1,9 @@
 # Opc_Kit
 
-> **专业的 AI Agent 技能工具集** — 从多角色决策辩论到结构化 PRD 输出，兼容所有 AI 编程代理的完整产品工作流解决方案
+> **专业的 AI Agent 技能工具集** — 从多角色决策辩论到结构化 PRD 输出，外加验证交付物的浏览器运行时，兼容所有 AI 编程代理的完整产品工作流解决方案
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version: v2.5.1](https://img.shields.io/badge/Version-2.5.1-blue.svg)]()
+[![Version: v2.6.0](https://img.shields.io/badge/Version-2.6.0-blue.svg)]()
 [![Status: Active](https://img.shields.io/badge/Status-Active-green.svg)]()
 [![skills.sh](https://skills.sh/b/sacrtap/Opc_Kit)](https://skills.sh/sacrtap/Opc_Kit)
 [![PRD Validation](https://github.com/sacrtap/Opc_Kit/actions/workflows/prd-validation.yml/badge.svg)](https://github.com/sacrtap/Opc_Kit/actions/workflows/prd-validation.yml)
@@ -12,13 +12,20 @@
 
 ## 为什么选择 Opc_Kit？
 
-大多数 AI 工具只给你单一视角。Opc_Kit 给你**完整的产品决策闭环**。
+大多数 AI 工具只给你单一视角。Opc_Kit 给你**完整的产品决策闭环** —— 以及验证交付物的浏览器运行时。
 
 - **从辩论到文档** — 用 **party-mode** 模拟专家圆桌讨论，再用 **create-prd** 将决策转化为结构化、可交付的 PRD。两个技能，一套完整工作流。
 - **消除决策盲区** — 17 位专业角色覆盖工程、产品、战略三大维度，在写下需求之前先挑战你的假设。
 - **专业级质量保证** — 双向追溯、第一性原理验证、7 维评分体系，每份输出都经得起资深 PM 审查。
-- **零学习成本** — 自然语言触发，自动意图识别。无需记忆命令，无需配置。
+- **在浏览器里验证，而不是靠手点** — **browser-with-typesafe** 把重复的点击、滚动、翻页收进一个低成本循环，让模型的 token 花在判断上，而不是花在点按钮上。
+- **零学习成本** — 自然语言触发，自动意图识别。无需记忆命令。
 - **全平台兼容** — 一套技能适配所有 AI 编程代理，无厂商锁定，自动适配工具链。
+
+> ### ⚠️ 其中一个技能需要先配置才能运行
+>
+> `create-prd` 与 `party-mode` 是纯提示词技能：装完即可用。
+>
+> **`browser-with-typesafe` 不同。** 它通过 TypeSafe Jev 驱动真实浏览器，因此需要 **Node.js 22+、代理提供的浏览器句柄，以及 Jev API key**（TypeSafe 或 OpenRouter）。它的安装程序**永不接收你的 key** —— 只生成配置模板由你自己填写，随后用 `node scripts/doctor.mjs` 确认配置可用。首次运行前请先看[它的指南](browser-with-typesafe-guide-CN.md)。
 
 ---
 
@@ -26,8 +33,9 @@
 
 | 技能 | 用途 | 版本 | 快速安装 | 使用指南 |
 |------|------|------|----------|----------|
-| 📝 [create-prd](create-prd/SKILL.md) | PRD 创建、更新与验证 | v2.5.1 | `npx skills add sacrtap/Opc_Kit --skill create-prd` | [使用指南](create-prd-guide-CN.md) |
-| 🎭 [party-mode](party-mode/SKILL.md) | 多角色产品决策讨论 | v1.0.0 | `npx skills add sacrtap/Opc_Kit --skill party-mode` | [使用指南](party-mode-guide-CN.md) |
+| 📝 [create-prd](skills/create-prd/SKILL.md) | PRD 创建、更新与验证 | v2.5.1 | `npx skills add sacrtap/Opc_Kit --skill create-prd` | [使用指南](create-prd-guide-CN.md) |
+| 🎭 [party-mode](skills/party-mode/SKILL.md) | 多角色产品决策讨论 | v1.0.0 | `npx skills add sacrtap/Opc_Kit --skill party-mode` | [使用指南](party-mode-guide-CN.md) |
+| 🌐 [browser-with-typesafe](skills/browser-with-typesafe/SKILL.md) | ⚠️ 通过 TypeSafe Jev 执行浏览器操作 —— **需要 API key + 浏览器句柄** | v0.1.0 | `npx skills add sacrtap/Opc_Kit --skill browser-with-typesafe` | [使用指南](browser-with-typesafe-guide-CN.md) |
 
 ---
 
@@ -42,9 +50,23 @@ npx skills add sacrtap/Opc_Kit
 # 安装指定技能
 npx skills add sacrtap/Opc_Kit --skill create-prd
 npx skills add sacrtap/Opc_Kit --skill party-mode
+npx skills add sacrtap/Opc_Kit --skill browser-with-typesafe
 
 # 查看可用技能列表
 npx skills add sacrtap/Opc_Kit --list
+```
+
+`browser-with-typesafe` 首次运行前需要配置 —— 安装后请按[环境要求与配置](browser-with-typesafe-guide-CN.md)操作。
+
+### 通过 omp 插件市场安装
+
+三个技能已作为一个市场发布：
+
+```bash
+omp plugin marketplace add sacrtap/Opc_Kit
+omp plugin install create-prd@opc-kit
+omp plugin install party-mode@opc-kit
+omp plugin install browser-with-typesafe@opc-kit
 ```
 
 ### 基本使用
@@ -70,6 +92,14 @@ npx skills add sacrtap/Opc_Kit --list
 ```
 
 两个技能，一套完整工作流：从多视角辩论到可执行文档。
+
+**在浏览器里验证一段流程（配置完成后）：**
+```
+用 browser-with-typesafe 打开设置页，展开「通知偏好」，滚动浏览列表，
+再折叠回去。状态显示 collapsed 时停止，然后你自己独立验证结果。
+```
+
+模型负责规划与验证；Jev 在模型已有的浏览器会话里执行点击、滚动与翻页。
 
 ---
 
@@ -141,18 +171,60 @@ npx skills add sacrtap/Opc_Kit --list
 
 ---
 
+### 🌐 browser-with-typesafe — 低成本浏览器操作
+
+**Jev 负责点击。你的模型负责思考与验证。**
+
+一个浏览器工作流由两个角色分担：**你的模型**负责规划、输入文本、判断视觉结果并做最终验证；**TypeSafe Jev** 负责选择每一步的机械动作 —— 导航、点击、开关、滚动、翻页 —— 全程在模型已有的浏览器会话内完成。重复流程不再为每一次点击花掉一个模型轮次。
+
+> **⚠️ 需要配置。** Node.js 22+、浏览器句柄（omp、Codex 或任意 Playwright/CDP 宿主），以及 Jev API key。安装程序永不接收你的 key —— 只生成配置模板由你填写。用 `node scripts/doctor.mjs` 确认配置可用。详见[环境要求与配置](browser-with-typesafe-guide-CN.md)。
+
+**核心特性：**
+- **三个适配器，一套引擎** — `omp`、`codex`、`playwright` 分别对接宿主实际暴露的浏览器句柄；`detectAdapter()` 依据真实能力选择，决策引擎从不引入任何宿主 API
+- **统一可访问性中间表示** — 各宿主的可访问性树被归一为同一种结构，因此策略与安全规则与宿主无关
+- **构造上就没有文本输入** — 根本不存在输入动作；你输入文本，然后继续同一个会话
+- **策略受限** — origin 白名单在每次模型调用与动作前复核，`denyNames` / `requireHostNames` 把不可逆操作留给宿主，陈旧决策被丢弃而非执行
+- **从不自我认证** — Jev 只返回 `needs_verification`，永不返回"通过"；由你检查最新状态
+- **核心零第三方依赖**
+
+**已完成的真机验证：**
+
+| 后端 | 结果 |
+|---|---|
+| omp（`browser` prelude） | ✅ 5/5 宿主校验通过，3 个动作 / 4 次决策，约 1.9s |
+| Playwright 1.59（headless Chrome） | ✅ exit 0，5/5 校验，约 2.3s |
+| Codex（`cua_repl`） | ⚠️ 仅契约测试覆盖 —— 验证环境无 Codex Computer Use 运行时 |
+
+两次真机运行产出了**完全相同**的动作序列，并且都证明了滚动**确实**滚动了面板，而不只是发出了点击。
+
+**示例：**
+```
+/browser — 展开评估报告，向下滚动，再折叠；完成后验证状态显示 collapsed。
+```
+
+📚 [查看完整指南](browser-with-typesafe-guide-CN.md)了解配置、安全模型、适配器契约与示例。
+
+---
+
 ## 跨平台兼容
 
-技能天生具备平台无关性。它们使用自然语言指令和通用工具描述，任何 AI 编程代理都能理解和执行。无厂商锁定，无需配置。
+技能天生具备平台无关性。它们使用自然语言指令和通用工具描述，任何 AI 编程代理都能理解和执行。无厂商锁定。
+
+唯一的例外是 `browser-with-typesafe`：它需要与外部决策服务通信，因此需要自己的凭据和宿主提供的浏览器句柄。其余技能都是装完即用。
 
 ### 已验证平台
+
+`create-prd` 与 `party-mode` 是纯提示词技能，处处可用。`browser-with-typesafe` 还要求宿主提供浏览器句柄 —— 见表格下方的说明。
 
 | 平台 | 状态 | 说明 |
 |------|------|------|
 | OpenCode | ✅ 完整支持 | 原生技能系统，支持子代理 |
+| omp | ✅ 完整支持 | 原生技能系统、支持子代理，`browser` prelude 支撑 browser-with-typesafe |
 | Claude Code | ✅ 完整支持 | 原生技能系统，支持子代理 |
 | Cursor | ✅ 完整支持 | 内置工具，内联聊天 |
-| Codex | ✅ 完整支持 | CLI 模式，完整工具访问 |
+| Codex | ✅ 完整支持 | CLI 模式，完整工具访问；browser-with-typesafe 使用其 Computer Use 标签页 |
+| Workbuddy | ✅ 兼容 | browser-with-typesafe 通过 Playwright/CDP 宿主运行 |
+| Zcode | ✅ 兼容 | browser-with-typesafe 通过 Playwright/CDP 宿主运行 |
 | GitHub Copilot | ✅ 兼容 | Workspace 模式，聊天界面 |
 | Windsurf (Codeium) | ✅ 兼容 | Cascade 流程，聊天模式 |
 | Aider | ✅ 兼容 | 基于聊天的交互 |
@@ -164,6 +236,11 @@ npx skills add sacrtap/Opc_Kit --list
 | Zed AI | ✅ 兼容 | 内置 AI 助手 |
 | Void | ✅ 兼容 | 开源替代方案 |
 | Trae | ✅ 兼容 | IDE 集成助手 |
+
+> **浏览器支持面更窄，我们如实标注验证范围。** `browser-with-typesafe` 已在 **omp** 与
+> **Playwright 1.59 headless Chrome** 上完成真机端到端验证；**Codex** 适配器由契约测试和针对
+> mock tab 的决策循环回归覆盖，但**尚未在真实 Codex Computer Use 运行时上跑过**。不具备
+> Computer Use 标签页或 Playwright/CDP 页面的宿主根本无法运行它 —— 它自带不提供浏览器驱动。
 
 ### 工作原理
 
@@ -191,7 +268,7 @@ npx skills add sacrtap/Opc_Kit --list
 ### 添加新技能
 
 1. Fork 本仓库
-2. 创建新技能文件夹（如 `my-skill/`）
+2. 在 `skills/` 下创建新技能文件夹（如 `skills/my-skill/`）
 3. 按结构规范编写 SKILL.md
 4. 提交 PR 并附上使用示例
 

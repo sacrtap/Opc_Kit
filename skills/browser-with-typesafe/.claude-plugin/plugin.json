@@ -1,0 +1,6 @@
+{
+  "name": "browser-with-typesafe",
+  "description": "Low-cost browser actions with TypeSafe Jev.",
+  "version": "0.1.0",
+  "skills": ["."]
+}
