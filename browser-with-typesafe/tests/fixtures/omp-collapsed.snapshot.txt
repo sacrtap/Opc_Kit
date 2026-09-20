@@ -1,0 +1,9 @@
+- generic [active] [ref=e1]:
+  - heading "Report workspace" [level=1] [ref=e2]
+  - paragraph [ref=e3]:
+    - text: "Status:"
+    - status [ref=e4]: idle
+  - paragraph [ref=e5]:
+    - text: "Scrolls:"
+    - status [ref=e6]: "0"
+  - button "Expand section" [ref=e7]

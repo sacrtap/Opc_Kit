@@ -1,0 +1,12 @@
+{
+  "name": "browser-with-typesafe",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Host-agnostic browser automation skill: the host model plans and verifies, TypeSafe Jev picks the next mechanical action.",
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "test:e2e:playwright": "node tests/e2e/playwright.e2e.mjs",
+    "test:e2e:omp": "node tests/e2e/omp.e2e.mjs"
+  }
+}

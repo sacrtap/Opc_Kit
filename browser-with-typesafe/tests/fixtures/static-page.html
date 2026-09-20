@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>browser-with-typesafe fixture</title>
+    <style>
+      body { font: 14px/1.5 system-ui, sans-serif; margin: 24px; max-width: 720px; }
+      #panel { border: 1px solid #ccc; height: 180px; overflow-y: auto; margin: 12px 0; padding: 8px; }
+      #panel[hidden] { display: none; }
+      li { padding: 6px 0; }
+      output { font-weight: 600; }
+    </style>
+  </head>
+  <body>
+    <h1>Report workspace</h1>
+
+    <p>Status: <output id="status">idle</output></p>
+    <p>Scrolls: <output id="scrolls">0</output></p>
+
+    <button id="expand" type="button">Expand section</button>
+
+    <section id="panel" hidden aria-label="Evaluation report">
+      <h2>Evaluation report</h2>
+      <ol id="rows"></ol>
+    </section>
+
+    <button id="collapse" type="button" hidden>Collapse section</button>
+
+    <script>
+      const status = document.getElementById('status');
+      const scrolls = document.getElementById('scrolls');
+      const panel = document.getElementById('panel');
+      const rows = document.getElementById('rows');
+      const expand = document.getElementById('expand');
+      const collapse = document.getElementById('collapse');
+
+      for (let i = 1; i <= 60; i += 1) {
+        const li = document.createElement('li');
+        li.textContent = `Evaluation item ${i}`;
+        rows.append(li);
+      }
+
+      // Scrolls are counted on the scroll container so the run can be verified
+      // from the accessibility snapshot alone.
+      panel.addEventListener('scroll', () => {
+        scrolls.textContent = String(Number(scrolls.textContent) + 1);
+      });
+
+      expand.addEventListener('click', () => {
+        panel.hidden = false;
+        expand.hidden = true;
+        collapse.hidden = false;
+        status.textContent = 'expanded';
+      });
+
+      collapse.addEventListener('click', () => {
+        panel.hidden = true;
+        collapse.hidden = true;
+        expand.hidden = false;
+        status.textContent = 'collapsed';
+      });
+    </script>
+  </body>
+</html>
