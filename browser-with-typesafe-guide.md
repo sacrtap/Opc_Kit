@@ -12,7 +12,7 @@
 
 | Actor | Responsibilities |
 |-------|------------------|
-| **Host model** | Planning, text entry, visual recognition, semantic judgment, sensitive actions, final verification |
+| **Host model** | Planning, visual recognition, semantic judgment, sensitive actions, final verification |
 | **Jev (TypeSafe)** | Mechanical action selection: navigate, click, toggle, scroll, page — chosen in a tight decision loop |
 
 Without this split, every mechanical click costs a full host-model turn; with it, the host model is spent only where judgment is actually required. The skill works across omp, Codex, Cursor, Claude Code, Workbuddy, Zcode, or any host exposing a computer-use tab, Playwright page, or CDP.
@@ -478,10 +478,28 @@ integration cost on a flow this size.
   find one.
 - Any flow whose next step genuinely depends on freshly observed state — the case the skill is
   designed for and this fixture does not exercise, because all 15 actions are known up front.
-- Flows needing text entry: out of scope by construction.
+- Flows needing text entry are now supported (`policy.fill` + a small helper model), but the search+filter+form measurement shows the skill still does not beat driving directly on a short flow.
 
 If you are choosing between driving a browser directly and using this skill for a scripted flow, the
 measurement says drive it directly.
+
+## Text entry: Jev selects, a small LLM fills
+
+Jev is a selector; it cannot generate text. Every build on `madewithjev.com` pairs it with a small
+fast LLM for exactly that reason. This skill does the same:
+
+- `policy.fill: true` offers every text field (textbox / textarea / combobox / searchbox) as a
+  candidate; Jev picks **which** field.
+- A free helper model (`bifrost/deepseek-v4-flash`) generates the **value** from the goal and the
+  field's label. The response is strict-parsed; a blank, non-string, or over-long value fails the
+  action and the run hands back rather than guessing.
+- `fill` **never** presses Enter and never submits. Any consequential submit/send/publish step stays
+  with the host.
+
+Measured on a search + filter + form flow (3 samples/arm, free host model both arms, correctness from
+the page's own report): arm A 29,299 tokens / 52.68 s per action / 3-of-3; arm B 49,180 tokens /
+89.52 s per action / 2-of-3. The skill cost **1.68x** the tokens and **1.70x** the time per action —
+the ≤0.8x criterion is not met. Jev is not the bottleneck (10 decisions, p50 **379 ms**).
 
 ## Verification Matrix
 
@@ -585,7 +603,7 @@ Expected: `200`
 
 | Limitation | Details |
 |------------|---------|
-| **No text entry** | Text input is host responsibility; no `type` action exists |
+| **Fill is delegated** | Jev picks *which* field; a small free LLM generates the value. `fill` never presses Enter and never submits — the host owns any consequential step. |
 | **No native select handling** | Native `<select>` dropdowns need host handling |
 | **No canvas/iframe support** | Canvas apps and cross-origin frames are unsupported |
 | **No drag-and-drop** | Drag operations require host-level automation |
