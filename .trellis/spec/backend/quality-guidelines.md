@@ -128,6 +128,36 @@ produces **no** work at all, because the failure happened while running a test.
 
 ---
 
+## Gotcha: A Signal That Is Validated But Never Consumed
+
+**Problem**: Validation and consumption are different code paths, and a field can
+pass the first and never reach the second. `readChoice` checked that a target
+head's `confidence` was a finite number in `[0, 1]` — so the value was *read* — and
+`readTarget` then returned only the action, so the confidence influenced nothing.
+The run gated on the *operation* question's confidence alone.
+
+**Symptom**: The system acts on a judgement the model has already reported as
+uncertain, and the failure looks like model error rather than a wiring gap.
+
+**Prevention**:
+- After adding validation for a field, grep for the field name at the decision
+  site. If it appears only inside the validator, nothing consumes it.
+- Treat "validated but unused" as a defect, not as harmless strictness: the
+  validator makes the field look handled, which is why it survives review.
+- Ask what the field would change if it were consumed, and design a probe that
+  distinguishes "would have changed the outcome" from "would not".
+
+**Real example**: the `browser-with-typesafe` target head's confidence was validated
+and discarded. A probe on states where **no** candidate control fit the goal showed
+the model reporting target confidence `0.176`, `0.092`, and `0.326` — every one below
+the existing `0.55` floor — while still being forced to return a candidate, so the
+run executed a wrong control 5/5 times in all three cases. Gating on the discarded
+value blocks all three; an explicit "none of these" option added to the criteria
+blocks only two of the three. The unused signal was the better detector, and the
+field's presence in the validator is what kept it invisible.
+
+---
+
 ## Required Patterns
 
 <!-- Patterns that must always be used -->
