@@ -1,6 +1,6 @@
 ---
 name: browser-with-typesafe
-version: "0.3.0"
+version: "0.4.0"
 description: Fast, low-cost browser operations with TypeSafe Jev. The host model plans, verifies, and judges visuals; Jev selects each next mechanical action (click, toggle, scroll, page, reload, and which field to fill); a small free LLM generates the fill text Jev cannot produce. Use it as the default first route for browser verification, dashboards, settings pages, reports, search/filter/form flows, and repetitive UI work on omp, Codex, Cursor, Claude Code, Workbuddy, Zcode, or any host that exposes a computer-use tab, a Playwright page, or CDP.
 ---
 
@@ -86,7 +86,10 @@ does not grow with the number of steps taken.
 
 ```js
 const { loadConfig } = await import('./bridge/index.mjs');
-const config = await loadConfig();   // { provider, model, configPath, hasApiKey } — never the key
+const config = await loadConfig();
+// { provider, model, configPath, hasApiKey, fillEndpoint, fillModel } — never the key
+// fillEndpoint/fillModel default to the free bifrost helper; set them in the
+// config file only to point the fill helper somewhere else.
 ```
 
 | Result | What to do |
@@ -99,6 +102,17 @@ const config = await loadConfig();   // { provider, model, configPath, hasApiKey
 | --- | --- | --- |
 | `typesafe` | TypeSafe official endpoint | <https://console.typesafe.ai/keys> |
 | `openrouter` | OpenRouter Decisions endpoint | <https://openrouter.ai/settings/keys> |
+
+The **fill helper** is configured separately from the decision provider: its
+endpoint and model are the `fillEndpoint` and `fillModel` keys (defaults:
+the free `bifrost` endpoint and `deepseek-v4-flash`), and its credential is
+`BIFROST_API_KEY` in the environment, not in the config file.
+
+**A `429` or `529` is retried, not failed.** The decision request and the fill
+helper both retry those two statuses with bounded exponential backoff, honoring
+`Retry-After` and never spending more than the run's remaining `maxMs` budget;
+`401`, `422`, schema, and credential failures stay terminal. A retried decision
+is visible as `decisionRetries` in the metrics.
 
 **Ask the user which provider they want; never pick one for them.** The key
 belongs in `~/.config/browser-with-typesafe/config.json` (mode `600`), entered

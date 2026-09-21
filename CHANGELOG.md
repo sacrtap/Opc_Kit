@@ -5,6 +5,49 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.6.4] - 2026-09-22
+
+### Fixed
+- **`429` and `529` are now retried instead of failing the run.** The TypeSafe API
+  documents both as retriable with exponential backoff, but the non-2xx branch threw
+  one undifferentiated `Error`, so the retry predicate (a regex over the message)
+  could not match a rate limit and every one became a terminal `decision_error`.
+  Non-2xx now throws a `ProviderRequestError` carrying `retryable` and
+  `retryAfterMs`, classified against the API's error table. Backoff is exponential
+  with jitter, honors `Retry-After`, and is bounded by the run's remaining `maxMs`
+  so it can never consume the whole budget. `401`, `422`, schema, and credential
+  failures stay terminal. Every existing error message string is unchanged.
+- **The decision questions now have the shapes the docs ask for.** The `operation`
+  Choice criteria were `criteria[op] = op` — a restatement of the key instead of a
+  rubric — and now carry a contrastive rubric per operation kind. Every target head
+  shared one instruction referring to "the selected operation", which is unknowable
+  because questions are evaluated in parallel and cannot read each other's answers;
+  each head now names its own operation.
+- **The acted-on target head's confidence is used.** `readChoice` validated it and
+  `readTarget` discarded it, so only the operation confidence gated a run. It is now
+  returned and gated by `minTargetConfidence` (default `minConfidence`, same
+  `[0.55, 1]` range), so a run no longer acts on a control selection the model
+  reported as uncertain.
+
+### Changed
+- **The fill helper is a first-class, configurable dependency.** Its endpoint and
+  model were pinned in source and absent from the provider guide and the
+  configuration reference; they are now the `fillEndpoint` and `fillModel` config
+  keys with unchanged defaults, documented alongside the `BIFROST_API_KEY`
+  credential, and the helper retries `429`/`529` through the same classification as
+  a decision.
+
+### Measured
+- A re-run of the A/B search flow did **not** meet the criterion (arm B 3.4× arm A
+  on uncached tokens, 3.06× on per-action time). The round is reported as confounded
+  rather than as a result about these changes: the fill helper cannot satisfy the
+  fixture's run-seeded query (it receives the goal and the field, never the page),
+  the helper endpoint had a degradation window during the run, and all three arm B
+  runs ended at the harness's 360s budget rather than naturally. A click-only
+  control run produced zero `low_confidence`, so the new target gate did not cause
+  the failures. Full detail and numbers: the task's
+  `research/typesafe-conformance-audit.md`.
+
 ## [2.6.3] - 2026-09-21
 
 ### Added

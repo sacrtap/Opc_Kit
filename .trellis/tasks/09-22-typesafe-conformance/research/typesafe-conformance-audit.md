@@ -249,3 +249,85 @@ the head instruction to a per-operation structured form, so the absolute
 confidences may move. The structural result — the model expresses a no-match state
 in the target confidence, not in the picked option — is what the decision rests on,
 and P6's live run re-observes it under the shipped shape.
+
+## P6 — the A/B re-run is confounded and cannot attribute its result
+
+Round 1, `--samples 3 --task search`, criterion unchanged:
+
+| arm | turns | uncached | output | correct | wall_s | per_action_s |
+| --- | ---: | ---: | ---: | --- | ---: | ---: |
+| A | 8.0 | 24,225 | 1,579 | 3/3 | 118.8 | 29.71 |
+| B | 21.7 | 82,236 | 6,198 | **1/3** | 363.7 | 90.93 |
+
+The criterion (B ≤ 0.8 × A on tokens AND per-action time) is **not met** — B is
+3.4× A on uncached tokens and 3.06× on per-action time. B's accuracy also fell from
+the 2/3 recorded before this task. **The measurement cannot attribute that to the
+P1–P5 changes**, for four measured reasons.
+
+### 1. The fill helper cannot complete this fixture's first step — pre-existing
+
+The fixture derives a run-specific query from the run id (`SEARCH_WORDS` in
+`tests/fixtures/static-page.html:410`) and requires an exact match, while
+`fillValue` receives only `{goal, field: {role, name}, recentActions}` and never
+the page. Measured directly against a healthy endpoint, same model, same
+instructions, varying only the goal:
+
+| Goal | Latency | Content |
+| --- | --- | --- |
+| the fixture's real search goal | 31.2s, 72.4s, 41.7s | `{"text": ""}` — empty |
+| `search for reports` | 2.6s, 2.5s, 1.7s | `{"text":"reports"}` |
+
+Both outcomes fail the skill: an empty value is rejected by `parseFillResponse`,
+and the latency exceeds the helper's 20s timeout. Four direct skill runs on the
+fixture (bypassing the host model entirely) each ended `action_error` / `fill error`
+at ~21s, after **1 decision and 0 executed actions** — the skill never reaches its
+second step.
+
+This is **not a regression**: `git diff` confirms `FILL_INSTRUCTIONS`, the 20s
+timeout, and the model are unchanged by this task; only the endpoint and model
+became configurable, with identical values.
+
+### 2. The endpoint had a degradation window during the run
+
+Direct samples of the fill endpoint during the investigation returned 25–90s
+latency, empty content, and HTML error pages; a later sample of the same endpoint
+returned **6/6 in 2.0–3.2s**. The A/B round ran inside the bad window.
+
+### 3. Every arm B run hit the harness budget, not a natural end
+
+All three arm B runs finished at wall 363.5 / 363.6 / 364.1s against the harness's
+`--max-time 360` (`tests/e2e/cost-experiment.sh:230`). Arm B's completion is bounded
+by the budget, so its accuracy reflects what fit inside 360s.
+
+### 4. The arms are not symmetric with respect to the degraded dependency
+
+Arm A completed 3/3 with zero errors and makes no fill-helper calls. Arm B depends
+on the same free endpoint **twice** — host model and fill helper — so a degradation
+window penalises it twice. That asymmetry comes from the fixture's design, not from
+the code under test.
+
+### P3 is exonerated by a click-only control
+
+The target gate was the prime suspect for the accuracy drop. A direct run of the
+**wizard** fixture — ten clicks, no fill, so the fill helper is not involved —
+produced **10 decisions, 10 executed clicks, and zero `low_confidence`**. The new
+gate did not fire on an unambiguous flow, so it does not explain arm B's failures.
+
+### What this means
+
+The criterion is not met and is reported as not met. What the round cannot do is
+support a claim in either direction about the P1–P5 changes, because arm B never
+got past its first mechanical action for reasons that predate them. A meaningful
+re-run needs the fixture's seeded-value requirement to be satisfiable by the fill
+helper's contract, or the fill step to be excluded from the measured flow.
+
+### New finding (outside the confirmed scope)
+
+**F8 — the fill helper's contract cannot satisfy a value the page reveals.** The
+helper sees the goal and the field's role/name, never the page. Any flow whose
+value is only discoverable from the page (this fixture seeds its query, row, and
+two field values that way) makes the helper's `fill` unusable, and its 20s timeout
+is shorter than the endpoint's observed latency under load (31–72s on the long
+goal). Fixing this is a design decision — pass the page's prompt text into the
+helper, raise/config the timeout, or keep the fill step out of measured flows — so
+it is recorded here rather than changed unilaterally.
