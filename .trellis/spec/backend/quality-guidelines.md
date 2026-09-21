@@ -80,6 +80,54 @@ Reword the prose instead only if the pattern cannot be tightened without losing 
 
 ---
 
+## Gotcha: A Measurement Arm That Reads A Doc Must Have The Current Doc
+
+**Problem**: When an A/B measurement has one arm that reads a documentation file (a SKILL.md, a
+README, an agent prompt) to learn how to invoke a feature, that document is *part of the measured
+system*. Shipping the code change without the doc update makes that arm test the previous design.
+
+**Symptom**: The doc-reading arm fails every run for a reason that looks like model incompetence —
+e.g. it never enables the new capability, so a flow that requires it cannot progress — while the
+control arm behaves normally.
+
+**Prevention**:
+- Order the work: **doc first, then measure**. Treat the user-facing doc as a code artifact for the
+  arm that reads it, not as a trailing write-up.
+- Before measuring, grep the doc for the capability you just added (`grep -n "<flag>\|<action>"
+  SKILL.md`). If it is absent, the arm cannot use it.
+- When an arm fails every run, read that arm's transcript for which doc it read and what block it
+  copied — before blaming the model.
+
+**Real example**: the `fill` helper landed in `bridge/` while `SKILL.md` still documented
+`policy: { click: true }` and stated "this skill performs no text entry". The skill arm copied that
+block, never enabled fill, and failed 0/3 on a search flow. Fixing the doc first made the same arm
+pass (`{status:"complete", actions:4, ok:true}`).
+
+---
+
+## Gotcha: Networked Helpers Must Be Mocked In Tests
+
+**Problem**: A helper that calls an external API (a model endpoint, a webhook) makes the test suite
+depend on that API's availability and quota. A test that calls it for real will pass locally and fail
+in CI, or fail the whole agent run when the provider throttles.
+
+**Symptom**: A sub-agent dies with a provider error (`429 ... quota exceeded`, `rpm exhausted`) and
+produces **no** work at all, because the failure happened while running a test.
+
+**Prevention**:
+- Split the helper: a **pure** parse/validate function (directly unit-tested) plus a **thin transport
+  wrapper** (never unit-tested against the network).
+- Mock `globalThis.fetch` in every test that reaches the transport, and restore it in a `finally`.
+- Assert on the request the helper *would* send, not on a live response.
+- Read provider credentials from the environment and never echo them — including inside error
+  messages, where a raw response can leak a key.
+
+**Real example**: a fill helper's first test round made real calls to the model provider until it hit
+`429 rpm exhausted`; the sub-agent exited 1 with zero file changes. The retry split
+`parseFillResponse` (pure) from the transport and mocked `globalThis.fetch`; it landed cleanly.
+
+---
+
 ## Required Patterns
 
 <!-- Patterns that must always be used -->
