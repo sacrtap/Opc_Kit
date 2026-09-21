@@ -1,0 +1,2 @@
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Quality gate: mocked transports, no credential leakage, guards must not match prose"}
+{"file": ".trellis/tasks/09-22-typesafe-conformance/research/typesafe-conformance-audit.md", "reason": "Verify each finding against its recorded evidence, and that claims stay proportional to it"}

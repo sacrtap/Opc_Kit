@@ -1,0 +1,2 @@
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Existing gotchas that bind this work: mock networked helpers, tighten source-scanning guards, update the doc-reading artifact before measuring"}
+{"file": ".trellis/tasks/09-22-typesafe-conformance/research/typesafe-conformance-audit.md", "reason": "The six findings with file:line evidence and measured live-Jev numbers; the source of every requirement"}
