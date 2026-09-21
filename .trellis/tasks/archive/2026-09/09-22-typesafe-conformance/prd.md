@@ -120,22 +120,22 @@ items, plus a re-run of the A/B measurement.**
 
 ## Acceptance Criteria
 
-- [ ] **AC1** A 429 or 529 response is retried with bounded exponential backoff
+- [x] **AC1** A 429 or 529 response is retried with bounded exponential backoff
       and `Retry-After` honored; 401 and 422 stay terminal; a retry is visible in
       the run history.
-- [ ] **AC2** The `operation` criteria carry a rubric per operation kind, and each
+- [x] **AC2** The `operation` criteria carry a rubric per operation kind, and each
       target head names its own operation instead of referring to an answer it
       cannot see.
-- [ ] **AC3** The acted-on target head's confidence is returned and gates the run,
+- [x] **AC3** The acted-on target head's confidence is returned and gates the run,
       independently configurable from the operation gate.
-- [ ] **AC4** The fill helper's endpoint and model are configuration-driven with
+- [x] **AC4** The fill helper's endpoint and model are configuration-driven with
       unchanged defaults, documented in the provider guide and the configuration
       reference, and share the retry path.
-- [ ] **AC5** F6 and F7 are decided with evidence: adopted with a measured
+- [x] **AC5** F6 and F7 are decided with evidence: adopted with a measured
       justification, or rejected with the reason recorded.
-- [ ] **AC6** The A/B measurement is re-run under the unchanged criterion, and
+- [x] **AC6** The A/B measurement is re-run under the unchanged criterion, and
       each finding is reported proportionally to what it actually shows.
-- [ ] **AC7** Docs updated: configuration surface, retry behavior, measurement
+- [x] **AC7** Docs updated: configuration surface, retry behavior, measurement
       result.
-- [ ] **AC8** No regression: `node --test tests/*.test.mjs` passes, the search and
+- [x] **AC8** No regression: `node --test tests/*.test.mjs` passes, the search and
       15-action fixtures still pass, and CI is green on both Node versions.
