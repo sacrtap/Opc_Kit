@@ -146,9 +146,13 @@ fast LLM for exactly that reason. This skill does the same:
 
 - `policy.fill: true` offers every text field (textbox / textarea / combobox / searchbox) as a
   candidate; Jev picks **which** field.
-- A free helper model (`bifrost/deepseek-v4-flash`) generates the **value** from the goal and the
-  field's label. The response is strict-parsed; a blank, non-string, or over-long value fails the
-  action and the run hands back rather than guessing.
+- A free helper model (`bifrost/deepseek-v4-flash` by default) generates the
+  **value** from the goal and the field's label. The endpoint and model are
+  configurable through the optional `fillEndpoint` / `fillModel` config keys,
+  and the credential comes from the `BIFROST_API_KEY` environment variable
+  (see `references/configuration.md`). The response is strict-parsed; a blank,
+  non-string, or over-long value fails the action and the run hands back rather
+  than guessing.
 - `fill` **never** presses Enter and never submits. Any consequential submit/send/publish step stays
   with the host, exactly as before.
 

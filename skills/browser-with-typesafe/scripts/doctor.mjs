@@ -16,7 +16,7 @@ import { readFile, stat } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { DEFAULT_CONFIG_PATH, resolveProviderConfig } from '../bridge/core.mjs';
+import { DEFAULT_CONFIG_PATH, providerGuide, resolveProviderConfig } from '../bridge/core.mjs';
 
 const DEFAULT_TIMEOUT_MS = 20000;
 
@@ -138,6 +138,13 @@ export async function runDoctor({ configPath = DEFAULT_CONFIG_PATH, probe = prob
     return summarize(checks);
   }
 
+  // The fill helper joins the documented configuration surface: report its
+  // route from the same providerGuide() the installer prints. Informational by
+  // design — the credential lives in BIFROST_API_KEY and is checked at call
+  // time, so this line can never block readiness.
+  const fill = providerGuide().find((entry) => entry.id === 'fill');
+  record('fill helper', true, `${fill.model} @ ${fill.endpoint}`);
+
   const result = await probe({ endpoint: resolved.endpoint, apiKey, model: resolved.model });
   record(
     'endpoint',
@@ -157,7 +164,7 @@ function printHelp() {
       '',
       `Checks the configuration at ${DEFAULT_CONFIG_PATH} (or --config <path>):`,
       '  config file · file permissions · directory permissions · JSON',
-      '  provider / model · apiKey presence · endpoint reachability',
+      '  provider / model · apiKey presence · fill helper · endpoint reachability',
       '',
       'Prints no credential. Exit code 0 when ready, 1 otherwise.',
     ].join('\n'),

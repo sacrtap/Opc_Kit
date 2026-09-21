@@ -1,7 +1,12 @@
 import assert from 'node:assert/strict';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import {
+  FILL_DEFAULT_ENDPOINT,
+  FILL_DEFAULT_MODEL,
   HISTORY_LIMIT,
   availableActions,
   checkState,
@@ -14,6 +19,7 @@ import {
   projectHistory,
   providerGuide,
   resolveProviderConfig,
+  retryDelayMs,
   run,
   summarizeLatencies,
   validateControl,
@@ -37,6 +43,8 @@ test('loadConfig returns the settings and never the key', async () => {
     model: 'jev-latest',
     configPath: CONFIG_FILE,
     hasApiKey: true,
+    fillEndpoint: 'https://bifrost.jiazoushi.com/v1/chat/completions',
+    fillModel: 'deepseek-v4-flash',
   });
   // the secret must not be reachable through the object that gets spread into a session
   assert.ok(!JSON.stringify(config).includes('test-key-not-a-real-credential'));
@@ -78,14 +86,20 @@ test('providerGuide exposes where each provider key comes from', () => {
   const guide = providerGuide();
   assert.deepEqual(
     guide.map((entry) => entry.id),
-    ['typesafe', 'openrouter'],
+    ['typesafe', 'openrouter', 'fill'],
   );
-  for (const entry of guide) {
+  const withKeysUrl = guide.filter((entry) => entry.keysUrl !== null);
+  for (const entry of withKeysUrl) {
     assert.match(entry.keysUrl, /^https:\/\//);
     assert.ok(entry.label);
     assert.ok(entry.model);
   }
   assert.equal(guide.find((entry) => entry.id === 'typesafe').keysUrl, 'https://console.typesafe.ai/keys');
+  const fill = guide.find((entry) => entry.id === 'fill');
+  assert.equal(fill.label, 'Fill helper (bifrost)');
+  assert.equal(fill.model, FILL_DEFAULT_MODEL);
+  assert.equal(fill.endpoint, FILL_DEFAULT_ENDPOINT);
+  assert.equal(fill.keysUrl, null, 'the fill credential is the BIFROST_API_KEY env var, not a console');
 });
 
 test('validateControl accepts the mechanical vocabulary and rejects everything else', () => {
@@ -1226,5 +1240,554 @@ test('a session reports decision latency in the same metrics object as decisions
     assert.equal(session.metrics().decisions, 1, 'latency rides along with the existing metrics');
   } finally {
     restore();
+  }
+});
+
+// ---------------------------------------------------------------------------
+// P1 — retriable-error classification
+// ---------------------------------------------------------------------------
+
+test('retryDelayMs applies exponential backoff with jitter, a cap, and Retry-After precedence', () => {
+  for (const [attempt, lo, hi] of [
+    [1, 250, 500],
+    [2, 500, 750],
+    [3, 1000, 1250],
+  ]) {
+    for (let i = 0; i < 100; i += 1) {
+      const delay = retryDelayMs(attempt);
+      assert.ok(delay >= lo && delay < hi, `attempt ${attempt} delay ${delay} is in [${lo}, ${hi})`);
+    }
+  }
+  for (let i = 0; i < 50; i += 1) {
+    assert.equal(retryDelayMs(5), 4000, 'attempts past the cap pin at RETRY_MAX_MS');
+  }
+  assert.equal(retryDelayMs(1, 1500), 1500, 'Retry-After overrides the jittered backoff');
+  assert.equal(retryDelayMs(9, 5000), 4000, 'Retry-After is still capped');
+  assert.equal(retryDelayMs(2, 0), 0, 'a zero Retry-After means retry immediately');
+  const negative = retryDelayMs(1, -1);
+  assert.ok(negative >= 250 && negative < 500, 'a negative Retry-After falls back to local backoff');
+  const stringValue = retryDelayMs(1, '120');
+  assert.ok(stringValue >= 250 && stringValue < 500, 'a non-finite Retry-After falls back to local backoff');
+});
+
+test('decide classifies 429/529 as retryable and other failures by the API table', async () => {
+  const original = globalThis.fetch;
+  const call = () =>
+    decide({
+      configPath: CONFIG_FILE,
+      provider: 'typesafe',
+      goal: 'g',
+      state: 's',
+      actions: [{ op: 'click', description: 'Click A' }],
+    });
+  const failing = (status, headers = {}) => async () => ({
+    ok: false,
+    status,
+    headers: new Headers(headers),
+  });
+  const capture = async () => {
+    try {
+      await call();
+      throw new Error('decide unexpectedly succeeded');
+    } catch (error) {
+      return error;
+    }
+  };
+  try {
+    globalThis.fetch = failing(429, { 'Retry-After': '120' });
+    let error = await capture();
+    assert.equal(error.name, 'ProviderRequestError');
+    assert.equal(error.retryable, true);
+    assert.equal(error.retryAfterMs, 120000, 'delta-seconds is parsed into milliseconds');
+    assert.match(error.message, /typesafe HTTP 429/);
+
+    globalThis.fetch = failing(429, { 'Retry-After': new Date(Date.now() + 5000).toUTCString() });
+    error = await capture();
+    assert.equal(error.retryable, true);
+    assert.equal(typeof error.retryAfterMs, 'number');
+    assert.ok(
+      error.retryAfterMs > 1000 && error.retryAfterMs < 10000,
+      'an HTTP-date Retry-After yields the remaining delay',
+    );
+
+    globalThis.fetch = failing(429, { 'Retry-After': 'not-a-header-value' });
+    error = await capture();
+    assert.equal(error.retryable, true);
+    assert.equal(error.retryAfterMs, null, 'garbage Retry-After falls back to local backoff');
+
+    globalThis.fetch = failing(529);
+    error = await capture();
+    assert.equal(error.retryable, true);
+    assert.equal(error.retryAfterMs, null);
+    assert.match(error.message, /typesafe HTTP 529/);
+
+    globalThis.fetch = failing(401);
+    error = await capture();
+    assert.equal(error.retryable, false, 'a credential problem is terminal');
+    assert.equal(error.retryAfterMs, null);
+
+    globalThis.fetch = failing(422);
+    error = await capture();
+    assert.equal(error.retryable, false, 'a malformed question is terminal');
+    assert.equal(error.retryAfterMs, null);
+
+    globalThis.fetch = async () => {
+      throw new Error('offline');
+    };
+    error = await capture();
+    assert.equal(error.retryable, true, 'a transport failure is retriable');
+    assert.equal(error.retryAfterMs, null);
+    assert.match(error.message, /transport failure or timeout/);
+  } finally {
+    globalThis.fetch = original;
+  }
+});
+
+test('a 429 decision is retried once and the run completes when the retry succeeds', async () => {
+  const original = globalThis.fetch;
+  const seen = [];
+  try {
+    globalThis.fetch = async (url, init) => {
+      const body = JSON.parse(init.body);
+      const opKeys = Object.keys(body.questions.operation.criteria);
+      const heads = {};
+      for (const [id, question] of Object.entries(body.questions)) {
+        if (id.endsWith('_target')) heads[id.slice(0, -'_target'.length)] = Object.keys(question.criteria);
+      }
+      const headKeys = heads.click ?? [];
+      seen.push(String(url));
+      if (seen.length === 1) return { ok: false, status: 429 };
+      const done = seen.length >= 3;
+      const answers = {
+        operation: choiceAnswer(done ? 'DONE' : 'click', opKeys),
+        ...(done || !headKeys.length ? {} : { click_target: choiceAnswer(headKeys[0], headKeys) }),
+      };
+      return {
+        ok: true,
+        status: 200,
+        async json() {
+          return { model: 'jev-1.13.0', answers };
+        },
+      };
+    };
+    const adapter = makeAdapter([
+      settingsPage('e1'),
+      settingsPage('e1'),
+      settingsPage('e1'),
+      ir('https://example.com/settings', [{ ref: 'e2', role: 'text', name: 'Alerts enabled' }]),
+      ir('https://example.com/settings', [{ ref: 'e2', role: 'text', name: 'Alerts enabled' }]),
+    ]);
+    const outcome = await run(adapter, {
+      ...BASE,
+      goal: 'Enable alerts and stop.',
+      controls: [{ op: 'click', name: 'Enable alerts' }],
+    });
+
+    assert.equal(outcome.status, 'needs_verification');
+    assert.deepEqual(adapter.calls, [{ op: 'click', ref: 'e1' }]);
+    assert.equal(outcome.history.filter((item) => item.reason === 'decision_retry').length, 1);
+    assert.equal(outcome.history.at(-1).reason, undefined, 'the final entry is the executed DONE record');
+  } finally {
+    globalThis.fetch = original;
+  }
+});
+
+test('a 529 decision is retried once', async () => {
+  const original = globalThis.fetch;
+  const seen = [];
+  try {
+    globalThis.fetch = async (url, init) => {
+      const body = JSON.parse(init.body);
+      const opKeys = Object.keys(body.questions.operation.criteria);
+      const heads = {};
+      for (const [id, question] of Object.entries(body.questions)) {
+        if (id.endsWith('_target')) heads[id.slice(0, -'_target'.length)] = Object.keys(question.criteria);
+      }
+      const headKeys = heads.click ?? [];
+      seen.push(String(url));
+      if (seen.length === 1) return { ok: false, status: 529 };
+      const done = seen.length >= 3;
+      const answers = {
+        operation: choiceAnswer(done ? 'DONE' : 'click', opKeys),
+        ...(done || !headKeys.length ? {} : { click_target: choiceAnswer(headKeys[0], headKeys) }),
+      };
+      return {
+        ok: true,
+        status: 200,
+        async json() {
+          return { model: 'jev-1.13.0', answers };
+        },
+      };
+    };
+    const adapter = makeAdapter([
+      settingsPage('e1'),
+      settingsPage('e1'),
+      settingsPage('e1'),
+      ir('https://example.com/settings', [{ ref: 'e2', role: 'text', name: 'Alerts enabled' }]),
+      ir('https://example.com/settings', [{ ref: 'e2', role: 'text', name: 'Alerts enabled' }]),
+    ]);
+    const outcome = await run(adapter, {
+      ...BASE,
+      goal: 'Enable alerts and stop.',
+      controls: [{ op: 'click', name: 'Enable alerts' }],
+    });
+
+    assert.equal(outcome.status, 'needs_verification');
+    assert.equal(outcome.history.filter((item) => item.reason === 'decision_retry').length, 1);
+  } finally {
+    globalThis.fetch = original;
+  }
+});
+
+test('a 401 decision is terminal and makes exactly one request', async () => {
+  const original = globalThis.fetch;
+  let requests = 0;
+  try {
+    globalThis.fetch = async () => {
+      requests += 1;
+      return { ok: false, status: 401 };
+    };
+    const outcome = await run(makeAdapter([settingsPage('e1')]), {
+      ...BASE,
+      goal: 'Enable alerts.',
+      controls: [{ op: 'click', name: 'Enable alerts' }],
+    });
+    assert.equal(outcome.status, 'decision_error');
+    assert.equal(outcome.error, 'typesafe HTTP 401');
+    assert.equal(requests, 1, 'a credential problem is not retried');
+    assert.equal(outcome.history.at(-1).reason, 'decision_error');
+    assert.equal(outcome.history.filter((item) => item.reason === 'decision_retry').length, 0);
+  } finally {
+    globalThis.fetch = original;
+  }
+});
+
+test('a 422 decision is terminal and makes exactly one request', async () => {
+  const original = globalThis.fetch;
+  let requests = 0;
+  try {
+    globalThis.fetch = async () => {
+      requests += 1;
+      return { ok: false, status: 422 };
+    };
+    const outcome = await run(makeAdapter([settingsPage('e1')]), {
+      ...BASE,
+      goal: 'Enable alerts.',
+      controls: [{ op: 'click', name: 'Enable alerts' }],
+    });
+    assert.equal(outcome.status, 'decision_error');
+    assert.equal(outcome.error, 'typesafe HTTP 422');
+    assert.equal(requests, 1, 'a malformed question is not retried');
+  } finally {
+    globalThis.fetch = original;
+  }
+});
+
+test('a 429 whose retry also fails ends in decision_error, not a hang', async () => {
+  const original = globalThis.fetch;
+  let requests = 0;
+  try {
+    globalThis.fetch = async () => {
+      requests += 1;
+      return { ok: false, status: 429 };
+    };
+    const startedAt = performance.now();
+    const outcome = await run(makeAdapter([settingsPage('e1'), settingsPage('e1')]), {
+      ...BASE,
+      goal: 'Enable alerts.',
+      controls: [{ op: 'click', name: 'Enable alerts' }],
+    });
+    const elapsed = performance.now() - startedAt;
+    assert.equal(outcome.status, 'decision_error');
+    assert.equal(requests, 2, 'one retry is attempted, then the run hands back');
+    assert.deepEqual(
+      outcome.history.map((item) => item.reason),
+      ['decision_retry', 'decision_error'],
+    );
+    assert.ok(elapsed < 3000, 'the bounded backoff keeps even a failing retry fast');
+  } finally {
+    globalThis.fetch = original;
+  }
+});
+
+// ---------------------------------------------------------------------------
+// P2 — question shapes
+// ---------------------------------------------------------------------------
+
+test('operation criteria carry real rubrics and every target head names its own operation', async () => {
+  const restore = stubDecide('a0');
+  try {
+    await decide({
+      configPath: CONFIG_FILE,
+      provider: 'typesafe',
+      goal: 'g',
+      state: 's',
+      actions: [
+        { op: 'click', description: 'Click A' },
+        { op: 'fill', description: 'Fill Query' },
+        { op: 'scroll', description: 'Scroll down' },
+        { op: 'press', description: 'Press Escape' },
+        { op: 'reload', description: 'Reload the current page' },
+      ],
+    });
+    const [{ body }] = restore.seen;
+    for (const op of ['click', 'fill', 'scroll', 'press', 'reload']) {
+      const rubric = body.questions.operation.criteria[op];
+      assert.ok(typeof rubric === 'string' && rubric.length > 0, `${op} has a non-empty rubric`);
+      assert.notEqual(rubric, op, `${op} rubric is not a restatement of its key`);
+
+      const head = body.questions[`${op}_target`];
+      assert.ok(head, `${op} has a target head`);
+      assert.equal(head.instructions.operation, op, `${op} head names its own operation`);
+      assert.ok(head.instructions.question.includes(`\`${op}\``), `${op} head question names its own operation`);
+      assert.ok(
+        !head.instructions.question.includes('selected operation'),
+        `${op} head never refers to the unreadable operation answer`,
+      );
+    }
+  } finally {
+    restore();
+  }
+});
+
+// ---------------------------------------------------------------------------
+// P3 — target confidence
+// ---------------------------------------------------------------------------
+
+test('a target head below the confidence gate returns low_confidence and executes nothing', async () => {
+  const original = globalThis.fetch;
+  try {
+    globalThis.fetch = async (url, init) => {
+      const body = JSON.parse(init.body);
+      const opKeys = Object.keys(body.questions.operation.criteria);
+      const headKeys = Object.keys(body.questions.click_target.criteria);
+      const operation = choiceAnswer('click', opKeys);
+      const target = choiceAnswer(headKeys[0], headKeys);
+      target.confidence = 0.4; // sure about the operation, unsure about the control
+      return {
+        ok: true,
+        status: 200,
+        async json() {
+          return { model: 'jev-1.13.0', answers: { operation, click_target: target } };
+        },
+      };
+    };
+    const adapter = makeAdapter([settingsPage('e1'), settingsPage('e1')]);
+    const outcome = await run(adapter, {
+      ...BASE,
+      goal: 'Enable alerts.',
+      controls: [{ op: 'click', name: 'Enable alerts' }],
+    });
+    assert.equal(outcome.status, 'low_confidence');
+    assert.equal(outcome.handoff, 'low_confidence');
+    assert.deepEqual(adapter.calls, [], 'nothing was executed');
+    assert.ok(outcome.history.at(-1).confidence >= 0.55, 'the operation gate did not fire');
+  } finally {
+    globalThis.fetch = original;
+  }
+});
+
+test('a confident target head still executes', async () => {
+  const restore = stubDecide(({ seen }) => (seen.length === 1 ? 'a0' : 'DONE'));
+  try {
+    const adapter = makeAdapter([
+      settingsPage('e1'),
+      settingsPage('e1'),
+      ir('https://example.com/settings', [{ ref: 'e2', role: 'text', name: 'Alerts enabled' }]),
+      ir('https://example.com/settings', [{ ref: 'e2', role: 'text', name: 'Alerts enabled' }]),
+    ]);
+    const outcome = await run(adapter, {
+      ...BASE,
+      goal: 'Enable alerts and stop.',
+      controls: [{ op: 'click', name: 'Enable alerts' }],
+    });
+    assert.equal(outcome.status, 'needs_verification');
+    assert.deepEqual(adapter.calls, [{ op: 'click', ref: 'e1' }]);
+    assert.equal(outcome.history.find((item) => item.executed).action, 'Click Enable alerts');
+  } finally {
+    restore();
+  }
+});
+
+test('targetConfidence is null when the decision has no target head', async () => {
+  for (const pick of ['DONE', 'BLOCKED', 'WAIT']) {
+    const restore = stubDecide(pick);
+    try {
+      const decision = await decide({
+        configPath: CONFIG_FILE,
+        provider: 'typesafe',
+        goal: 'g',
+        state: 's',
+        actions: [{ op: 'click', description: 'Click A' }],
+      });
+      assert.equal(decision.action, null);
+      assert.equal(decision.targetConfidence, null, `${pick} carries no target head`);
+    } finally {
+      restore();
+    }
+  }
+});
+
+test('an out-of-range minTargetConfidence is refused like minConfidence', async () => {
+  const adapter = makeAdapter([settingsPage('e1')]);
+  for (const value of [0.1, 0.54, 1.01]) {
+    await assert.rejects(
+      () => run(adapter, { ...BASE, goal: 'g', controls: [{ op: 'click', name: 'x' }], minTargetConfidence: value }),
+      /Invalid task contract/,
+      `minTargetConfidence ${value} is outside [0.55, 1]`,
+    );
+  }
+});
+
+// ---------------------------------------------------------------------------
+// P4 — fill helper configuration
+// ---------------------------------------------------------------------------
+
+test('loadConfig reads an optional fillEndpoint/fillModel from the file', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'bwt-fill-config-'));
+  const path = join(dir, 'config.json');
+  await writeFile(
+    path,
+    JSON.stringify({
+      provider: 'typesafe',
+      apiKey: 'test-key-not-a-real-credential',
+      fillEndpoint: 'https://custom.example/v1/chat/completions',
+      fillModel: 'custom-model',
+    }),
+  );
+  try {
+    const config = await loadConfig(path);
+    assert.equal(config.fillEndpoint, 'https://custom.example/v1/chat/completions');
+    assert.equal(config.fillModel, 'custom-model');
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('fillValue resolves endpoint and model from options with the constants as defaults', async () => {
+  const original = globalThis.fetch;
+  const requests = [];
+  try {
+    globalThis.fetch = async (url, init) => {
+      requests.push({ url: String(url), body: JSON.parse(init.body) });
+      return {
+        ok: true,
+        status: 200,
+        async json() {
+          return { choices: [{ message: { content: '{"text":"v"}' } }] };
+        },
+      };
+    };
+    await withFillKey(() => fillValue({ goal: 'g', field: { name: 'Query' } }));
+    assert.equal(requests[0].url, FILL_DEFAULT_ENDPOINT);
+    assert.equal(requests[0].body.model, FILL_DEFAULT_MODEL);
+
+    await withFillKey(() =>
+      fillValue(
+        { goal: 'g', field: { name: 'Query' } },
+        { endpoint: 'https://custom.example/v1/chat/completions', model: 'custom-model' },
+      ),
+    );
+    assert.equal(requests[1].url, 'https://custom.example/v1/chat/completions');
+    assert.equal(requests[1].body.model, 'custom-model');
+  } finally {
+    globalThis.fetch = original;
+  }
+});
+
+test('the fill helper retries a 429 once and a 401 is terminal', async () => {
+  const original = globalThis.fetch;
+  const requests = [];
+  try {
+    globalThis.fetch = async (url, init) => {
+      requests.push(String(url));
+      if (requests.length === 1) {
+        return { ok: false, status: 429, headers: new Headers({ 'Retry-After': '0' }) };
+      }
+      return {
+        ok: true,
+        status: 200,
+        async json() {
+          return { choices: [{ message: { content: '{"text":"ok"}' } }] };
+        },
+      };
+    };
+    const text = await withFillKey(() => fillValue({ goal: 'g', field: { name: 'Query' } }));
+    assert.equal(text, 'ok');
+    assert.equal(requests.length, 2, 'a 429 is retried once');
+
+    requests.length = 0;
+    globalThis.fetch = async () => {
+      requests.push('x');
+      return { ok: false, status: 401 };
+    };
+    await assert.rejects(
+      () => withFillKey(() => fillValue({ goal: 'g', field: { name: 'Query' } })),
+      /fill error/,
+    );
+    assert.equal(requests.length, 1, 'a 401 is not retried');
+
+    requests.length = 0;
+    globalThis.fetch = async () => {
+      requests.push('x');
+      return { ok: false, status: 429 };
+    };
+    await assert.rejects(
+      () => withFillKey(() => fillValue({ goal: 'g', field: { name: 'Query' } })),
+      /fill error/,
+    );
+    assert.equal(requests.length, 2, 'a 429 is retried at most maxRetries times');
+  } finally {
+    globalThis.fetch = original;
+  }
+});
+
+test('run forwards config-supplied fill endpoint and model to the helper', async () => {
+  const original = globalThis.fetch;
+  const fillRequests = [];
+  try {
+    globalThis.fetch = async (url, init) => {
+      if (String(url).includes('bifrost') || String(url).includes('custom-fill')) {
+        fillRequests.push({ url: String(url), body: JSON.parse(init.body) });
+        return {
+          ok: true,
+          status: 200,
+          async json() {
+            return { choices: [{ message: { content: '{"text":"reports"}' } }] };
+          },
+        };
+      }
+      const body = JSON.parse(init.body);
+      const opKeys = Object.keys(body.questions.operation.criteria);
+      const headKeys = Object.keys(body.questions.fill_target.criteria);
+      return {
+        ok: true,
+        status: 200,
+        async json() {
+          return {
+            model: 'jev-1.13.0',
+            answers: {
+              operation: choiceAnswer('fill', opKeys),
+              fill_target: choiceAnswer(headKeys[0], headKeys),
+            },
+          };
+        },
+      };
+    };
+    const adapter = makeAdapter([fillPage('q1'), fillPage('q1'), fillPage('q1')]);
+    await withFillKey(() =>
+      run(adapter, {
+        ...BASE,
+        goal: 'Search for reports.',
+        controls: [{ op: 'fill', name: 'Query' }],
+        fillEndpoint: 'https://custom-fill.example/v1/chat/completions',
+        fillModel: 'custom-model',
+      }),
+    );
+    assert.equal(fillRequests.length, 1);
+    assert.equal(fillRequests[0].url, 'https://custom-fill.example/v1/chat/completions');
+    assert.equal(fillRequests[0].body.model, 'custom-model');
+  } finally {
+    globalThis.fetch = original;
   }
 });

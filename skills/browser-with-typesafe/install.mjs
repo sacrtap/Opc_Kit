@@ -149,7 +149,10 @@ function parseArgs(argv) {
 
 function printHelp() {
   const providers = providerGuide()
-    .map((guide) => `  ${guide.id.padEnd(11)} ${guide.label.padEnd(22)} key: ${guide.keysUrl}`)
+    .map(
+      (guide) =>
+        `  ${guide.id.padEnd(11)} ${guide.label.padEnd(22)} key: ${guide.keysUrl ?? 'env BIFROST_API_KEY'}`,
+    )
     .join('\n');
 
   console.log(

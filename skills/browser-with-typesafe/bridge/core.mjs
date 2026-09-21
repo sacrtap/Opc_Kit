@@ -72,12 +72,83 @@ export const PROVIDER_IDS = Object.keys(PROVIDERS);
  * Use this instead of duplicating key URLs or default models in prose.
  */
 export function providerGuide() {
-  return PROVIDER_IDS.map((id) => ({
-    id,
-    label: PROVIDERS[id].label,
-    model: PROVIDERS[id].model,
-    keysUrl: PROVIDERS[id].keysUrl,
-  }));
+  return [
+    ...PROVIDER_IDS.map((id) => ({
+      id,
+      label: PROVIDERS[id].label,
+      model: PROVIDERS[id].model,
+      keysUrl: PROVIDERS[id].keysUrl,
+    })),
+    {
+      id: 'fill',
+      label: 'Fill helper (bifrost)',
+      model: FILL_DEFAULT_MODEL,
+      endpoint: FILL_DEFAULT_ENDPOINT,
+      // The fill helper's credential is not a console key: it comes from the
+      // BIFROST_API_KEY environment variable, so there is no keysUrl to print.
+      keysUrl: null,
+    },
+  ];
+}
+
+/**
+ * HTTP statuses the TypeSafe API documents as retriable with backoff
+ * (`api.md`: 429 Too Many Requests, 529 Overloaded), and the backoff bounds
+ * for one request. Everything else is terminal so a configuration problem
+ * fails fast instead of being retried on a delay.
+ */
+const RETRIABLE_STATUS = new Set([429, 529]);
+const RETRY_BASE_MS = 250;
+const RETRY_MAX_MS = 4000;
+
+/** Whether the API documents this HTTP status as retriable with backoff. */
+function retriableStatus(status) {
+  return RETRIABLE_STATUS.has(status);
+}
+
+/**
+ * Backoff for one retried request. `Retry-After` wins when the server
+ * supplies it; otherwise exponential backoff with jitter, capped so a single
+ * retry cannot stall a run. Pure and exported so tests assert bounds without
+ * sleeping.
+ */
+export function retryDelayMs(attempt, retryAfterMs = null) {
+  if (Number.isFinite(retryAfterMs) && retryAfterMs >= 0) return Math.min(retryAfterMs, RETRY_MAX_MS);
+  const exponential = RETRY_BASE_MS * 2 ** Math.max(0, attempt - 1);
+  const jitter = Math.floor(Math.random() * RETRY_BASE_MS);
+  return Math.min(exponential + jitter, RETRY_MAX_MS);
+}
+
+/**
+ * Parse a `Retry-After` header value: the delta-seconds form or an HTTP-date.
+ * Anything unparseable yields null so the caller falls back to local backoff.
+ */
+function parseRetryAfter(value) {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) && value >= 0 ? value * 1000 : null;
+  }
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (/^\d+$/.test(trimmed)) return Number(trimmed) * 1000;
+    const date = Date.parse(trimmed);
+    if (Number.isFinite(date)) return Math.max(0, date - Date.now());
+  }
+  return null;
+}
+
+/**
+ * An error thrown by `decide()` that carries machine-readable retry intent:
+ * whether the request may be retried, and the server-supplied delay if any.
+ * Messages are unchanged — only the classification is new, so nothing that
+ * matches on message text breaks.
+ */
+class ProviderRequestError extends Error {
+  constructor(message, { retryable, retryAfterMs = null }) {
+    super(message);
+    this.name = 'ProviderRequestError';
+    this.retryable = retryable;
+    this.retryAfterMs = retryAfterMs;
+  }
 }
 
 const INSTRUCTIONS = [
@@ -95,23 +166,31 @@ const INSTRUCTIONS = [
 ].join(' ');
 
 /**
- * Instruction text for every per-operation target head. The operation question
- * picks *which kind* of action; the matching target head picks *which exact
- * control*. Other heads are ignored by the executor (design C2).
+ * Rubrics for the `operation` Choice criteria, one per operation kind in the
+ * action space. Each states what the option does and what it does not do, so
+ * the options separate from one another instead of restating their keys (the
+ * TypeSafe Choice guidance asks for criteria that describe each option).
  */
-const TARGET_RULES =
-  'Choose the exact target for the selected operation from the listed candidates; ' +
-  'pick the one that best matches the goal and the current accessibility state.';
+const OPERATION_RUBRICS = {
+  click: 'Press one clickable control (button, link, checkbox, tab) to move the page forward.',
+  fill: 'Type a generated value into one text field. It enters text only and never submits.',
+  scroll: 'Move the viewport to reveal content that is currently out of view. It changes nothing else.',
+  press: 'Send one bounded keyboard key to the page. It does not type text.',
+  reload: 'Reload the current page. It discards page-local state and changes nothing else.',
+};
 
 /**
  * Fill helper (layer "generate" of the three-layer design): a small
  * OpenAI-compatible model writes the field value Jev cannot produce. The
- * endpoint and model are pinned so the helper's cost stays the free
- * `bifrost` route; the credential comes from BIFROST_API_KEY and never leaves
- * this module or reaches an error message.
+ * endpoint and model are configuration-driven with the current free `bifrost`
+ * route as the defaults; the credential comes from BIFROST_API_KEY and never
+ * leaves this module or reaches an error message.
  */
-export const FILL_MODEL = 'deepseek-v4-flash';
-const FILL_ENDPOINT = 'https://bifrost.jiazoushi.com/v1/chat/completions';
+export const FILL_DEFAULT_ENDPOINT = 'https://bifrost.jiazoushi.com/v1/chat/completions';
+export const FILL_DEFAULT_MODEL = 'deepseek-v4-flash';
+
+/** Backwards-compatible alias for the default helper model. */
+export const FILL_MODEL = FILL_DEFAULT_MODEL;
 
 /** Hard bound on a helper-generated value; longer text fails the action. */
 const FILL_MAX_TEXT = 2000;
@@ -217,6 +296,9 @@ export async function loadConfig(path = DEFAULT_CONFIG_PATH) {
     model: resolved.model,
     configPath: path,
     hasApiKey: typeof parsed.apiKey === 'string' && parsed.apiKey.trim().length > 0,
+    fillEndpoint:
+      typeof parsed?.fillEndpoint === 'string' && parsed.fillEndpoint ? parsed.fillEndpoint : FILL_DEFAULT_ENDPOINT,
+    fillModel: typeof parsed?.fillModel === 'string' && parsed.fillModel ? parsed.fillModel : FILL_DEFAULT_MODEL,
   };
 }
 
@@ -481,12 +563,18 @@ export function parseFillResponse(payload) {
  * key, transport, HTTP, bad JSON, strict-parse rejection — throws `fill
  * error` so the run hands back instead of guessing.
  */
-export async function fillValue({ goal, field, recentActions = [] }, { timeoutMs = 20000 } = {}) {
+export async function fillValue(
+  { goal, field, recentActions = [] },
+  { timeoutMs = 20000, endpoint, model, maxRetries = 1 } = {},
+) {
   const key = typeof process.env.BIFROST_API_KEY === 'string' ? process.env.BIFROST_API_KEY.trim() : '';
   if (!key) throw new Error('fill error');
 
+  const resolvedEndpoint = endpoint ?? FILL_DEFAULT_ENDPOINT;
+  const resolvedModel = model ?? FILL_DEFAULT_MODEL;
+
   const body = JSON.stringify({
-    model: FILL_MODEL,
+    model: resolvedModel,
     messages: [
       { role: 'system', content: FILL_INSTRUCTIONS },
       { role: 'user', content: JSON.stringify({ goal, field, recent_actions: recentActions }) },
@@ -496,18 +584,30 @@ export async function fillValue({ goal, field, recentActions = [] }, { timeoutMs
   if (body.includes(key)) throw new Error('fill error');
 
   let response;
-  try {
-    response = await fetch(FILL_ENDPOINT, {
-      method: 'POST',
-      redirect: 'error',
-      signal: AbortSignal.timeout(timeoutMs),
-      headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-      body,
-    });
-  } catch {
+  let attempts = 0;
+  for (;;) {
+    try {
+      response = await fetch(resolvedEndpoint, {
+        method: 'POST',
+        redirect: 'error',
+        signal: AbortSignal.timeout(timeoutMs),
+        headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+        body,
+      });
+    } catch {
+      throw new Error('fill error');
+    }
+    if (response.ok) break;
+    // A rate-limited helper degrades the same way a rate-limited decision
+    // does: bounded backoff for 429/529 only, everything else terminal.
+    if (retriableStatus(response.status) && attempts < maxRetries) {
+      attempts += 1;
+      const retryAfterMs = parseRetryAfter(response.headers?.get?.('Retry-After') ?? null);
+      await new Promise((resolve) => setTimeout(resolve, retryDelayMs(attempts, retryAfterMs)));
+      continue;
+    }
     throw new Error('fill error');
   }
-  if (!response.ok) throw new Error('fill error');
 
   let parsed;
   try {
@@ -572,8 +672,9 @@ function readChoice(answers, id, criteria) {
 }
 
 /**
- * Read ONLY the target head that matches the selected operation. Every other
- * head is ignored — an unused head's malformed answer can never fail the
+ * Read ONLY the target head that matches the selected operation, returning the
+ * acted-on action AND the confidence the model placed on that head. Every
+ * other head is ignored — an unused head's malformed answer can never fail the
  * request. Operations without a head (DONE/BLOCKED/WAIT) return null; an
  * absent or invalid head for an operation that HAS one throws, failing the
  * request so the caller retries per policy.
@@ -582,7 +683,8 @@ function readTarget(answers, op, byOp) {
   const entry = byOp.get(op);
   if (!entry) return null;
   const head = readChoice(answers, `${op}_target`, entry.criteria);
-  return entry.byId.get(head.choice) ?? null;
+  const action = entry.byId.get(head.choice) ?? null;
+  return action === null ? null : { action, confidence: head.confidence };
 }
 
 /**
@@ -625,7 +727,7 @@ export async function decide({
     const entry = byOp.get(action.op);
     entry.criteria[`a${index}`] = action.description;
     entry.byId.set(`a${index}`, action);
-    operationCriteria[action.op] = action.op;
+    operationCriteria[action.op] = OPERATION_RUBRICS[action.op] ?? action.op;
   }
   operationCriteria.DONE = 'Goal fully achieved; stop for independent host verification';
   operationCriteria.BLOCKED = 'Cannot safely complete with allowed actions; return control to the host';
@@ -647,8 +749,19 @@ export async function decide({
       },
     },
   };
+  // Each per-operation target head is evaluated in parallel and in isolation,
+  // so a head must name its own operation instead of referring to the
+  // `operation` answer it cannot read. The structured `{ operation, question }`
+  // instruction keeps the two apart; the criteria carry the candidates.
   for (const [op, entry] of byOp) {
-    questions[`${op}_target`] = { type: 'choice', instructions: TARGET_RULES, criteria: entry.criteria };
+    questions[`${op}_target`] = {
+      type: 'choice',
+      instructions: {
+        operation: op,
+        question: `Choose the exact target for a \`${op}\` operation from the listed candidates; pick the one that best matches the goal and the current accessibility state.`,
+      },
+      criteria: entry.criteria,
+    };
   }
 
   const body = JSON.stringify({
@@ -669,9 +782,15 @@ export async function decide({
       body,
     });
   } catch {
-    throw new Error(`${provider} transport failure or timeout`);
+    throw new ProviderRequestError(`${provider} transport failure or timeout`, { retryable: true });
   }
-  if (!response.ok) throw new Error(`${provider} HTTP ${response.status}`);
+  if (!response.ok) {
+    const retryable = retriableStatus(response.status);
+    throw new ProviderRequestError(`${provider} HTTP ${response.status}`, {
+      retryable,
+      retryAfterMs: retryable ? parseRetryAfter(response.headers?.get?.('Retry-After') ?? null) : null,
+    });
+  }
 
   let result;
   try {
@@ -703,11 +822,12 @@ export async function decide({
     operation: operation.choice,
     choice: operation.choice,
     confidence: operation.confidence,
+    targetConfidence: action?.confidence ?? null,
     progress: readProgress(answers),
     model: result.model,
     apiMs: Math.round(performance.now() - startedAt),
     usage: normalizeUsage(result.usage),
-    action,
+    action: action?.action ?? null,
   };
 }
 
@@ -803,10 +923,13 @@ export async function run(
     allowedOrigins,
     maxSteps = 10,
     minConfidence = 0.55,
+    minTargetConfidence = minConfidence,
     maxMs = 45000,
     decisionTimeoutMs = 20000,
     maxDecisionRetries = 1,
     waitPollMs = 750,
+    fillEndpoint,
+    fillModel,
   },
   prior = [],
 ) {
@@ -831,6 +954,9 @@ export async function run(
     !Number.isFinite(minConfidence) ||
     minConfidence < 0.55 ||
     minConfidence > 1 ||
+    !Number.isFinite(minTargetConfidence) ||
+    minTargetConfidence < 0.55 ||
+    minTargetConfidence > 1 ||
     !Number.isFinite(waitPollMs) ||
     waitPollMs < 100 ||
     waitPollMs > 5000 ||
@@ -897,10 +1023,11 @@ export async function run(
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Decision failed';
+      const remaining = maxMs - (performance.now() - startedAt);
       const canRetry =
-        /transport failure or timeout/.test(message) &&
+        (error?.retryable === true || /transport failure or timeout/.test(message)) &&
         decisionRetries < maxDecisionRetries &&
-        maxMs - (performance.now() - startedAt) >= 1000;
+        remaining >= 1000;
       history.push({
         provider: provider ?? null,
         choice: 'ERROR',
@@ -913,6 +1040,14 @@ export async function run(
       });
       if (canRetry) {
         decisionRetries += 1;
+        // Backoff is bounded by the cap and by the remaining budget: the sleep
+        // can never consume the whole run, so a retriable provider degrades the
+        // run into `budget` instead of stalling it on one decision.
+        const delay = Math.max(
+          0,
+          Math.min(retryDelayMs(decisionRetries, error?.retryAfterMs ?? null), RETRY_MAX_MS, remaining - 1000),
+        );
+        await new Promise((resolve) => setTimeout(resolve, delay));
         state = await adapter.getState();
         checkState(state, allowedOrigins);
         step -= 1;
@@ -943,6 +1078,12 @@ export async function run(
       continue;
     }
     if (decision.confidence < minConfidence) {
+      return result('low_confidence', [...history, record], state, startedAt);
+    }
+    // The acted-on target head's confidence gates the run independently: a
+    // strong operation pick with an unsure target must not be executed as if
+    // the control were certain. No head (DONE/BLOCKED/WAIT) means no gate.
+    if (decision.targetConfidence !== null && decision.targetConfidence < minTargetConfidence) {
       return result('low_confidence', [...history, record], state, startedAt);
     }
     if (decision.choice === 'WAIT') {
@@ -976,11 +1117,14 @@ export async function run(
     // run never guesses a value and never executes a fill without one.
     try {
       if (decision.action.op === 'fill') {
-        decision.action.text = await fillValue({
-          goal,
-          field: { role: decision.action.role ?? null, name: decision.action.name },
-          recentActions: projectHistory(history).map((item) => item.action),
-        });
+        decision.action.text = await fillValue(
+          {
+            goal,
+            field: { role: decision.action.role ?? null, name: decision.action.name },
+            recentActions: projectHistory(history).map((item) => item.action),
+          },
+          { endpoint: fillEndpoint, model: fillModel },
+        );
         record.text = decision.action.text;
       }
     } catch (error) {
