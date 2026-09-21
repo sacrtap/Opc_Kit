@@ -814,12 +814,21 @@ test('parseFillResponse returns a valid text and rejects everything else', () =>
   assert.throws(() => parseFillResponse({ text: null }), /fill error/);
 });
 
-/** Set a fake fill credential for the duration of `fn`; restores after. */
-function withFillKey(fn) {
+/**
+ * Run `fn` with a fill credential in the environment, restoring it afterwards.
+ *
+ * MUST be awaited: the previous version was synchronous and wrapped an async
+ * `fn`, so its `finally` restored (or deleted) the variable before the awaited
+ * work ran. Any test that reached `fillValue` indirectly — through `run()`,
+ * which makes a decision request first — then saw no key and got
+ * `action_error`. It only passed locally because the ambient environment
+ * happened to hold a real key; in CI (no key) the test failed.
+ */
+async function withFillKey(fn) {
   const previous = process.env.BIFROST_API_KEY;
   process.env.BIFROST_API_KEY = 'test-bifrost-key-not-in-body';
   try {
-    return fn();
+    return await fn();
   } finally {
     if (previous === undefined) delete process.env.BIFROST_API_KEY;
     else process.env.BIFROST_API_KEY = previous;
