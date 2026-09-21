@@ -81,6 +81,19 @@ export const BOUNDS_15 = { maxSteps: 20, maxMs: 45000, minConfidence: 0.55 };
 export const GOAL_15 =
   "open the page, then complete the compliance review: expand section A and check Accept terms A1 and Accept terms A2; expand section B, select Option B1, and expand section C; scroll down inside the Compliance report; check Accept terms C1; expand section D and check Accept terms D1; scroll down inside the Compliance report; expand section E, select Option E1, press Escape to dismiss the warning, then click Confirm submission. Finally reply with exactly the review status text shown on the page and nothing else.";
 
+/**
+ * The state-dependent wizard goal for the A/B experiment.
+ *
+ * This is the flow the skill is designed for but the earlier fixtures could not
+ * exercise: the next action can only be chosen from the freshly rendered step,
+ * because the target word is seeded from the run id and the next step's buttons
+ * do not exist until the current one is answered. Arm A must read the page and
+ * decide once per step (~10 host turns); arm B should run the whole flow inside
+ * one session.run() call.
+ */
+export const GOAL_WIZARD =
+  "open the page, then complete the configuration wizard. The wizard shows one step at a time; each step's prompt names a target word and offers three buttons, and only the button labeled with that exact target word advances the wizard. Work through all 10 steps, reading each step's freshly rendered prompt before choosing its button. Finally reply with exactly the wizard status text shown on the page and nothing else.";
+
 /** Run TASK (or the supplied task) against an adapter, returning the outcome and session metrics. */
 export async function runTask(adapter, { origin, config, overrides = {}, task = TASK, bounds = BOUNDS }) {
   const session = createSession(adapter, {

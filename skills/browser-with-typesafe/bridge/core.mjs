@@ -379,7 +379,12 @@ export function discoverActions(ir, policy = {}) {
 export function checkState(ir, allowedOrigins) {
   if (!ir || typeof ir.url !== 'string') throw new Error('Cannot verify browser origin');
   const origin = originOf(ir.url);
-  if (!allowedOrigins.includes(origin)) throw new Error('Browser left authorized origins');
+  if (!allowedOrigins.includes(origin)) {
+    throw new Error(
+      `Browser left authorized origins: page origin is "${origin}" but the allowlist is [${allowedOrigins.join(', ')}]. ` +
+        'allowedOrigins must be FULL origins like "http://host:port" (use new URL(tabUrl).origin), not bare hostnames.',
+    );
+  }
   if (isTooLarge(ir)) throw new Error('Snapshot too large; narrow the task');
 }
 

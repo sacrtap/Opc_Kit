@@ -84,6 +84,17 @@
       </div>
     </div>
 
+    <!-- ── State-dependent wizard (10 steps) ────────────────────── -->
+
+    <h2>Configuration wizard</h2>
+    <p>Wizard status: <output id="wizardStatus">pending</output></p>
+    <p>Step: <output id="wizardStep">0</output>/10</p>
+
+    <section id="wizard" aria-label="Configuration wizard">
+      <p id="wizardPrompt"></p>
+      <div id="wizardButtons"></div>
+    </section>
+
     <script>
       // ── 3-action flow (unchanged) ──────────────────────────────
 
@@ -262,7 +273,104 @@
       const runId = params.get('run');
       const expected = Number(params.get('expected') ?? '3');
 
+      // When the wizard is the active flow, hide the 3-action and 15-action
+      // regions so the model's snapshot is small and focused (the wizard's ~15
+      // nodes instead of the fixture's ~97). A smaller snapshot means faster
+      // Jev decisions, fewer WAIT/loading_timeout returns, and nothing left for
+      // the host to inspect. The wizard's own elements are untouched.
+      if (expected === 10) {
+        for (const id of [
+          'reportPanel', 'sectionA', 'sectionB', 'sectionC', 'sectionD', 'sectionE',
+          'expand', 'collapse',
+        ]) {
+          const el = document.getElementById(id);
+          if (el) el.hidden = true;
+        }
+      }
+
+      // ── State-dependent wizard (10 steps) ──────────────────────
+      //
+      // Each step renders a prompt naming a target word and three buttons,
+      // only one of which carries the target. The target sequence is seeded
+      // from the run id, so the correct action at every step can only be
+      // chosen by reading the freshly rendered step: the next step's controls
+      // do not exist until the current one is answered. This is the flow the
+      // A/B exists to measure — each next step depends on observed state.
+
+      const WIZARD_STEPS = 10;
+      const WIZARD_WORDS = [
+        'alpine', 'basalt', 'cedar', 'delta', 'ember', 'fjord', 'grove',
+        'harbor', 'ivory', 'jade', 'kelp', 'lunar', 'marsh', 'north', 'onyx',
+        'pine', 'quartz', 'reef', 'stone', 'tidal',
+      ];
+
+      // Tiny deterministic PRNG seeded from the run id: each run gets a
+      // different target sequence (the answers cannot be memorised), and the
+      // same run id reproduces the same sequence for debugging.
+      function wizardSeed(str) {
+        let h = 2166136261;
+        for (let i = 0; i < str.length; i += 1) {
+          h ^= str.charCodeAt(i);
+          h = Math.imul(h, 16777619);
+        }
+        return h >>> 0;
+      }
+      function mulberry32(a) {
+        return function () {
+          a |= 0;
+          a = (a + 0x6d2b79f5) | 0;
+          let t = Math.imul(a ^ (a >>> 15), 1 | a);
+          t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+          return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+      }
+      const wizardRand = mulberry32(wizardSeed(String(runId ?? 'wizard')));
+      const wizardStatus = document.getElementById('wizardStatus');
+      const wizardStep = document.getElementById('wizardStep');
+      const wizardPrompt = document.getElementById('wizardPrompt');
+      const wizardButtons = document.getElementById('wizardButtons');
+      let wizStep = 0;
+
+      function renderWizard() {
+        wizardStep.textContent = String(wizStep);
+        if (wizStep >= WIZARD_STEPS) {
+          wizardStatus.textContent = 'complete';
+          wizardPrompt.textContent = 'All steps complete.';
+          wizardButtons.innerHTML = '';
+          report();
+          return;
+        }
+        const target = WIZARD_WORDS[Math.floor(wizardRand() * WIZARD_WORDS.length)];
+        const others = new Set();
+        while (others.size < 2) {
+          const word = WIZARD_WORDS[Math.floor(wizardRand() * WIZARD_WORDS.length)];
+          if (word !== target) others.add(word);
+        }
+        const labels = [target, ...others].sort(() => wizardRand() - 0.5);
+        wizardPrompt.textContent = `Step ${wizStep + 1}: click the button labeled "${target}".`;
+        wizardButtons.innerHTML = '';
+        for (const label of labels) {
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.textContent = label;
+          button.addEventListener('click', () => {
+            bumpAction();
+            if (label === target) {
+              wizStep += 1;
+              renderWizard();
+            }
+            report();
+          });
+          wizardButtons.append(button);
+        }
+        wizardStatus.textContent = 'pending';
+      }
+      renderWizard();
+
       function expectedStateOk() {
+        if (expected === 10) {
+          return wizardStatus.textContent === 'complete' && wizStep >= WIZARD_STEPS;
+        }
         if (expected === 15) {
           return (
             fifteenStatus.textContent === 'confirmed' &&
@@ -296,7 +404,12 @@
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({
             run: runId,
-            status: expected === 15 ? fifteenStatus.textContent : status.textContent,
+            status:
+              expected === 15
+                ? fifteenStatus.textContent
+                : expected === 10
+                  ? wizardStatus.textContent
+                  : status.textContent,
             actions: actions,
             expected: expected,
             ok: actions >= expected && expectedStateOk(),

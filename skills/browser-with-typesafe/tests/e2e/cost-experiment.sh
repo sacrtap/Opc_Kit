@@ -88,11 +88,31 @@ case "$TASK_SELECTOR" in
       exit 1
     fi
     ;;
+  wizard)
+    EXPECTED=10
+    # State-dependent flow: each step's target word is seeded from the run id
+    # and the next step's buttons only render after the current step, so the
+    # next action cannot be planned ahead — it must be read from fresh state.
+    GOAL_SUFFIX="$(cd "$SKILL_DIR" && node -e "import('./tests/e2e/task.mjs').then((m) => process.stdout.write(m.GOAL_WIZARD))" 2>/dev/null)" || true
+    if [ -z "$GOAL_SUFFIX" ]; then
+      echo "could not read GOAL_WIZARD from tests/e2e/task.mjs" >&2
+      exit 1
+    fi
+    ;;
   *)
-    echo "unknown task selector: ${TASK_SELECTOR} (expected 3-action or 15-action)" >&2
+    echo "unknown task selector: ${TASK_SELECTOR} (expected 3-action, 15-action, or wizard)" >&2
     exit 2
     ;;
 esac
+
+# Host model for both arms. Defaults to a free bifrost model (cost 0 in
+# models.yml); the user constraint is that all tested/configured models are
+# free. With a free host the billed $ is 0 for both arms, so the comparison
+# criterion is TOKENS (uncached + output), which the summary prints.
+# deepseek-v4-pro is stronger than flash and explores less when following the
+# skill's quick-start block; both arms use the same model, so the comparison
+# stays fair.
+HOST_MODEL="${BWT_HOST_MODEL:-bifrost/sensenova/deepseek-v4-pro}"
 
 # Appended identically to BOTH prompts. Only arm B has per-decision timing to
 # report; the point is that the arms differ in nothing except the skill mention,
@@ -176,7 +196,21 @@ for n in $(seq 1 "$SAMPLES"); do
     # differ in nothing but whether the agent is told to use the skill.
     prompt="${prefix}The page to work on is ${url} (open that exact URL, query string included). Goal: ${GOAL_SUFFIX}${METRICS_NOTE}"
     t0=$(python3 -c "import time; print(time.time())")
-    ( cd "$cwd" && omp -p "$prompt" --mode=json --auto-approve --max-time 240 > "${OUT}/${run}.jsonl" 2>/dev/null )
+    # Process-level hard timeout. `--max-time=240` is omp's session budget but a
+    # stalled tool call (e.g. browser.open hung in eval) can outlive it and pin
+    # the process for ~an hour; this wrapper kills it after 280s no matter what.
+    python3 - "$prompt" "$cwd" "$HOST_MODEL" "${OUT}/${run}.jsonl" <<'PY'
+import subprocess, sys
+prompt, cwd, model, out = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
+p = subprocess.Popen(
+    ['omp', '-p', prompt, '--mode=json', '--auto-approve', '--max-time', '240', '--model', model],
+    cwd=cwd, stdout=open(out, 'w'), stderr=subprocess.DEVNULL,
+)
+try:
+    p.wait(timeout=280)
+except subprocess.TimeoutExpired:
+    p.kill()
+PY
     t1=$(python3 -c "import time; print(time.time())")
     wall=$(python3 -c "print(f'{$t1 - $t0:.1f}')")
     echo "$wall" > "${OUT}/${run}.wall"
