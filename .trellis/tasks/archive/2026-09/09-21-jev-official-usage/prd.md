@@ -101,16 +101,16 @@ filter + form.
 
 ## Acceptance Criteria
 
-- [ ] **AC1** `fill` action + text helper implemented across core + all three adapters; helper value
+- [x] **AC1** `fill` action + text helper implemented across core + all three adapters; helper value
       is validated and a bad value hands back rather than guessing.
-- [ ] **AC2** `decide()` sends one multi-question request (operation + per-operation target heads)
+- [x] **AC2** `decide()` sends one multi-question request (operation + per-operation target heads)
       and consumes only the selected head; unit tests pin the request shape and the defensive reads.
-- [ ] **AC3** The search+filter+form fixture is solvable by a scripted run and reports `ok` only
+- [x] **AC3** The search+filter+form fixture is solvable by a scripted run and reports `ok` only
       when query, selection, and field values all match; a short/incomplete run reports not-ok.
-- [ ] **AC4** The harness emits per-arm wall time, per-action time, turns, tokens, and (B) Jev
+- [x] **AC4** The harness emits per-arm wall time, per-action time, turns, tokens, and (B) Jev
       latency; the criterion (B ≤ 0.8×A on tokens AND time, reproduced two rounds) is evaluated from
       those numbers, not asserted.
-- [ ] **AC5** Docs updated with the fill helper, its safety boundary, and the measured result.
-- [ ] **AC6** No regression: `node --test tests/*.test.mjs` passes, 15-action fixture 6/6, 3-action
+- [x] **AC5** Docs updated with the fill helper, its safety boundary, and the measured result.
+- [x] **AC6** No regression: `node --test tests/*.test.mjs` passes, 15-action fixture 6/6, 3-action
       E2E passes.
-- [ ] **AC7** Anything that does not survive measurement is reverted, and the report says so.
+- [x] **AC7** Anything that does not survive measurement is reverted, and the report says so.
