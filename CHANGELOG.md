@@ -5,6 +5,41 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.6.3] - 2026-09-21
+
+### Added
+- **Text-entry helper (the missing half of Jev's design).** Research across
+  `madewithjev.com/categories/agents-and-browsers` (60 builds) and the official `browser-use/jev-ultrafast`
+  converges on one architecture: Jev *selects* the next action, it cannot *generate* text, so a small
+  fast LLM produces the fill value. The skill now does the same — `policy.fill: true` offers text
+  fields as candidates, Jev picks which field, and a free `bifrost/deepseek-v4-flash` helper generates
+  the value (strict-parsed; a bad value hands back rather than guessing). `fill` never presses Enter
+  and never submits; the host still owns any consequential step. Adapter contract gains `type(ref, text)`
+  across omp / playwright / codex.
+- **Multi-question decision.** One request now asks `operation` plus one target head per available
+  operation (`click_target`, `fill_target`, …), evaluated in parallel, and reads only the head matching
+  the selected operation — the official "two decisions, one network round trip" shape. An unused head's
+  malformed answer cannot fail the request.
+- **A search+filter+form fixture** and a `--task search` harness selector.
+
+### Changed — the published result is still not favourable
+Measured on the search+filter+form flow, 3 samples per arm, free host model for both arms, correctness
+from the page's own report:
+
+| | Arm A (direct) | Arm B (with the skill) |
+| --- | ---: | ---: |
+| Tokens (uncached + output) | **29,299** | 49,180 |
+| Time per mechanical action | **52.68 s** | 89.52 s |
+| Correct | **3/3** | 2/3 |
+
+The skill's tokens were **1.68×** and its time per action **1.70×** arm A — the criterion (≤ 0.8×)
+is not met. Jev itself is not the bottleneck: 10 decisions at a **p50 of 379 ms**. The skill now
+*can* do search/form flows it could not attempt before (a smoke run reported
+`{status:"complete", actions:4, ok:true}`), but adopting the official 3-layer design adds capability
+without changing the economics on a short flow: reading the skill and writing the wiring costs more
+host turns (14.3 vs 9.0) than the direct path. Full method and per-run spread:
+`.trellis/tasks/09-21-jev-official-usage/research/search-ab-measurement.md`.
+
 ## [2.6.0] - 2026-09-20
 
 ### Added
@@ -231,6 +266,7 @@ step is not knowable up front, and state that the break-even flow length is **no
 
 | Version | Release Date | Key Improvements |
 |---------|--------------|------------------|
+| 2.6.3   | 2026-09-21 | Text-entry helper + multi-question request; search A/B published (skill still loses) |
 | 2.6.2   | 2026-09-20 | Bounded the Jev payload; 15-action A/B published (skill still loses) |
 | 2.6.1   | 2026-09-20 | Corrected an unsupported cost claim; added measured A/B harness |
 | 2.6.0   | 2026-09-20 | Added browser-with-typesafe skill, omp marketplace catalog, `skills/` layout |

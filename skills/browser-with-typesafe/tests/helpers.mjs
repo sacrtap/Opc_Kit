@@ -32,6 +32,9 @@ export function makeAdapter(states) {
     async click(ref) {
       calls.push({ op: 'click', ref });
     },
+    async type(ref, text) {
+      calls.push({ op: 'type', ref, text });
+    },
     async scroll(args) {
       calls.push({ op: 'scroll', ...args });
     },
@@ -45,11 +48,31 @@ export function makeAdapter(states) {
 }
 
 /**
+ * Build a schema-valid `choice` answer for one question: the strict validator
+ * in `decide()` requires type/choice/confidence plus probabilities over exactly
+ * the criteria keys that sum to ~1 with the choice as argmax.
+ */
+export function choiceAnswer(choice, keys) {
+  const rest = keys.length > 1 ? 0.05 / (keys.length - 1) : 0;
+  return {
+    type: 'choice',
+    choice,
+    confidence: 0.9,
+    probabilities: Object.fromEntries(
+      keys.map((key) => [key, key === choice ? (keys.length > 1 ? 0.95 : 1) : rest]),
+    ),
+  };
+}
+
+/**
  * Replace global fetch with a scripted decision endpoint.
  *
- * `pick` receives `{ criteria, body, seen }` and returns the choice id. The
- * returned response is always schema-valid, so tests exercise the loop rather
- * than the validator.
+ * `pick` receives `{ criteria, body, seen }` and returns the choice id.
+ * `criteria` is the flat union of every target head plus DONE/BLOCKED/WAIT,
+ * with ids being the GLOBAL action indices — the same shape the old single
+ * `next` question used — so a pick of `'a0'`/`'DONE'` works unchanged. A pick
+ * of an operation kind (`'click'`) is also accepted. The returned response is
+ * always schema-valid, so tests exercise the loop rather than the validator.
  */
 export function stubDecide(pick) {
   const original = globalThis.fetch;
@@ -57,18 +80,37 @@ export function stubDecide(pick) {
 
   globalThis.fetch = async (url, init) => {
     const body = JSON.parse(init.body);
-    const criteria = body.questions.next.criteria;
+    const questions = body.questions;
+    const operationCriteria = questions.operation.criteria;
+    const heads = new Map();
+    for (const [id, question] of Object.entries(questions)) {
+      if (id.endsWith('_target')) heads.set(id.slice(0, -'_target'.length), question.criteria);
+    }
+    const criteria = { ...operationCriteria };
+    for (const headCriteria of heads.values()) Object.assign(criteria, headCriteria);
     const entry = { url, body, criteria };
     seen.push(entry);
 
     const choice = typeof pick === 'function' ? await pick({ ...entry, seen }) : pick;
-    const keys = Object.keys(criteria);
-    if (!keys.includes(choice)) throw new Error(`stubDecide: unknown choice ${choice}`);
 
-    const rest = keys.length > 1 ? 0.05 / (keys.length - 1) : 0;
-    const probabilities = Object.fromEntries(
-      keys.map((key) => [key, key === choice ? (keys.length > 1 ? 0.95 : 1) : rest]),
-    );
+    let operation;
+    let headChoice;
+    if (Object.hasOwn(operationCriteria, choice)) {
+      operation = choice;
+      // an operation kind with candidates still needs its head answered
+      if (heads.has(operation)) headChoice = Object.keys(heads.get(operation))[0];
+    } else if (/^a\d+$/.test(choice)) {
+      operation = [...heads.keys()].find((op) => Object.hasOwn(heads.get(op), choice));
+      if (operation === undefined) throw new Error(`stubDecide: unknown choice ${choice}`);
+      headChoice = choice;
+    } else {
+      throw new Error(`stubDecide: unknown choice ${choice}`);
+    }
+
+    const answers = { operation: choiceAnswer(operation, Object.keys(operationCriteria)) };
+    if (headChoice !== undefined) {
+      answers[`${operation}_target`] = choiceAnswer(headChoice, Object.keys(heads.get(operation)));
+    }
 
     return {
       ok: true,
@@ -76,7 +118,7 @@ export function stubDecide(pick) {
       async json() {
         return {
           model: 'jev-1.13.0',
-          answers: { next: { type: 'choice', choice, confidence: 0.9, probabilities } },
+          answers,
           usage: { input_tokens: 300, output_tokens: 20 },
         };
       },

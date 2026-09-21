@@ -11,8 +11,9 @@
  * canonicalized by the IR, so two nodes that share a role and name stay
  * distinguishable through the occurrence index.
  *
- * The adapter never opens a browser, never navigates, and never enters text:
- * the host owns the page and all text input.
+ * The adapter never opens a browser and never navigates. Text entry happens
+ * only through `type(ref, text)`, driven by a decided `fill` action whose
+ * value came from the fill helper — never ad hoc.
  */
 
 import { parseAriaSnapshot } from '../aria-snapshot.mjs';
@@ -62,6 +63,10 @@ export function createPlaywrightAdapter(page, { timeoutMs = 15000 } = {}) {
 
     async click(ref) {
       await locatorFor(ref).click({ timeout: timeoutMs });
+    },
+
+    async type(ref, text) {
+      await locatorFor(ref).fill(text, { timeout: timeoutMs });
     },
 
     async scroll({ direction, amount = 1, target }) {

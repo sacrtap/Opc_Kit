@@ -42,7 +42,11 @@ export const CLICK_ROLES = new Set([
   'switch',
 ]);
 
-/** Canonical text-entry roles. Never auto-discovered; the host enters text. */
+/**
+ * Canonical text-entry roles.
+ * Discovered as `fill` candidates only under `policy.fill`; Jev picks the
+ * field, the fill helper generates the value, and the adapter types it.
+ */
 export const TEXT_ROLES = new Set(['textbox', 'textarea', 'combobox', 'searchbox']);
 
 /**
@@ -320,6 +324,15 @@ export function matchByName(ir, names) {
  */
 export function matchScrollContainer(ir, names) {
   return matchByName(ir, names).filter((node) => SCROLL_CONTAINER_ROLES.has(node.role));
+}
+
+/**
+ * Nodes a `fill` action can target: a canonical text-entry role with an
+ * executable ref. Reuses `TEXT_ROLES` so the role set is defined exactly once.
+ * Ref-less nodes are visible context only and cannot be filled.
+ */
+export function fillableNodes(ir) {
+  return ir.nodes.filter((node) => TEXT_ROLES.has(node.role) && node.ref !== null);
 }
 
 /** True when the serialized snapshot exceeds the model-input budget. */

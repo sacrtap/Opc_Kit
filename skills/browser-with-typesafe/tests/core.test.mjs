@@ -8,7 +8,9 @@ import {
   createSession,
   decide,
   discoverActions,
+  fillValue,
   loadConfig,
+  parseFillResponse,
   projectHistory,
   providerGuide,
   resolveProviderConfig,
@@ -17,7 +19,7 @@ import {
   validateControl,
   waitForState,
 } from '../bridge/core.mjs';
-import { ir, makeAdapter, stubDecide } from './helpers.mjs';
+import { choiceAnswer, ir, makeAdapter, stubDecide } from './helpers.mjs';
 
 const CONFIG_FILE = fileURLToPath(new URL('./fixtures/config.json', import.meta.url));
 const BASE = { configPath: CONFIG_FILE, provider: 'typesafe', allowedOrigins: ['https://example.com'] };
@@ -368,8 +370,8 @@ test('decide refuses a credential leak and a malformed provider response', async
     globalThis.fetch = async (url, init) => {
       const body = JSON.parse(init.body);
       assert.ok(!init.body.includes('test-key-not-a-real-credential'));
-      const criteria = body.questions.next.criteria;
-      const keys = Object.keys(criteria);
+      const opKeys = Object.keys(body.questions.operation.criteria);
+      const headKeys = Object.keys(body.questions.click_target.criteria);
       return {
         ok: true,
         status: 200,
@@ -377,12 +379,8 @@ test('decide refuses a credential leak and a malformed provider response', async
           return {
             model: 'jev-1.13.0',
             answers: {
-              next: {
-                type: 'choice',
-                choice: keys[0],
-                confidence: 0.9,
-                probabilities: Object.fromEntries(keys.map((key) => [key, 1 / keys.length])),
-              },
+              operation: choiceAnswer('click', opKeys),
+              click_target: choiceAnswer(headKeys[0], headKeys),
             },
           };
         },
@@ -393,15 +391,20 @@ test('decide refuses a credential leak and a malformed provider response', async
       provider: 'typesafe',
       goal: 'g',
       state: 's',
-      actions: [{ description: 'Click A' }, { description: 'Click B' }],
+      actions: [
+        { op: 'click', description: 'Click A' },
+        { op: 'click', description: 'Click B' },
+      ],
     });
-    assert.equal(decision.choice, 'a0');
-    assert.deepEqual(decision.action, { description: 'Click A' });
+    assert.equal(decision.operation, 'click');
+    assert.equal(decision.choice, 'click');
+    assert.deepEqual(decision.action, { op: 'click', description: 'Click A' });
 
     // probabilities that do not match the criteria set must be rejected outright
     globalThis.fetch = async (url, init) => {
       const body = JSON.parse(init.body);
-      const keys = Object.keys(body.questions.next.criteria);
+      const opKeys = Object.keys(body.questions.operation.criteria);
+      const headKeys = Object.keys(body.questions.click_target.criteria);
       return {
         ok: true,
         status: 200,
@@ -409,12 +412,13 @@ test('decide refuses a credential leak and a malformed provider response', async
           return {
             model: 'jev-1.13.0',
             answers: {
-              next: {
+              operation: {
                 type: 'choice',
-                choice: 'a0',
+                choice: 'click',
                 confidence: 0.9,
-                probabilities: { [keys[0]]: 1.0 },
+                probabilities: { click: 1.0 }, // missing DONE/BLOCKED/WAIT keys
               },
+              click_target: choiceAnswer(headKeys[0], headKeys),
             },
           };
         },
@@ -427,7 +431,10 @@ test('decide refuses a credential leak and a malformed provider response', async
           provider: 'typesafe',
           goal: 'g',
           state: 's',
-          actions: [{ description: 'Click A' }, { description: 'Click B' }],
+          actions: [
+            { op: 'click', description: 'Click A' },
+            { op: 'click', description: 'Click B' },
+          ],
         }),
       /Invalid typesafe decision schema/,
     );
@@ -482,21 +489,14 @@ test('a missing usage block degrades to zero rather than NaN', async () => {
   const original = globalThis.fetch;
   globalThis.fetch = async (url, init) => {
     const body = JSON.parse(init.body);
-    const keys = Object.keys(body.questions.next.criteria);
+    const opKeys = Object.keys(body.questions.operation.criteria);
     return {
       ok: true,
       status: 200,
       async json() {
         return {
           model: 'jev-1.13.0',
-          answers: {
-            next: {
-              type: 'choice',
-              choice: 'DONE',
-              confidence: 0.9,
-              probabilities: Object.fromEntries(keys.map((key) => [key, 1 / keys.length])),
-            },
-          },
+          answers: { operation: choiceAnswer('DONE', opKeys) },
         };
       },
     };
@@ -623,7 +623,7 @@ test('a long run sends at most HISTORY_LIMIT entries and still records every ste
   }
 });
 
-test('one request carries both the action choice and the independent progress question', async () => {
+test('one request carries the operation choice, its target head, and the progress question', async () => {
   const restore = stubDecide('a0');
   try {
     await decide({
@@ -631,11 +631,11 @@ test('one request carries both the action choice and the independent progress qu
       provider: 'typesafe',
       goal: 'g',
       state: 's',
-      actions: [{ description: 'Click A' }],
+      actions: [{ op: 'click', description: 'Click A' }],
     });
 
     const [{ body }] = restore.seen;
-    assert.deepEqual(Object.keys(body.questions).sort(), ['next', 'progress']);
+    assert.deepEqual(Object.keys(body.questions).sort(), ['click_target', 'operation', 'progress']);
     assert.equal(
       body.questions.progress.type,
       'noul',
@@ -643,7 +643,8 @@ test('one request carries both the action choice and the independent progress qu
     );
     assert.ok(body.questions.progress.instructions.length > 0);
     assert.deepEqual(Object.keys(body.questions.progress.criteria).sort(), ['false', 'true']);
-    assert.deepEqual(Object.keys(body.questions.next.criteria), ['a0', 'DONE', 'BLOCKED', 'WAIT']);
+    assert.deepEqual(Object.keys(body.questions.operation.criteria), ['click', 'DONE', 'BLOCKED', 'WAIT']);
+    assert.deepEqual(Object.keys(body.questions.click_target.criteria), ['a0']);
   } finally {
     restore();
   }
@@ -652,7 +653,7 @@ test('one request carries both the action choice and the independent progress qu
 test('a missing or malformed progress answer degrades to null instead of failing the request', async () => {
   const original = globalThis.fetch;
   const respond = (progress) => async (url, init) => {
-    const keys = Object.keys(JSON.parse(init.body).questions.next.criteria);
+    const opKeys = Object.keys(JSON.parse(init.body).questions.operation.criteria);
     return {
       ok: true,
       status: 200,
@@ -660,12 +661,7 @@ test('a missing or malformed progress answer degrades to null instead of failing
         return {
           model: 'jev-1.13.0',
           answers: {
-            next: {
-              type: 'choice',
-              choice: 'DONE',
-              confidence: 0.9,
-              probabilities: Object.fromEntries(keys.map((key) => [key, 1 / keys.length])),
-            },
+            operation: choiceAnswer('DONE', opKeys),
             ...(progress === undefined ? {} : { progress }),
           },
         };
@@ -678,7 +674,7 @@ test('a missing or malformed progress answer degrades to null instead of failing
       provider: 'typesafe',
       goal: 'g',
       state: 's',
-      actions: [{ description: 'Click A' }],
+      actions: [{ op: 'click', description: 'Click A' }],
     });
 
   try {
@@ -702,7 +698,7 @@ test('a missing or malformed progress answer degrades to null instead of failing
 test('DONE with a low progress answer still needs verification and flags the disagreement', async () => {
   const original = globalThis.fetch;
   const respond = (progress) => async (url, init) => {
-    const keys = Object.keys(JSON.parse(init.body).questions.next.criteria);
+    const opKeys = Object.keys(JSON.parse(init.body).questions.operation.criteria);
     return {
       ok: true,
       status: 200,
@@ -710,12 +706,7 @@ test('DONE with a low progress answer still needs verification and flags the dis
         return {
           model: 'jev-1.13.0',
           answers: {
-            next: {
-              type: 'choice',
-              choice: 'DONE',
-              confidence: 0.9,
-              probabilities: Object.fromEntries(keys.map((key) => [key, 1 / keys.length])),
-            },
+            operation: choiceAnswer('DONE', opKeys),
             progress,
           },
         };
@@ -741,6 +732,443 @@ test('DONE with a low progress answer still needs verification and flags the dis
     assert.equal(agreed.history.at(-1).progressDisagreement, undefined, '0.5 is not a disagreement');
   } finally {
     globalThis.fetch = original;
+  }
+});
+
+test('validateControl accepts a named fill and rejects a nameless one', () => {
+  assert.ok(validateControl({ op: 'fill', name: 'Query' }));
+  assert.ok(!validateControl({ op: 'fill' }));
+  assert.ok(!validateControl({ op: 'fill', name: '' }));
+});
+
+test('discoverActions offers fill only for uniquely named TEXT_ROLES nodes with a ref', () => {
+  const state = ir('https://example.com/', [
+    { ref: 'e1', role: 'textbox', name: 'Query' },
+    { ref: 'e2', role: 'textarea', name: 'Notes' },
+    { ref: 'e3', role: 'button', name: 'Search' },
+    { ref: 'e4', role: 'link', name: 'Results' },
+    { ref: 'e5', role: 'combobox', name: 'Theme' },
+    { ref: null, role: 'searchbox', name: 'Unreferenced' },
+    { ref: 'e6', role: 'textbox', name: 'Denied field' },
+    { ref: 'e7', role: 'textbox', name: 'Reserved field' },
+    { ref: 'e8', role: 'textbox', name: 'Dup' },
+    { ref: 'e9', role: 'textbox', name: 'Dup' },
+  ]);
+  const actions = discoverActions(state, {
+    fill: true,
+    denyNames: [/denied/i],
+    requireHostNames: [/reserved/i],
+  });
+  const fills = actions.filter((action) => action.op === 'fill');
+  assert.deepEqual(
+    fills.map((action) => [action.ref, action.name, action.role, action.description]),
+    [
+      ['e1', 'Query', 'textbox', 'Fill Query'],
+      ['e2', 'Notes', 'textarea', 'Fill Notes'],
+      ['e5', 'Theme', 'combobox', 'Fill Theme'],
+    ],
+    'buttons, links, ref-less nodes, denied, reserved, and duplicate names are excluded',
+  );
+  assert.equal(
+    discoverActions(state, { click: true }).filter((action) => action.op === 'fill').length,
+    0,
+    'no fill candidates without policy.fill',
+  );
+});
+
+test('availableActions binds a unique named field and drops absent or ambiguous ones', () => {
+  const state = ir('https://example.com/settings', [
+    { ref: 'f1', role: 'textbox', name: 'Email' },
+    { ref: 'f2', role: 'textbox', name: 'Nickname' },
+    { ref: 'f3', role: 'textbox', name: 'Nickname' },
+    { ref: 'f4', role: 'heading', name: 'Email' },
+    { ref: null, role: 'textbox', name: 'Refless' },
+  ]);
+  const actions = availableActions(state, [
+    { op: 'fill', name: 'Email' }, // one textbox (the heading is not fillable) → bound
+    { op: 'fill', name: 'Nickname' }, // two textboxes → dropped
+    { op: 'fill', name: 'Missing' }, // absent → dropped
+    { op: 'fill', name: 'Refless' }, // no executable ref → dropped
+  ]);
+  assert.equal(actions.length, 1);
+  assert.deepEqual(actions[0], {
+    op: 'fill',
+    name: 'Email',
+    ref: 'f1',
+    role: 'textbox',
+    description: 'Fill Email',
+  });
+});
+
+test('parseFillResponse returns a valid text and rejects everything else', () => {
+  assert.equal(parseFillResponse({ text: 'hello' }), 'hello');
+  assert.equal(parseFillResponse({ text: 'x'.repeat(2000) }).length, 2000, '2000 chars is the bound, not a failure');
+  assert.throws(() => parseFillResponse({ text: 'x'.repeat(2001) }), /fill error/);
+  assert.throws(() => parseFillResponse(null), /fill error/);
+  assert.throws(() => parseFillResponse('nope'), /fill error/);
+  assert.throws(() => parseFillResponse([]), /fill error/);
+  assert.throws(() => parseFillResponse({}), /fill error/);
+  assert.throws(() => parseFillResponse({ text: '' }), /fill error/);
+  assert.throws(() => parseFillResponse({ text: '   ' }), /fill error/);
+  assert.throws(() => parseFillResponse({ text: 42 }), /fill error/);
+  assert.throws(() => parseFillResponse({ text: null }), /fill error/);
+});
+
+/** Set a fake fill credential for the duration of `fn`; restores after. */
+function withFillKey(fn) {
+  const previous = process.env.BIFROST_API_KEY;
+  process.env.BIFROST_API_KEY = 'test-bifrost-key-not-in-body';
+  try {
+    return fn();
+  } finally {
+    if (previous === undefined) delete process.env.BIFROST_API_KEY;
+    else process.env.BIFROST_API_KEY = previous;
+  }
+}
+
+test('fillValue sends the field to the helper and strict-parses its JSON', async () => {
+  const original = globalThis.fetch;
+  const requests = [];
+  try {
+    globalThis.fetch = async (url, init) => {
+      requests.push({ url: String(url), init });
+      return {
+        ok: true,
+        status: 200,
+        async json() {
+          return { choices: [{ message: { content: '{"text":"reports"}' } }] };
+        },
+      };
+    };
+    const text = await withFillKey(() =>
+      fillValue({
+        goal: 'Search for reports.',
+        field: { role: 'textbox', name: 'Query' },
+        recentActions: ['Click Search'],
+      }),
+    );
+    assert.equal(text, 'reports');
+    assert.equal(requests.length, 1);
+    assert.equal(requests[0].url, 'https://bifrost.jiazoushi.com/v1/chat/completions');
+    const body = JSON.parse(requests[0].init.body);
+    assert.equal(body.model, 'deepseek-v4-flash');
+    assert.deepEqual(JSON.parse(body.messages[1].content), {
+      goal: 'Search for reports.',
+      field: { role: 'textbox', name: 'Query' },
+      recent_actions: ['Click Search'],
+    });
+  } finally {
+    globalThis.fetch = original;
+  }
+});
+
+test('fillValue fails closed on a missing key or bad helper output instead of guessing', async () => {
+  const original = globalThis.fetch;
+  try {
+    const call = () => withFillKey(() => fillValue({ goal: 'g', field: { name: 'Query' } }));
+
+    globalThis.fetch = async () => {
+      throw new Error('offline');
+    };
+    await assert.rejects(call, /fill error/, 'a transport failure is a fill error');
+
+    globalThis.fetch = async () => ({ ok: false, status: 500 });
+    await assert.rejects(call, /fill error/, 'an HTTP error is a fill error');
+
+    globalThis.fetch = async () => ({
+      ok: true,
+      status: 200,
+      async json() {
+        throw new Error('bad json');
+      },
+    });
+    await assert.rejects(call, /fill error/, 'a non-JSON body is a fill error');
+
+    globalThis.fetch = async () => ({
+      ok: true,
+      status: 200,
+      async json() {
+        return { choices: [{ message: { content: 'not json' } }] };
+      },
+    });
+    await assert.rejects(call, /fill error/, 'a non-JSON content is a fill error');
+
+    globalThis.fetch = async () => ({
+      ok: true,
+      status: 200,
+      async json() {
+        return { choices: [{ message: { content: '{"text":""}' } }] };
+      },
+    });
+    await assert.rejects(call, /fill error/, 'a blank value is a fill error');
+
+    // a missing credential fails before any request is made
+    globalThis.fetch = async () => {
+      throw new Error('must not be called');
+    };
+    const previous = process.env.BIFROST_API_KEY;
+    delete process.env.BIFROST_API_KEY;
+    try {
+      await assert.rejects(() => fillValue({ goal: 'g', field: { name: 'Query' } }), /fill error/);
+    } finally {
+      if (previous === undefined) delete process.env.BIFROST_API_KEY;
+      else process.env.BIFROST_API_KEY = previous;
+    }
+  } finally {
+    globalThis.fetch = original;
+  }
+});
+
+const fillPage = (ref) =>
+  ir('https://example.com/search', [
+    { ref, role: 'textbox', name: 'Query' },
+    { ref: `${ref}-btn`, role: 'button', name: 'Search' },
+  ]);
+
+test('a fill helper failure hands back as action_error instead of guessing a value', async () => {
+  const original = globalThis.fetch;
+  try {
+    globalThis.fetch = async (url, init) => {
+      if (String(url).includes('bifrost')) throw new Error('fill helper unavailable');
+      const body = JSON.parse(init.body);
+      const opKeys = Object.keys(body.questions.operation.criteria);
+      const headKeys = Object.keys(body.questions.fill_target.criteria);
+      return {
+        ok: true,
+        status: 200,
+        async json() {
+          return {
+            model: 'jev-1.13.0',
+            answers: {
+              operation: choiceAnswer('fill', opKeys),
+              fill_target: choiceAnswer(headKeys[0], headKeys),
+            },
+          };
+        },
+      };
+    };
+    const adapter = makeAdapter([fillPage('q1'), fillPage('q1'), fillPage('q1')]);
+    const outcome = await withFillKey(() =>
+      run(adapter, {
+        ...BASE,
+        goal: 'Search for reports.',
+        controls: [{ op: 'fill', name: 'Query' }],
+      }),
+    );
+    assert.equal(outcome.status, 'action_error');
+    assert.equal(outcome.handoff, 'action_error');
+    assert.equal(outcome.error, 'fill error');
+    assert.equal(outcome.history.at(-1).reason, 'action_error');
+    assert.equal(outcome.history.at(-1).executed, false);
+    assert.ok(!adapter.calls.some((call) => call.op === 'type'), 'no type() may run without a value');
+  } finally {
+    globalThis.fetch = original;
+  }
+});
+
+test('a decided fill executes through adapter.type with the helper value', async () => {
+  const original = globalThis.fetch;
+  const fillRequests = [];
+  try {
+    globalThis.fetch = async (url, init) => {
+      if (String(url).includes('bifrost')) {
+        fillRequests.push(init.body);
+        return {
+          ok: true,
+          status: 200,
+          async json() {
+            return { choices: [{ message: { content: '{"text":"reports"}' } }] };
+          },
+        };
+      }
+      const body = JSON.parse(init.body);
+      const opKeys = Object.keys(body.questions.operation.criteria);
+      const headKeys = Object.keys(body.questions.fill_target.criteria);
+      return {
+        ok: true,
+        status: 200,
+        async json() {
+          return {
+            model: 'jev-1.13.0',
+            answers: {
+              operation: choiceAnswer('fill', opKeys),
+              fill_target: choiceAnswer(headKeys[0], headKeys),
+            },
+          };
+        },
+      };
+    };
+    const adapter = makeAdapter([fillPage('q1'), fillPage('q1'), fillPage('q1')]);
+    const outcome = await withFillKey(() =>
+      run(adapter, {
+        ...BASE,
+        goal: 'Search for reports.',
+        controls: [{ op: 'fill', name: 'Query' }],
+      }),
+    );
+    assert.equal(outcome.status, 'no_progress', 'the same fill repeats once and then hands back');
+    assert.deepEqual(
+      adapter.calls.filter((call) => call.op === 'type'),
+      [{ op: 'type', ref: 'q1', text: 'reports' }],
+      'execute routes the fill to adapter.type with the helper text',
+    );
+    const executed = outcome.history.find((item) => item.executed);
+    assert.equal(executed.action, 'Fill Query');
+    assert.equal(executed.text, 'reports', 'the history entry carries the generated value');
+    assert.equal(fillRequests.length, 1, 'the helper is not called again before the handback');
+    const helperBody = JSON.parse(fillRequests[0]);
+    assert.equal(helperBody.model, 'deepseek-v4-flash');
+    assert.deepEqual(JSON.parse(helperBody.messages[1].content), {
+      goal: 'Search for reports.',
+      field: { role: 'textbox', name: 'Query' },
+      recent_actions: [],
+    });
+  } finally {
+    globalThis.fetch = original;
+  }
+});
+
+test('one request carries operation plus one target head per candidate operation', async () => {
+  const restore = stubDecide('a0');
+  try {
+    await decide({
+      configPath: CONFIG_FILE,
+      provider: 'typesafe',
+      goal: 'g',
+      state: 's',
+      actions: [
+        { op: 'click', description: 'Click A' },
+        { op: 'fill', description: 'Fill Query' },
+      ],
+    });
+
+    const [{ body }] = restore.seen;
+    assert.deepEqual(
+      Object.keys(body.questions).sort(),
+      ['click_target', 'fill_target', 'operation', 'progress'],
+    );
+    assert.deepEqual(Object.keys(body.questions.operation.criteria), [
+      'click',
+      'fill',
+      'DONE',
+      'BLOCKED',
+      'WAIT',
+    ]);
+    assert.deepEqual(Object.keys(body.questions.click_target.criteria), ['a0']);
+    assert.deepEqual(Object.keys(body.questions.fill_target.criteria), ['a1']);
+    assert.equal(body.questions.progress.type, 'noul');
+  } finally {
+    restore();
+  }
+});
+
+test('a malformed unselected target head cannot fail the request', async () => {
+  const original = globalThis.fetch;
+  try {
+    globalThis.fetch = async (url, init) => {
+      const body = JSON.parse(init.body);
+      const opKeys = Object.keys(body.questions.operation.criteria);
+      const headKeys = Object.keys(body.questions.click_target.criteria);
+      return {
+        ok: true,
+        status: 200,
+        async json() {
+          return {
+            model: 'jev-1.13.0',
+            answers: {
+              operation: choiceAnswer('click', opKeys),
+              click_target: choiceAnswer(headKeys[0], headKeys),
+              // fill was not selected: its malformed answer must be ignored
+              fill_target: { type: 'choice', choice: 'a9', confidence: 0.9, probabilities: {} },
+            },
+          };
+        },
+      };
+    };
+    const decision = await decide({
+      configPath: CONFIG_FILE,
+      provider: 'typesafe',
+      goal: 'g',
+      state: 's',
+      actions: [
+        { op: 'click', description: 'Click A' },
+        { op: 'fill', description: 'Fill Query' },
+      ],
+    });
+    assert.equal(decision.operation, 'click');
+    assert.deepEqual(decision.action, { op: 'click', description: 'Click A' });
+  } finally {
+    globalThis.fetch = original;
+  }
+});
+
+test('a missing or invalid selected head fails the request', async () => {
+  const original = globalThis.fetch;
+  const call = () =>
+    decide({
+      configPath: CONFIG_FILE,
+      provider: 'typesafe',
+      goal: 'g',
+      state: 's',
+      actions: [{ op: 'fill', description: 'Fill Query' }],
+    });
+  try {
+    globalThis.fetch = async (url, init) => {
+      const opKeys = Object.keys(JSON.parse(init.body).questions.operation.criteria);
+      return {
+        ok: true,
+        status: 200,
+        async json() {
+          return {
+            model: 'jev-1.13.0',
+            answers: { operation: choiceAnswer('fill', opKeys) },
+          };
+        },
+      };
+    };
+    await assert.rejects(call, /Invalid typesafe decision schema/, 'the selected head is missing');
+
+    globalThis.fetch = async (url, init) => {
+      const opKeys = Object.keys(JSON.parse(init.body).questions.operation.criteria);
+      return {
+        ok: true,
+        status: 200,
+        async json() {
+          return {
+            model: 'jev-1.13.0',
+            answers: {
+              operation: choiceAnswer('fill', opKeys),
+              fill_target: { type: 'choice', choice: 'a9', confidence: 0.9, probabilities: { a9: 1 } },
+            },
+          };
+        },
+      };
+    };
+    await assert.rejects(call, /Invalid typesafe decision schema/, 'the selected head is invalid');
+  } finally {
+    globalThis.fetch = original;
+  }
+});
+
+test('DONE, BLOCKED, and WAIT carry no target head', async () => {
+  const restore = stubDecide('DONE');
+  try {
+    await decide({
+      configPath: CONFIG_FILE,
+      provider: 'typesafe',
+      goal: 'g',
+      state: 's',
+      actions: [{ op: 'click', description: 'Click A' }],
+    });
+    const [{ body }] = restore.seen;
+    assert.deepEqual(Object.keys(body.questions).sort(), ['click_target', 'operation', 'progress']);
+    assert.ok(!body.questions.done_target, 'DONE has no head');
+    assert.ok(!body.questions.blocked_target, 'BLOCKED has no head');
+    assert.ok(!body.questions.wait_target, 'WAIT has no head');
+    const opKeys = Object.keys(body.questions.operation.criteria);
+    assert.ok(opKeys.includes('DONE') && opKeys.includes('BLOCKED') && opKeys.includes('WAIT'));
+  } finally {
+    restore();
   }
 });
 

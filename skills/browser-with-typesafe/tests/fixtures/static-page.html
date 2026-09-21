@@ -288,6 +288,21 @@
         }
       }
 
+      // The search flow gets the same focused snapshot the wizard gets: hide
+      // the 3-action and 15-action regions and the wizard itself so the model
+      // sees only the search flow's controls. (`panel` is already hidden by
+      // default; it is listed for explicitness.)
+      if (expected === 4) {
+        for (const id of [
+          'panel', 'expand', 'collapse',
+          'reportPanel', 'sectionA', 'sectionB', 'sectionC', 'sectionD', 'sectionE',
+          'wizard',
+        ]) {
+          const el = document.getElementById(id);
+          if (el) el.hidden = true;
+        }
+      }
+
       // ── State-dependent wizard (10 steps) ──────────────────────
       //
       // Each step renders a prompt naming a target word and three buttons,
@@ -367,6 +382,185 @@
       }
       renderWizard();
 
+      // ── Search+filter+form flow (expected=4) ──────────────────
+      //
+      // A state-dependent flow that exercises the fill+select split the skill
+      // is built for, instead of pure click navigation: a run-seeded query
+      // must be typed into a search box (results render ONLY for the exact
+      // seeded query), one product row matching the run-seeded target must be
+      // selected among several similar rows (the form exists ONLY after that
+      // selection), and two form fields must be filled with the run-seeded
+      // expected values. The page's own verdict requires the query, the
+      // selection, and both field values to match the seeded values — never
+      // the agent's claim.
+      //
+      // The flow is rendered dynamically ONLY when it is the active flow
+      // (expected === 4), so the 3/10/15 runs never see any of its controls:
+      // their snapshots stay small, their self-reports stay byte-identical,
+      // and the fifteen-action fixture's "no text-entry control exists"
+      // contract keeps holding for expected=15 (that check counts the DOM,
+      // not the accessibility tree).
+      //
+      // The flow's concrete values are seeded from the run id and shown in
+      // the page prompt (like the wizard's seeded words), so the host must
+      // read the prompt to learn the query, the target row, and the two
+      // field values — they cannot be memorised or planned ahead.
+
+      const SEARCH_WORDS = [
+        'alpine', 'basalt', 'cedar', 'delta', 'ember', 'fjord', 'grove',
+        'harbor', 'ivory', 'jade', 'kelp', 'lunar', 'marsh', 'north', 'onyx',
+        'pine', 'quartz', 'reef', 'stone', 'tidal',
+      ];
+      const SEARCH_NAMES = [
+        'Ada', 'Blair', 'Casey', 'Dana', 'Ellis', 'Finley', 'Gray', 'Hollis',
+        'Ira', 'Jules', 'Kai', 'Lee', 'Morgan', 'Nico', 'Owen', 'Piper',
+        'Quinn', 'Reese', 'Sage', 'Tate',
+      ];
+
+      // Flow state. The elements stay null unless the search flow is the
+      // active flow, which keeps expectedStateOk() and report() safe on the
+      // 3/10/15 runs.
+      let searchStatus = null;
+      let searchPrompt = null;
+      let searchBox = null;
+      let searchFeedback = null;
+      let searchResults = null;
+      let detailForm = null;
+      let nameField = null;
+      let emailField = null;
+      let selectedRow = null;
+      let expectedQuery = '';
+      let expectedTarget = '';
+      let expectedName = '';
+      let expectedEmail = '';
+
+      /** True exactly when query, selection, and both field values all match. */
+      function searchMatches() {
+        return (
+          searchBox !== null &&
+          searchBox.value === expectedQuery &&
+          selectedRow === expectedTarget &&
+          nameField !== null &&
+          nameField.value === expectedName &&
+          emailField !== null &&
+          emailField.value === expectedEmail
+        );
+      }
+
+      function renderSearchFlow() {
+        // Seed the flow's concrete values from the run id. The salt keeps the
+        // search values independent of the wizard's for the same run id.
+        const rand = mulberry32(wizardSeed(String(runId ?? 'search') + '|search'));
+        expectedQuery = SEARCH_WORDS[Math.floor(rand() * SEARCH_WORDS.length)];
+        do {
+          expectedTarget = SEARCH_WORDS[Math.floor(rand() * SEARCH_WORDS.length)];
+        } while (expectedTarget === expectedQuery);
+        expectedName = SEARCH_NAMES[Math.floor(rand() * SEARCH_NAMES.length)];
+        expectedEmail = `${expectedName.toLowerCase()}@example.test`;
+
+        // The result set for the correct query: the target product plus four
+        // seeded distractors from the same catalog, so picking the right row
+        // is a real selection among similar rows and cannot be planned ahead.
+        const others = new Set();
+        while (others.size < 4) {
+          const word = SEARCH_WORDS[Math.floor(rand() * SEARCH_WORDS.length)];
+          if (word !== expectedTarget) others.add(word);
+        }
+        const rowNames = [expectedTarget, ...others].sort(() => rand() - 0.5);
+        const prices = rowNames.map(() => (1 + Math.floor(rand() * 99)).toFixed(2));
+
+        const section = document.createElement('section');
+        section.id = 'searchFlow';
+        section.setAttribute('aria-label', 'Product search');
+        section.innerHTML =
+          '<h2>Product search</h2>' +
+          '<p>Search status: <output id="searchStatus">pending</output></p>' +
+          '<p id="searchPrompt"></p>' +
+          '<input type="search" id="searchBox" aria-label="Search products" autocomplete="off" spellcheck="false" />' +
+          '<p id="searchFeedback"></p>' +
+          '<ol id="searchResults" hidden></ol>' +
+          '<form id="detailForm" hidden>' +
+          '<p><label for="nameField">Name</label> <input type="text" id="nameField" autocomplete="off" /></p>' +
+          '<p><label for="emailField">Email</label> <input type="text" id="emailField" autocomplete="off" /></p>' +
+          '</form>';
+        document.body.append(section);
+
+        searchStatus = document.getElementById('searchStatus');
+        searchPrompt = document.getElementById('searchPrompt');
+        searchBox = document.getElementById('searchBox');
+        searchFeedback = document.getElementById('searchFeedback');
+        searchResults = document.getElementById('searchResults');
+        detailForm = document.getElementById('detailForm');
+        nameField = document.getElementById('nameField');
+        emailField = document.getElementById('emailField');
+
+        searchPrompt.textContent =
+          `Search for "${expectedQuery}" to filter the catalog, then select the product row named "${expectedTarget}". ` +
+          `Fill the form fields with name "${expectedName}" and email "${expectedEmail}".`;
+
+        // A wrong query never renders results: the page only accepts the
+        // run-seeded expected query.
+        searchBox.addEventListener('input', () => {
+          bumpAction();
+          if (searchBox.value === expectedQuery) {
+            searchFeedback.textContent = '';
+            searchResults.innerHTML = '';
+            for (let i = 0; i < rowNames.length; i += 1) {
+              const li = document.createElement('li');
+              const button = document.createElement('button');
+              button.type = 'button';
+              button.textContent = rowNames[i];
+              button.setAttribute('data-codename', rowNames[i]);
+              button.addEventListener('click', () => {
+                bumpAction();
+                if (selectedRow === null && button.dataset.codename === expectedTarget) {
+                  selectedRow = expectedTarget;
+                  searchResults.hidden = true;
+                  detailForm.hidden = false;
+                  searchStatus.textContent = 'form';
+                } else if (selectedRow === null) {
+                  searchFeedback.textContent =
+                    `"${button.dataset.codename}" is not the requested product.`;
+                }
+                report();
+              });
+              li.append(button);
+              const price = document.createElement('span');
+              price.textContent = `$${prices[i]}`;
+              li.append(price);
+              searchResults.append(li);
+            }
+            searchResults.hidden = false;
+            searchStatus.textContent = 'results';
+          } else {
+            searchFeedback.textContent =
+              `No products match "${searchBox.value}". Use the exact query from the prompt.`;
+            searchResults.hidden = true;
+            searchResults.innerHTML = '';
+            detailForm.hidden = true;
+            selectedRow = null;
+            searchStatus.textContent = 'pending';
+          }
+          report();
+        });
+
+        for (const field of [nameField, emailField]) {
+          field.addEventListener('input', () => {
+            bumpAction();
+            if (searchMatches()) searchStatus.textContent = 'complete';
+            else if (selectedRow !== null) searchStatus.textContent = 'form';
+            report();
+          });
+        }
+
+        // The fixture never submits: a fill action never presses Enter, and the
+        // host owns any consequential submit step. The guard keeps an errant
+        // Enter from navigating the flow away mid-run.
+        detailForm.addEventListener('submit', (event) => event.preventDefault());
+      }
+
+      if (expected === 4) renderSearchFlow();
+
       function expectedStateOk() {
         if (expected === 10) {
           return wizardStatus.textContent === 'complete' && wizStep >= WIZARD_STEPS;
@@ -386,6 +580,13 @@
             // state includes them, so a click-only run is not "complete".
             reportScrolls >= 2
           );
+        }
+        if (expected === 4) {
+          // The search flow's own verdict: the query, the selection, and both
+          // field values must all match the run-seeded expected values. The
+          // status word is derived from the same state, so re-checking the
+          // values keeps the verdict independent of any text on the page.
+          return searchMatches();
         }
         // expected === 3: the original 3-action end state
         return (
@@ -409,7 +610,9 @@
                 ? fifteenStatus.textContent
                 : expected === 10
                   ? wizardStatus.textContent
-                  : status.textContent,
+                  : expected === 4
+                    ? searchStatus.textContent
+                    : status.textContent,
             actions: actions,
             expected: expected,
             ok: actions >= expected && expectedStateOk(),

@@ -139,6 +139,34 @@ integration cost on a flow this size.
 If you are choosing between driving a browser directly and using this skill for a scripted flow, the
 measurement says drive it directly.
 
+## Text entry: Jev selects, a small LLM fills
+
+Jev is a selector; it cannot generate text. Every build on `madewithjev.com` pairs it with a small
+fast LLM for exactly that reason. This skill does the same:
+
+- `policy.fill: true` offers every text field (textbox / textarea / combobox / searchbox) as a
+  candidate; Jev picks **which** field.
+- A free helper model (`bifrost/deepseek-v4-flash`) generates the **value** from the goal and the
+  field's label. The response is strict-parsed; a blank, non-string, or over-long value fails the
+  action and the run hands back rather than guessing.
+- `fill` **never** presses Enter and never submits. Any consequential submit/send/publish step stays
+  with the host, exactly as before.
+
+## Measured on a search + filter + form flow
+
+3 samples per arm, free host model for both arms, correctness from the page's own report:
+
+| | Arm A (direct) | Arm B (with the skill) |
+| --- | ---: | ---: |
+| Tokens (uncached + output) | **29,299** | 49,180 |
+| Time per mechanical action | **52.68 s** | 89.52 s |
+| Correct | **3/3** | 2/3 |
+
+The skill cost **1.68×** the tokens and **1.70×** the time per action — the ≤ 0.8× criterion is not
+met. Jev is not the bottleneck (10 decisions, p50 **379 ms**). The skill can now do search/form flows
+it could not attempt before, but on a short flow the integration cost (reading this document, writing
+the wiring) costs more host turns than driving directly.
+
 ## Verification matrix
 
 Checks are identical across backends: the same fixture page

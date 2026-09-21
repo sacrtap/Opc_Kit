@@ -14,10 +14,13 @@
 #   ./tests/e2e/cost-experiment.sh 3 --task 15-action      # 15-action flow
 #   ./tests/e2e/cost-experiment.sh --samples 3 --task 15-action
 #   ./tests/e2e/cost-experiment.sh 3 8791 15-action        # legacy positional form
+#   ./tests/e2e/cost-experiment.sh --task wizard           # state-dependent wizard
+#   ./tests/e2e/cost-experiment.sh --task search          # search+filter+form flow
 #
-# The 15-action goal text is read from tests/e2e/task.mjs (`GOAL_15`) so the two
-# arms cannot drift apart: both prompts are that one string, differing only in
-# whether the agent is told to use the skill.
+# The 15-action, wizard, and search goals are read from tests/e2e/task.mjs
+# (GOAL_15 / GOAL_WIZARD / GOAL_SEARCH, and EXPECTED_SEARCH for the search
+# action count) so the arms cannot drift apart: both prompts are that one
+# string, differing only in whether the agent is told to use the skill.
 #
 # Per run the harness records: wall-clock time, host turns, uncached input /
 # cache-read / output tokens, billed cost, correctness from the fixture's
@@ -99,8 +102,26 @@ case "$TASK_SELECTOR" in
       exit 1
     fi
     ;;
+  search)
+    # Search+filter+form flow: the goal text AND the action count come from
+    # task.mjs (GOAL_SEARCH, EXPECTED_SEARCH) — the single source of truth —
+    # read in the same import pattern as the 15-action/wizard cases. The
+    # flow's concrete values are seeded per run and shown in the page prompt;
+    # the fill helper's model is NOT passed here, the skill reads
+    # BIFROST_API_KEY from its own environment.
+    SEARCH_META="$(cd "$SKILL_DIR" && node -e "import('./tests/e2e/task.mjs').then((m) => process.stdout.write(m.GOAL_SEARCH + '\n' + String(m.EXPECTED_SEARCH)))" 2>/dev/null)" || true
+    GOAL_SUFFIX="$(printf '%s\n' "$SEARCH_META" | sed -n '1p')"
+    EXPECTED="$(printf '%s\n' "$SEARCH_META" | sed -n '2p')"
+    if [ -z "$GOAL_SUFFIX" ]; then
+      echo "could not read GOAL_SEARCH from tests/e2e/task.mjs" >&2
+      exit 1
+    fi
+    case "$EXPECTED" in
+      ''|*[!0-9]*) echo "could not read EXPECTED_SEARCH (expected a positive integer) from tests/e2e/task.mjs" >&2; exit 1 ;;
+    esac
+    ;;
   *)
-    echo "unknown task selector: ${TASK_SELECTOR} (expected 3-action, 15-action, or wizard)" >&2
+    echo "unknown task selector: ${TASK_SELECTOR} (expected 3-action, 15-action, wizard, or search)" >&2
     exit 2
     ;;
 esac
@@ -111,8 +132,9 @@ esac
 # criterion is TOKENS (uncached + output), which the summary prints.
 # deepseek-v4-pro is stronger than flash and explores less when following the
 # skill's quick-start block; both arms use the same model, so the comparison
-# stays fair.
-HOST_MODEL="${BWT_HOST_MODEL:-bifrost/sensenova/deepseek-v4-pro}"
+# stays fair. NOTE: the model id is provider/model without the removed
+# `sensenova` segment — see models.yml.
+HOST_MODEL="${BWT_HOST_MODEL:-bifrost/deepseek-v4-pro}"
 
 # Appended identically to BOTH prompts. Only arm B has per-decision timing to
 # report; the point is that the arms differ in nothing except the skill mention,
@@ -196,18 +218,20 @@ for n in $(seq 1 "$SAMPLES"); do
     # differ in nothing but whether the agent is told to use the skill.
     prompt="${prefix}The page to work on is ${url} (open that exact URL, query string included). Goal: ${GOAL_SUFFIX}${METRICS_NOTE}"
     t0=$(python3 -c "import time; print(time.time())")
-    # Process-level hard timeout. `--max-time=240` is omp's session budget but a
+    # Process-level hard timeout. `--max-time` is omp's session budget but a
     # stalled tool call (e.g. browser.open hung in eval) can outlive it and pin
-    # the process for ~an hour; this wrapper kills it after 280s no matter what.
+    # the process for ~an hour; this wrapper kills it after the outer budget no
+    # matter what. A search+form flow legitimately needs ~250s, so both budgets
+    # are set above that — and both arms get the same numbers, so it stays fair.
     python3 - "$prompt" "$cwd" "$HOST_MODEL" "${OUT}/${run}.jsonl" <<'PY'
 import subprocess, sys
 prompt, cwd, model, out = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
 p = subprocess.Popen(
-    ['omp', '-p', prompt, '--mode=json', '--auto-approve', '--max-time', '240', '--model', model],
+    ['omp', '-p', prompt, '--mode=json', '--auto-approve', '--max-time', '360', '--model', model],
     cwd=cwd, stdout=open(out, 'w'), stderr=subprocess.DEVNULL,
 )
 try:
-    p.wait(timeout=280)
+    p.wait(timeout=400)
 except subprocess.TimeoutExpired:
     p.kill()
 PY

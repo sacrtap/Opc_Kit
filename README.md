@@ -3,7 +3,7 @@
 > **Professional AI Agent Skill Toolkit** — From multi-persona decision debates to structured PRD output, a complete product workflow solution compatible with all AI coding agents
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version: v2.6.2](https://img.shields.io/badge/Version-2.6.2-blue.svg)]()
+[![Version: v2.6.3](https://img.shields.io/badge/Version-2.6.3-blue.svg)]()
 [![Status: Active](https://img.shields.io/badge/Status-Active-green.svg)]()
 [![skills.sh](https://skills.sh/b/sacrtap/Opc_Kit)](https://skills.sh/sacrtap/Opc_Kit)
 [![PRD Validation](https://github.com/sacrtap/Opc_Kit/actions/workflows/prd-validation.yml/badge.svg)](https://github.com/sacrtap/Opc_Kit/actions/workflows/prd-validation.yml)

@@ -94,6 +94,31 @@ export const GOAL_15 =
 export const GOAL_WIZARD =
   "open the page, then complete the configuration wizard. The wizard shows one step at a time; each step's prompt names a target word and offers three buttons, and only the button labeled with that exact target word advances the wizard. Work through all 10 steps, reading each step's freshly rendered prompt before choosing its button. Finally reply with exactly the wizard status text shown on the page and nothing else.";
 
+/**
+ * The search+filter+form goal for the A/B experiment. Both arms receive the
+ * identical goal; the arm-specific prefix ("Use the browser-with-typesafe
+ * skill to do exactly this:" vs "Using the eval tool with the browser
+ * prelude:") is prepended by cost-experiment.sh, so the two prompts differ
+ * ONLY in whether they mention the skill.
+ *
+ * This is the flow the skill's fill+select split is built for: the fixture
+ * seeds a query, a target product row, and two form field values from the run
+ * id and shows them in its page prompt, so the concrete values cannot be
+ * planned ahead — the host must read the page's prompt for them (exactly like
+ * the wizard's seeded target words) and hand them to the flow. The fixture's
+ * own self-report is the verdict: ok requires the query, the row selection,
+ * and both field values to match the seeded values.
+ */
+export const GOAL_SEARCH =
+  "open the page, then complete the product search flow. The search query, the product row to select, and the two form field values are seeded for this run and shown in the page's prompt — read them from the prompt. Type the seeded query into the search box, pick the product row matching the prompt, and fill the two form fields with exactly the prompt's values. Finally reply with exactly the search status text shown on the page and nothing else.";
+
+/**
+ * The search flow's mechanical-action count (1 fill query + 1 click row + 2
+ * fill fields). Single source of truth for the harness's per-action-time
+ * denominator, alongside GOAL_SEARCH.
+ */
+export const EXPECTED_SEARCH = 4;
+
 /** Run TASK (or the supplied task) against an adapter, returning the outcome and session metrics. */
 export async function runTask(adapter, { origin, config, overrides = {}, task = TASK, bounds = BOUNDS }) {
   const session = createSession(adapter, {

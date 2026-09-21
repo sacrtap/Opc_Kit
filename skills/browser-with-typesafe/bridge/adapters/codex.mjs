@@ -9,11 +9,12 @@
  *   tab.getAXState({ emit:false, disableDiffing:true }) -> textual AX state
  *   tab.click(index) / tab.scroll(target, direction, amount) / tab.pressKey(key)
  *   tab.reload()
+ *   tab.type(index, text) or tab.insert(index, text) for `fill` (contract-only)
  *
  * Nodes are addressed by their own numeric index, which is what that contract
  * accepts, so `ref` is the index rendered as a string.
  *
- * This adapter never opens a browser and never enters text.
+ * This adapter never opens a browser.
  */
 
 import { createIR } from '../ir.mjs';
@@ -97,6 +98,20 @@ export function createCodexAdapter(tab) {
       const index = Number(ref);
       if (!Number.isInteger(index)) throw new Error(`Codex click requires a numeric ref, got ${ref}`);
       await tab.click(index);
+    },
+
+    async type(ref, text) {
+      // Contract-only stub: the Computer Use tab contract has no fixed
+      // typing method name, so this dispatches to `type` or `insert` and fails
+      // loudly when the runtime exposes neither. Exercised by contract tests
+      // only — no Codex runtime is available here.
+      const index = Number(ref);
+      if (!Number.isInteger(index)) throw new Error(`Codex type requires a numeric ref, got ${ref}`);
+      const writer = tab.type ?? tab.insert;
+      if (typeof writer !== 'function') {
+        throw new Error('Codex tab cannot type: it exposes neither type() nor insert()');
+      }
+      await writer.call(tab, index, text);
     },
 
     async scroll({ direction, amount = 1, target }) {

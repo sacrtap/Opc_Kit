@@ -6,8 +6,9 @@
  * converts omp's ARIA snapshot into the shared IR and executes mechanical
  * actions through the same tab handle the host already opened.
  *
- * This adapter never opens or closes a browser and never enters text: the host
- * owns the session and all text input.
+ * This adapter never opens or closes a browser and never navigates on its own.
+ * Text entry happens only through `type(ref, text)`, driven by a decided
+ * `fill` action whose value came from the fill helper — never ad hoc.
  */
 
 import { parseAriaSnapshot } from '../aria-snapshot.mjs';
@@ -40,6 +41,11 @@ export function createOmpAdapter(tab) {
     async click(ref) {
       if (ref === null || ref === undefined) throw new Error('click requires a ref');
       await (await tab.ref(ref)).click();
+    },
+
+    async type(ref, text) {
+      if (ref === null || ref === undefined) throw new Error('type requires a ref');
+      await (await tab.ref(ref)).fill(text);
     },
 
     async scroll({ direction, amount = 1, target }) {

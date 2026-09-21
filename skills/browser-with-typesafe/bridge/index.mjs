@@ -18,6 +18,7 @@ import { createSession } from './core.mjs';
 
 export * from './core.mjs';
 export { parseAriaSnapshot } from './aria-snapshot.mjs';
+export { fillableNodes } from './ir.mjs';
 export { createCodexAdapter } from './adapters/codex.mjs';
 export { createOmpAdapter } from './adapters/omp.mjs';
 export { createPlaywrightAdapter } from './adapters/playwright.mjs';

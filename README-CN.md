@@ -3,7 +3,7 @@
 > **专业的 AI Agent 技能工具集** — 从多角色决策辩论到结构化 PRD 输出，外加验证交付物的浏览器运行时，兼容所有 AI 编程代理的完整产品工作流解决方案
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version: v2.6.2](https://img.shields.io/badge/Version-2.6.2-blue.svg)]()
+[![Version: v2.6.3](https://img.shields.io/badge/Version-2.6.3-blue.svg)]()
 [![Status: Active](https://img.shields.io/badge/Status-Active-green.svg)]()
 [![skills.sh](https://skills.sh/b/sacrtap/Opc_Kit)](https://skills.sh/sacrtap/Opc_Kit)
 [![PRD Validation](https://github.com/sacrtap/Opc_Kit/actions/workflows/prd-validation.yml/badge.svg)](https://github.com/sacrtap/Opc_Kit/actions/workflows/prd-validation.yml)
