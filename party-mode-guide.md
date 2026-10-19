@@ -263,10 +263,16 @@ The skill remembers previous discussions. When you start a new session on a rela
 
 | Mode | Description | Best For |
 |------|-------------|----------|
-| `subagent` | Each role is an independent sub-agent, truly independent thinking | Complex decisions (default) |
-| `session` | One model plays all roles, fast and lightweight | Quick brainstorming |
-| `auto` | Normal conversation, spawns independent agents at critical moments | Balanced speed/depth |
-| `agent-team` | Persistent team, roles directly address each other | Ongoing projects |
+| `session` | One model plays all roles, fast and lightweight. **Default** | Quick brainstorming, everyday discussion |
+| `auto` | **Spawns independent sub-agents first**; if unsupported or spawn fails, **falls back to `session` and tells you so** | Effortless with independence when available |
+| `subagent` | Each role is an independent sub-agent, truly independent thinking. **Explicit opt-in** (`--mode subagent` or "use subagents") | Complex decisions, red-teaming, reviews |
+| `agent-team` | Persistent team, roles directly address each other (native on Claude Code; other harnesses degrade by tier, announced) | Ongoing projects |
+
+**Failure semantics differ — this is the key distinction:**
+
+- `session` never spawns, so it cannot fail this way.
+- `auto` failure → **silent degradation is not allowed**: in the same turn you must be told "sub-agents were intended, they can't start (`reason`), the room is now single-voice and no longer independent".
+- `subagent` is a **forced mode**: unsupported harness or a failing first spawn → report the error and **abort the session** (no agenda, no artifacts). It never quietly downgrades to a single voice. A mid-session mechanism failure stops the round and asks whether to switch to `auto`/`session` or reschedule.
 
 ### Intelligent Model Allocation
 
@@ -339,8 +345,11 @@ What preset rooms are available?
 ### Switching Modes
 
 ```
-Use session mode for a quick discussion on [topic]
+Have each role discuss [topic] as an independent sub-agent   # subagent, forced
+Spawn sub-agents first, fall back and tell me if they fail    # auto
 ```
+
+> `session` is the default (one mind, all voices) — no flag needed. `subagent` must be asked for explicitly and never downgrades: if it can't spawn, it reports and aborts.
 
 ---
 

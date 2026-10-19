@@ -120,7 +120,7 @@ Stop making critical decisions with a single perspective. Bring 17 product and e
 - **17 Professional Personas** — Engineering, product, and strategy experts with distinct expertise and communication styles
 - **Dynamic Role Selection** — Auto-selects 4-6 most relevant experts based on your topic
 - **Three Discussion Tiers** — Quick Take (3-5 rounds), Standard (8-12 rounds), Deep Dive (15-25 rounds) based on complexity
-- **Four Operating Modes** — Subagent (independent thinking), Session (lightweight), Auto (hybrid), Agent-Team (persistent)
+- **Four Operating Modes** — Session (default, lightweight), Auto (subagent-first with announced fallback), Subagent (explicit opt-in, forced), Agent-Team (persistent)
 - **Evidence-Driven** — Roles cite industry data, benchmarks, and case studies, not just opinions
 - **Session Memory** — Cross-session context retention, roles remember previous conclusions and alliances
 

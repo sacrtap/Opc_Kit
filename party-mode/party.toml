@@ -29,13 +29,14 @@ communication_language = "English"
 default_party = ""
 
 # How the room is run — who does the talking. A runtime `--mode <value>` wins
-# for the session; an unsupported mode falls back to "session".
-# SKILL.md "How It Runs" is the authority on what each mode does.
-#   "subagent"   (default) spawn a real subagent per substantive round, so each persona thinks independently
-#   "session"    never spawn — one mind voices every persona inline
-#   "auto"       voice inline for light rounds, spawn subagents when independent thinking matters
+# for the session. SKILL.md "How It Runs" is the authority on what each mode does.
+#   "session"    (default) never spawn — one mind voices every persona inline
+#   "auto"       subagent first; if spawn is unsupported or fails, fall back to
+#                "session" and SAY SO to the user (announced, never silent)
+#   "subagent"   explicit request only — forced subagents; if spawn is unsupported
+#                or fails, tell the user and ABORT the session (no fallback)
 #   "agent-team" persistent agent team addressing each other directly
-party_mode = "subagent"
+party_mode = "session"
 
 # Where the end-of-session keepsake is written. The self-contained HTML
 # document lands in `{output_dir}/`. Point this elsewhere in your override

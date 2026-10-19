@@ -18,6 +18,13 @@ then projected into only what the moment needs:
   * --party <id> — full member detail for one chosen group, on demand
     (e.g. when the user switches rooms). Unknown id returns the available
     names instead of an error wall.
+  * --brief — the cheap roster for composing the room: code, name, icon,
+    title, model_tier, domains. No `persona`/`speaking_style` payload, so
+    the orchestrator can read every persona's tags without a full-roster
+    dump; fetch full detail per member only for the 4–6 actually cast.
+  * --validate-roster <codes> — coverage check for a composed roster:
+    existence, aggregated domains, tier distribution, flagged gaps.
+    Pure check; never selects members for you.
 
 The merge is deterministic (a keyed union; a custom member whose code
 matches a base member overrides it), so the orchestrator consumes a
@@ -26,9 +33,12 @@ resolved roster instead of re-deriving it every session.
 Stdlib only (Python 3.11+ for tomllib). Run with `python3` — no uv or
 project scaffolding required.
 
-  resolve_party.py --config party.toml [--user-config user/party.user.toml]
-  resolve_party.py --config party.toml --list-groups
-  resolve_party.py --config party.toml --party writers-room
+  resolve_party.py [--config party.toml] [--user-config user/party.user.toml]
+  resolve_party.py                      # no args: party.toml next to this script
+  resolve_party.py --list-groups
+  resolve_party.py --brief
+  resolve_party.py --party writers-room
+  resolve_party.py --validate-roster "sec-hawk,adversary"
 """
 
 import argparse
@@ -249,16 +259,78 @@ def group_detail(g, collective, index):
     return detail
 
 
+def validate_roster(member_tokens, collective, index):
+    """Coverage check for a dynamically composed or explicitly named roster.
+
+    Input: comma/space-separated member codes. Output: each member's
+    existence, aggregated domains coverage, tier distribution, and flagged
+    gaps so the orchestrator (or the user) can verify the room has both
+    builders and challengers before the discussion starts.
+
+    Pure stdlib; does not select members — it only checks what was picked.
+    """
+    tokens = [t.strip() for t in member_tokens.replace(",", " ").split() if t.strip()]
+    resolved, unresolved = resolve_members(tokens, collective, index)
+    domains = set()
+    tiers = {}
+    for m in resolved:
+        for d in (m.get("domains") or []):
+            domains.add(d)
+        tier = m.get("model_tier") or "balanced"
+        tiers[tier] = tiers.get(tier, 0) + 1
+    suggestions = []
+    if len(resolved) < 4:
+        suggestions.append("room feels thin — consider 4-6 voices for coverage with tension")
+    if not any(d for d in ("security", "code-review", "adversarial", "reliability") if d in domains):
+        suggestions.append("no adversarial/security coverage — everyone may drift into agreement")
+    if not any(d for d in ("shipping", "pragmatism", "delivery", "decision-forcing") if d in domains):
+        suggestions.append("no builder/pragmatist voice — add a constructive role")
+    if tiers.get("strong", 0) == 0 and len(resolved) >= 3:
+        suggestions.append("no strong-tier member — deep reasoning rounds will be shallow")
+    return {
+        "roster": [{"code": m["code"], "name": m.get("name"), "model_tier": m.get("model_tier", "balanced")} for m in resolved],
+        "unresolved": unresolved,
+        "member_count": len(resolved),
+        "domains": sorted(domains),
+        "tier_distribution": tiers,
+        "suggestions": suggestions,
+    }
+
+
+def _default_config_path():
+    """Default config: `party.toml` next to this script's skill root.
+
+    Lets `python3 scripts/resolve_party.py` run with no arguments from
+    anywhere on disk — a bare invocation inside the skill folder is the
+    obvious first thing an orchestrator tries, and it must not die on a
+    usage wall.
+    """
+    return Path(__file__).resolve().parent.parent / "party.toml"
+
+
 def main():
     ap = argparse.ArgumentParser(description="Resolve the party-mode roster, lazily.")
-    ap.add_argument("--config", required=True, help="Path to the skill's party.toml")
+    ap.add_argument("--config", default=None,
+                    help="Path to the skill's party.toml (default: party.toml next to this script)")
     ap.add_argument("--user-config", default=None,
                     help="Optional user override party.user.toml (merged over --config)")
     ap.add_argument("--party", help="Resolve full detail for this group id")
     ap.add_argument("--list-groups", action="store_true", help="Group names only")
+    ap.add_argument("--validate-roster", metavar="CODES",
+                    help="Coverage-check a comma/space-separated list of member codes")
+    ap.add_argument("--brief", action="store_true",
+                    help="Cheap roster: code/name/icon/title/model_tier/domains only (no persona payload)")
     args = ap.parse_args()
 
-    config_path = Path(args.config).resolve()
+    if args.config:
+        config_path = Path(args.config).resolve()
+    else:
+        config_path = _default_config_path()
+        if not config_path.exists():
+            sys.stderr.write(
+                "error: no --config given and default not found: %s\n"
+                "Pass --config /path/to/party.toml explicitly.\n" % config_path)
+            sys.exit(2)
     user_path = Path(args.user_config).resolve() if args.user_config else \
         config_path.parent / "user" / "party.user.toml"
 
@@ -281,6 +353,23 @@ def main():
         return
 
     collective, index = build_collective(party.get("party_members", []))
+
+    if args.validate_roster is not None:
+        _emit(validate_roster(args.validate_roster, collective, index))
+        return
+
+    if args.brief:
+        brief = [{
+            "code": m["code"],
+            "name": m.get("name"),
+            "icon": m.get("icon"),
+            "title": m.get("title"),
+            "model_tier": m.get("model_tier", "balanced"),
+            "domains": m.get("domains", []),
+        } for m in collective.values()]
+        _emit({"party_mode": party_mode, "member_count": len(brief),
+               "groups": group_menu(groups), "roster": brief})
+        return
 
     if args.party:
         g = find_group(groups, args.party)
