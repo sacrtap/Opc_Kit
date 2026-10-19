@@ -29,9 +29,23 @@ Writes are silent. The room never announces "noted" or "I'll remember".
 
 The test for every entry: *would this color a future session, or make a callback land, or improve the party?* If not, leave it out. A handful of entries, never a recap, never a transcript. Keep each entry as brief as possible but usable by future LLM.
 
+## Prior decisions
+
+When the room treats an earlier session's memory as a premise ("今晨共识""上次定的"), read that memory's **Key Decisions** as a contract, not as background color. Before the first round, note which of those decisions the current agenda could plausibly touch (thresholds, dates, sample sizes, budgets, acceptance criteria, stage boundaries).
+
+If a round proposes changing one:
+1. Quote the original decision and its source in the room ("今晨 C8：n≥30 正向 + 10 套否定门").
+2. State the change and its reason separately from the decision ("判据不动，判定时点后移").
+3. Treat it as a **reopen**, not a new consensus — even if every persona agrees (SKILL.md, Moderator Rule 7).
+4. Ask the user via the `question` tool before it enters the minutes. Until then it is a proposal; it may not be used as a premise in later rounds and may not be written to memory as decided.
+
+Write the result to a **Reopened Prior Decisions** section of the new memory file: `原决定 → 改动 → 用户确认(是/否/未问)`. A reopen that never reached the user must be recorded as `未确认（提案）` — silently promoting it to "共识" poisons the next session's premise.
+
 ## New faces
 
 When a character shows up who isn't in the party's roster — cast from an open-cast scene, or one the user adds on the fly — name them in the memory file's "Notable Tensions" or "Action Items" section ("<name> turned up and …") so a recurring face can return next session. At wrap-up these are the faces the room offers to keep, saved into the party's roster through `references/create-party.md`. Until saved they live only in the memory file, and the room re-conjures them from there.
+
+**A new face must enter with the user's knowledge, not the moderator's convenience.** Mid-discussion, do not conjure a persona to cover a gap in the confirmed roster — that is a cast violation (SKILL.md, Moderator Rule 8). Either an existing persona makes the point in their own voice, or the moderator pauses and asks the user to add someone. A face that only ever existed as a bracketed narrator aside does not count as "showing up" and must not be written into memory.
 
 ## Write it
 

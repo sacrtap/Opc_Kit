@@ -26,7 +26,17 @@ If a persona has an explicit `model` field in `party.toml`, use that model. This
 
 ### 3. Detect available models from environment
 
-Check the host environment for available models:
+Check the host environment for available models. **A failed probe is not an error**: a missing config path, a Path-not-found on a `user/party.user.toml` check, or an unreadable settings file all mean exactly one thing — *not configured* — and you proceed to auto-assignment per `SKILL.md` (Unconfigured-pool check) instead of aborting the check. Never let a missing file kill the detection flow.
+
+**omp harness:**
+- Read the omp settings via `cfg://` (e.g. `cfg://` namespace listing, or platform-config files at `~/.omp/agent/`) for the configured model pool.
+- Look for `model`, `models`, `available_models`, or router config (e.g. `9router/deepseek-v4-flash` style IDs in the workstation model field).
+- Common keys: provider-prefixed IDs like `anthropic/claude-*-*`, `openai/gpt-*`, `qwen/*`, `deepseek/*`.
+- Fall back to the orchestrator's own model (the one running the current session) when the config doesn't expose a list — every user's omp install has exactly the models their provider granted them, so per-user model inventory varies; never assume a fixed triple exists.
+- **omp subagents can't take a model**: the `task` agent rejects a `model` argument. Detect the pool for the *declarative* mapping and the `user/party.user.toml` save, but every spawned subagent inherits the session model — see `references/mode-subagent.md` (Model choice).
+
+**workbuddy (if present):**
+- Detect via `WORKBUDDY_*` env vars or a workbuddy config path; probe per-spawn model support (`model` in its spawn API) before promising an operative mapping — treat as declarative until confirmed.
 
 **OpenCode:**
 - Read `.opencode/config.json` or `.opencode.json` for model configuration
@@ -108,9 +118,9 @@ fast    → openai/gpt-4
 
 The orchestrator should:
 
-1. **Before first subagent spawn**, detect available models and build the tier mapping
+1. **Before first subagent spawn**, detect available models and build the tier mapping (a failed probe = not configured, auto-assign per `SKILL.md`)
 2. **Announce the mapping** to the user: "Using claude-3-opus for strong roles, claude-3-sonnet for balanced, claude-3-haiku for fast"
-3. **Pass the correct model** when spawning each subagent
+3. **Pass the correct model when spawning each subagent — where the harness accepts it** (Claude Code, Codex multi-agent, workbuddy if confirmed). On omp the `task` agent rejects `model`; keep the mapping declarative there and differentiate by round structure (see `references/mode-subagent.md` — Model choice)
 4. **Respect overrides**: user-specified model > per-persona model > tier mapping
 
 ## Cost Optimization

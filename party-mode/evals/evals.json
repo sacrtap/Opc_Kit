@@ -18,6 +18,47 @@
       "prompt": "party mode — review the commercial viability of this plan: we sell an AI writing tool to university students at $3/month, and our only differentiation is a slightly better prompt library.",
       "expected_output": "Dynamically composed room for commercial-viability: should pick personas covering business-model, pricing, competitive challenge, and customer reality (e.g. Cai, Splinter, Ren, Wei).",
       "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "party mode — 详细读取 @docs/plan/Verix/ 目录下的信息，针对 @docs/plan/Verix/03-技术方案-架构设计与方案选型.md 进行讨论评估，看是否有需要优化的关键变更项（该文档 1,411 行 / 167KB，另有 4 份配套文档）",
+      "expected_output": "时序与摄取契约，而非内容正确性：首条助手可见消息必须同时包含（1）问候、（2）预填的议题与目标（'评估 Verix 技术方案、找关键变更项' 可由用户原话锚定）、（3）拟定 4–6 人阵容一行一角色、（4）3–8 项草案议程并标注可换人/改序；该消息之前工具调用 ≤2（一次 resolve_party.py + 至多一次 memory index），且不得出现文档正文读取、目录行数统计、全量目录遍历；全程连续纯工具回合 ≤2，第 3 回合必须含可见文本；不得顺序通读 03 文档第 3 段之后正文，遇到 'Showing lines X of Y' 截断提示即停在 Layer 1；文档正文总量受 ~800 行预算约束；首条消息语言为用户语言（中文），不得因 party.toml 的 communication_language=\"English\" 而用英文开场；Tier 在 Layer 1 末定档并大声说依据。",
+      "files": [],
+      "assertions": [
+        "首条可见消息含：问候 + 议题确认 + 阵容名单",
+        "首条可见消息前工具调用 ≤2",
+        "全程连续纯工具回合 ≤2",
+        "Layer 1 后不得顺序通读文档第 3 段之后正文",
+        "首条消息语言 = 用户语言（中文）"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "party mode — session 模式。以今天上午那场 04 执行计划评审的结论为前提，讨论 A1–A39 与 S0–S5 的具体实施顺序建议，按周粒度给启动序列。",
+      "expected_output": "收敛诚实性契约，而非内容正确性：每个议程收口前必须逐人点名表态（同意/保留/反对），不得用『有异议的现在说』的沉默当作同意；有保留意见的议程在结论里标注『多数一致（保留意见：X）』而非『一致』；轮内提出但无人回答的问题必须进入『未闭合项』并标 owner 或『待用户定』；若修改了上一场已定案的门判据/判定时点/对照样本量/预算/验收标准，必须标『改判』并先用 question 工具向用户确认，未确认只能记为提案，不得写进 memory 的『Key Decisions & Consensus』；不得引入 Turn 1 未确认的 persona，不得出现『（主持人：…）』式破墙旁白。",
+      "files": [],
+      "assertions": [
+        "每个议程收口前逐人点名表态，沉默不算同意",
+        "保留意见在结论中标为『多数一致（保留意见：X）』",
+        "轮内未答问题进入『未闭合项』并标 owner 或『待用户定』",
+        "触及上一场已定案判据的改动标『改判』并走 question 确认",
+        "未确认的改判不得写入 memory 的 Key Decisions",
+        "无阵容外 persona，无『（主持人：…）』式旁白"
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "party mode — 讨论一下我们该不该把默认模式改成 session（无 --mode 参数，使用 party.toml 默认值）",
+      "expected_output": "默认模式与失败语义契约：未指定 --mode 时按 party.toml 的 party_mode=session 运行，全程不 spawn 子代理；若用户显式要求 subagent 而环境不支持 spawn 或首次 spawn 报错，必须报错并中止会话（不开议程、不产出 memory/report/visual），不得静默降级为单脑；若运行 auto，spawn 不可用或机制失败时回退到 session 必须在同一可见回合内明确告知用户（原本要派子代理、失败原因、独立性已失去），且不得埋在工具结果或 thinking 里；任何模式都应在开场声明实际运行的模式。",
+      "files": [],
+      "assertions": [
+        "未指定 --mode 时默认 party_mode=session，全程不 spawn",
+        "session 模式开场声明当前为单脑多角色",
+        "subagent 模式 spawn 失败必须中止会话，不得降级",
+        "subagent 中止时不得产出 memory/report/visual",
+        "auto 回退 session 必须在同一可见回合显式告知原因",
+        "回退说明不得只出现在工具结果或 thinking 中"
+      ]
     }
   ]
 }

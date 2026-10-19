@@ -1,6 +1,6 @@
 # Agent-Team Mode
 
-Active when the resolved `party_mode` is `agent-team` (or a `--mode agent-team` override). Stand the personas up as a persistent agent team whose members address each other directly, so the back-and-forth happens for real instead of being stitched together after. Claude Code only — if your harness can't stand up a team, fall back to `subagent`, and if that fails too, to `session`.
+Active when the resolved `party_mode` is `agent-team` (or a `--mode agent-team` override). Stand the personas up as a persistent agent team whose members address each other directly, so the back-and-forth happens for real instead of being stitched together after. **Native support is Claude Code only** — other harnesses degrade through the agent-team tiers (see `references/tool-compatibility.md`): Tier 1 native team (Claude Code) → Tier 2 subagent-simulated standing team (omp, Codex CLI) → Tier 3 session rotation (Qoder, OpenCode, generic). Since `agent-team` is opt-in, degrading is allowed but must be announced at every step; only fall to `session` when even subagent spawn is unavailable, and say clearly that the team independence is gone.
 
 Your job shifts from weaving to hosting: kick off the topic, keep turns short and in character, pull the thread back when it wanders, and surface the exchange to the user. Voice, brevity, and clash still hold.
 
